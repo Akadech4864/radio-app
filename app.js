@@ -343,6 +343,9 @@ window.selectDate = function(y, m, d) {
     updateDisplayDateLabel();
     renderDashboard();
     renderCalendar();
+    
+    // Scroll down to the details view
+    document.querySelector('.content-grid-bottom').scrollIntoView({ behavior: 'smooth' });
 }
 
 

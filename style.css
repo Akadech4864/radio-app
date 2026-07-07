@@ -437,6 +437,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .day-cell.today {
     border: 2px solid var(--primary);
+    position: relative;
+}
+.day-cell.today::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: red;
 }
 
 /* Search Results */
