@@ -137,7 +137,7 @@ async function loadData() {
         }
         
         if (appData && appData.personnel) {
-            let optionsHtml = '<option value="">เลือกรายชื่อจากตาราง...</option>';
+            let optionsHtml = '<option value="">ค้นหาจากชื่อ...</option>';
             for (let i = 1; i < appData.personnel.length; i++) {
                 let row = appData.personnel[i];
                 if (row && row[1]) {
