@@ -390,16 +390,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     justify-content: center;
     align-items: center;
     border-radius: 8px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
-    height: 60px;
+    width: 100%;
 }
 
 @media (min-width: 768px) {
     .day-cell {
-        height: 80px;
+        font-size: 1.2rem;
     }
 }
 
