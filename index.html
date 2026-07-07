@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางเวรสำหรับวิทยุ สน.ลำหิน</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -66,41 +66,42 @@
             <div class="main-column">
                 <h2 class="section-title" id="displayDateLabel">ข้อมูลประจำวันนี้</h2>
                 
-                <!-- Duty Card -->
-                <div class="glass-panel card duty-card">
+                <div class="card glass-panel highlight-border duty-card">
                     <div class="card-header">
                         <i class="fa-solid fa-user-shield"></i>
                         <h3>พนักงานสอบสวนเวร</h3>
                     </div>
                     <div class="card-body" id="investigatorDuty">
-                        <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> กำลังโหลด...</div>
+                        <div class="loading-spinner"><div class="spinner"></div></div>
                     </div>
                 </div>
 
-                <div class="glass-panel card duty-card">
+                <div class="card glass-panel duty-card">
                     <div class="card-header">
-                        <i class="fa-solid fa-user-group"></i>
+                        <i class="fa-solid fa-user-tie"></i>
                         <h3>ผู้ช่วยพนักงานสอบสวน</h3>
                     </div>
                     <div class="card-body" id="assistantDuty">
-                        <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> กำลังโหลด...</div>
+                        <div class="loading-spinner"><div class="spinner"></div></div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Mission Card -->
-                <div class="glass-panel card mission-card">
+            <!-- Right Column: Missions -->
+            <div class="side-column">
+                <div class="card glass-panel mission-card">
                     <div class="card-header">
                         <i class="fa-solid fa-clipboard-list"></i>
-                        <h3>ภารกิจ</h3>
+                        <h3>ภารกิจวันนี้</h3>
                     </div>
                     <div class="card-body" id="dailyMissions">
-                        <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> กำลังโหลด...</div>
+                        <div class="loading-spinner"><div class="spinner"></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=6"></script>
 </body>
 </html>

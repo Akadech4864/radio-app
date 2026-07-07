@@ -224,7 +224,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-left: 3px solid var(--primary);
+}
+
+.duty-item {
+    border-left: 4px solid var(--success);
+}
+
+.mission-item {
+    border-left: 4px solid var(--warning);
+}
+
+.duty-card .card-header i {
+    color: var(--success);
+}
+
+.mission-card .card-header i {
+    color: var(--warning);
 }
 
 .duty-info-wrapper {
@@ -273,6 +288,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     font-size: 0.75rem;
     padding: 0.2rem 0.6rem;
     border-radius: 12px;
+}
+.badge-duty {
+    background: var(--success);
+}
+.badge-mission {
+    background: var(--warning);
 }
 
 .mission-title {

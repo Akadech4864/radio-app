@@ -71,9 +71,17 @@ function updateDateFilterInput() {
     dateFilterInput.value = `${year}-${month}-${day}`;
 }
 
+function formatShortThaiDate(dateObj) {
+    if (!dateObj) return '';
+    const thMonthsShort = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const d = dateObj.getDate();
+    const m = thMonthsShort[dateObj.getMonth()];
+    const y = (dateObj.getFullYear() + 543).toString().slice(-2);
+    return `${d} ${m}.${y}`; // e.g. 12 มิ.ย.69
+}
+
 function updateDisplayDateLabel() {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    displayDateLabel.innerText = "ข้อมูลประจำ " + selectedDate.toLocaleDateString('th-TH', options);
+    displayDateLabel.innerText = "ข้อมูลประจำวันที่ " + formatShortThaiDate(selectedDate);
 }
 
 // Utility to parse Thai dates from sheet (dd/MM/yyyy)
@@ -214,7 +222,7 @@ function renderDashboard() {
                         ${phoneLink}
                     </div>
                 </div>
-                <span class="badge">เวร</span>
+                <span class="badge badge-duty">เวร</span>
             </div>`}).join('') 
         : '<div class="empty-state">ไม่มีข้อมูลพนักงานสอบสวนเวร</div>';
         
@@ -231,7 +239,7 @@ function renderDashboard() {
                         ${phoneLink}
                     </div>
                 </div>
-                <span class="badge">ผู้ช่วยฯ</span>
+                <span class="badge badge-duty">ผู้ช่วยฯ</span>
             </div>`}).join('') 
         : '<div class="empty-state">ไม่มีข้อมูลผู้ช่วยพนักงานสอบสวน</div>';
 
@@ -356,12 +364,20 @@ function handleSearch(query) {
         // Sort by date (assuming dd/mm/yyyy)
         results.sort((a,b) => parseSheetDate(a.date) - parseSheetDate(b.date));
         
-        searchResultsList.innerHTML = results.map(res => `
+        searchResultsList.innerHTML = results.map(res => {
+            let formattedDate = formatShortThaiDate(parseSheetDate(res.date));
+            let badgeClass = res.type === 'duty' ? 'badge-duty' : 'badge-mission';
+            let badgeText = res.type === 'duty' ? 'เวร' : 'ภารกิจ';
+            return `
             <div class="search-item" style="cursor:pointer" onclick="goToDateStr('${res.date}')">
-                <span class="date-tag"><i class="fa-regular fa-calendar-check"></i> ${res.date}</span>
-                ${res.text}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span class="date-tag"><i class="fa-regular fa-calendar-check"></i> ${formattedDate}</span>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div>${res.text}</div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     } else {
         searchResultsList.innerHTML = '<div class="empty-state">ไม่พบข้อมูล</div>';
     }
