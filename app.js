@@ -276,6 +276,25 @@ function renderDashboard() {
     // Find missions
     // Assume Mission sheet: [Date, Time, Location, Title, Participants, ...]
     const missionRows = appData.mission.filter(r => isSameDate(r[0], selectedDate));
+    
+    // Sort missionRows by time (m[1])
+    missionRows.sort((a, b) => {
+        let timeA = a[1] ? String(a[1]).trim() : '';
+        let timeB = b[1] ? String(b[1]).trim() : '';
+        
+        if (!timeA) return 1;
+        if (!timeB) return -1;
+        
+        let parseTime = (tStr) => {
+            let parts = tStr.split(':');
+            let h = parseInt(parts[0], 10) || 0;
+            let m = parseInt(parts[1], 10) || 0;
+            return h * 60 + m;
+        };
+        
+        return parseTime(timeA) - parseTime(timeB);
+    });
+
     dailyMissions.innerHTML = missionRows.length > 0
         ? missionRows.map(m => {
             let participants = m[4] ? m[4].split(/,|\n/).map(p => p.trim()).filter(p => p) : [];
