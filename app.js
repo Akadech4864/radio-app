@@ -51,6 +51,14 @@ function setupEventListeners() {
 
     searchInput.addEventListener('change', (e) => {
         currentSearchQuery = e.target.value.toLowerCase();
+        
+        // Reset date to today when searching for a person
+        selectedDate = new Date();
+        currentCalendarDate = new Date();
+        updateDateFilterInput();
+        updateDisplayDateLabel();
+        renderDashboard();
+        
         renderCalendar();
     });
 
