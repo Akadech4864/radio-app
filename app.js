@@ -16,7 +16,6 @@ let currentCalendarDate = new Date();
 let currentSearchQuery = '';
 
 // DOM Elements
-const dateFilterInput = document.getElementById('dateFilter');
 const searchInput = document.getElementById('searchInput');
 const displayDateLabel = document.getElementById('displayDateLabel');
 const investigatorDuty = document.getElementById('investigatorDuty');
@@ -33,23 +32,13 @@ const searchResultsList = document.getElementById('searchResultsList');
 // Initialize
 async function init() {
     setupEventListeners();
-    updateDateFilterInput();
     updateDisplayDateLabel();
     
     await loadData();
 }
 
 function setupEventListeners() {
-    dateFilterInput.addEventListener('change', (e) => {
-        if(e.target.value) {
-            selectedDate = new Date(e.target.value);
-            currentCalendarDate = new Date(selectedDate);
-            updateDisplayDateLabel();
-            renderDashboard();
-            renderCalendar();
-        }
-    });
-
+    
     searchInput.addEventListener('change', (e) => {
         currentSearchQuery = e.target.value.toLowerCase();
         
@@ -62,7 +51,6 @@ function setupEventListeners() {
         // Reset date to today when searching for a person
         selectedDate = new Date();
         currentCalendarDate = new Date();
-        updateDateFilterInput();
         updateDisplayDateLabel();
         renderDashboard();
         
@@ -89,7 +77,6 @@ function setupEventListeners() {
             searchInput.value = '';
             searchResultsPanel.style.display = 'none';
             searchLegend.style.display = 'none';
-            updateDateFilterInput();
             updateDisplayDateLabel();
             renderDashboard();
             renderCalendar();
@@ -98,12 +85,6 @@ function setupEventListeners() {
     }
 }
 
-function updateDateFilterInput() {
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    dateFilterInput.value = `${year}-${month}-${day}`;
-}
 
 function formatShortThaiDate(dateObj) {
     if (!dateObj) return '';
@@ -359,7 +340,6 @@ function renderCalendar() {
 
 window.selectDate = function(y, m, d) {
     selectedDate = new Date(y, m, d);
-    updateDateFilterInput();
     updateDisplayDateLabel();
     renderDashboard();
     renderCalendar();
@@ -439,7 +419,6 @@ window.goToDateStr = function(dateStr) {
     if(d) {
         selectedDate = d;
         currentCalendarDate = new Date(d);
-        updateDateFilterInput();
         updateDisplayDateLabel();
         renderDashboard();
         renderCalendar();

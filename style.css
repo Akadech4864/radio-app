@@ -400,6 +400,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (min-width: 768px) {
     .day-cell {
         font-size: 1.2rem;
+        height: 80px;
+        width: 80px;
+        margin: 0 auto;
     }
 }
 
