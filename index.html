@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ตารางเวรสำหรับวิทยุ สน.ลำหิน</title>
+    <title>ตารางเวร/ภารกิจ งานสอบสวน</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="style.css?v=14">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -17,7 +17,7 @@
         <header class="glass-panel main-header">
             <div class="header-content header-single-row">
                 <div class="logo logo-compact">
-                    <img src="https://drive.google.com/uc?export=view&id=1ocJtiwmzsLHYL0QKFcxts_bHd_XKkQ2_" alt="Logo สน.ลำหิน" class="police-logo">
+                    <img src="logo.png" alt="Logo สน.ลำหิน" class="police-logo">
                     <h1>ตารางเวร/ภารกิจ งานสอบสวน</h1>
                 </div>
                 
@@ -41,6 +41,18 @@
 
         <!-- Top Section: Calendar -->
         <div class="calendar-top-section">
+            <div id="searchLegend" style="display: none; background: rgba(37,99,235,0.1); border: 1px solid var(--primary); padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;">
+                <strong><i class="fa-solid fa-circle-info"></i> สัญลักษณ์การค้นหา:</strong>
+                <div style="margin-top: 6px;">
+                    <span style="display: inline-block; margin-right: 20px;">
+                        <span style="display: inline-block; width: 14px; height: 14px; background: rgba(37, 99, 235, 0.4); border: 1px solid var(--primary-light); border-radius: 4px; vertical-align: middle; margin-right: 5px;"></span> วันที่เข้าเวร
+                    </span>
+                    <span style="display: inline-block;">
+                        <span style="display: inline-block; width: 6px; height: 6px; background: #f97316; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> มีภารกิจ
+                    </span>
+                </div>
+            </div>
+
             <div class="glass-panel calendar-panel">
                 <div class="calendar-header">
                     <button id="prevMonth" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
@@ -103,6 +115,6 @@
         </div>
     </div>
     
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>

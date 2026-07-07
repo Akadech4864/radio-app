@@ -26,6 +26,7 @@ const prevMonthBtn = document.getElementById('prevMonth');
 const nextMonthBtn = document.getElementById('nextMonth');
 const currentMonthLabel = document.getElementById('currentMonthLabel');
 const calendarDays = document.getElementById('calendarDays');
+const searchLegend = document.getElementById('searchLegend');
 const searchResultsPanel = document.getElementById('searchResultsPanel');
 const searchResultsList = document.getElementById('searchResultsList');
 
@@ -51,6 +52,12 @@ function setupEventListeners() {
 
     searchInput.addEventListener('change', (e) => {
         currentSearchQuery = e.target.value.toLowerCase();
+        
+        if (currentSearchQuery) {
+            searchLegend.style.display = 'block';
+        } else {
+            searchLegend.style.display = 'none';
+        }
         
         // Reset date to today when searching for a person
         selectedDate = new Date();
@@ -81,6 +88,7 @@ function setupEventListeners() {
             currentSearchQuery = '';
             searchInput.value = '';
             searchResultsPanel.style.display = 'none';
+            searchLegend.style.display = 'none';
             updateDateFilterInput();
             updateDisplayDateLabel();
             renderDashboard();
