@@ -2,7 +2,7 @@
  * Config
  * IMPORTANT: User MUST replace this URL with their new Apps Script Web App URL after redeploying!
  */
-const API_URL = "https://script.google.com/macros/s/AKfycbxEFJh88uUU1_O3_4-jntXNHzlWdQpc0Jln-2rySR35CP83EKyEzwTZQFoUEeFyVnel/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbwgwvs6i9DQlxCeC0FWZvvDKTMaszpsrSOX3GsqS56SbhUae-Y9JqAnNf13pDnakoS7/exec"; 
 
 // Data State
 let appData = {
