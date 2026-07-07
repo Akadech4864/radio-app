@@ -165,7 +165,15 @@ function showError(msg) {
 
 function extractCleanName(name) {
     if (!name) return '';
-    return name.replace(/ว่าที่|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|พ\.ต\.ท\.|พ\.ต\.อ\.|พ\.ต\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ดาบตำรวจ|ด\.ต\.|จ\.ส\.ต\.|นาย|นางสาว|นาง|หญิง/g, '').trim().toLowerCase();
+    return name.replace(/ ว่าที่|ร\.ต\.ต\.|ร\.ต\.ท\.|ร\.ต\.อ\.|พ\.ต\.ต\.|พ\.ต\.ท\.|พ\.ต\.อ\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|นายพลตำรวจ|พล\.ต\.|พล\.ต\.ต\.|หญิง|ผู้กำกับ|พัน|พนักงานสอบสวน/g, '').trim().toLowerCase();
+}
+
+function formatShortName(fullName) {
+    if (!fullName) return '';
+    let parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 1) return fullName + 'ฯ';
+    parts.pop();
+    return parts.join(' ') + 'ฯ';
 }
 
 function getPersonImage(name) {
@@ -264,19 +272,20 @@ function renderDashboard() {
     dailyMissions.innerHTML = missionRows.length > 0
         ? missionRows.map(m => {
             let participants = m[4] ? m[4].split(/,|\n/).map(p => p.trim()).filter(p => p) : [];
+            let shortNamesStr = participants.map(p => formatShortName(p)).join(', ');
             let faceHtml = participants.map(p => `<img src="${getPersonImage(p)}" alt="${p}" class="mission-face" title="${p}">`).join('');
             
             return `
             <div class="mission-item">
                 <div>
-                    <div class="mission-title">${m[3] || 'ภารกิจ'}</div>
+                    <div class="mission-title">${m[3] || 'ไม่ระบุภารกิจ'}</div>
                     <div class="mission-details">
                         <i class="fa-regular fa-clock"></i> ${m[1] || '-'} | 
                         <i class="fa-solid fa-location-dot"></i> ${m[2] || '-'}
                     </div>
                     <div class="mission-details" style="margin-top:4px">
-                        <i class="fa-solid fa-users"></i> ${m[4] || '-'} 
-                        ${m[5] ? `(ประธาน: ${m[5]})` : ''}
+                        <i class="fa-solid fa-users"></i> ${shortNamesStr || '-'} 
+                        ${m[5] ? `(หมายเหตุ: ${m[5]})` : ''}
                     </div>
                     ${faceHtml ? `<div class="mission-faces-container">${faceHtml}</div>` : ''}
                 </div>
