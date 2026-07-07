@@ -483,3 +483,78 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         flex-direction: column;
     }
 }
+
+/* Header Layout Override */
+.header-single-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+.logo-compact {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.logo-compact h1 {
+    font-size: 1.4rem;
+    margin: 0;
+}
+.police-logo {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(37,99,235,0.5));
+}
+.compact-search {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+    gap: 10px;
+}
+
+.reset-btn {
+    border: 1px solid var(--primary);
+    background: rgba(37, 99, 235, 0.2);
+    color: var(--text-light);
+    padding: 0 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 500;
+    transition: all 0.2s;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.reset-btn:hover {
+    background: rgba(37, 99, 235, 0.4);
+}
+
+/* Highlight Calendar Day from Search */
+.day-cell.highlight-search-day {
+    background: rgba(37, 99, 235, 0.4);
+    border: 1px solid var(--primary-light);
+    transform: scale(1.1);
+    z-index: 2;
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.6);
+    font-weight: bold;
+    color: white;
+}
+
+@media (max-width: 900px) {
+    .header-single-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .compact-search {
+        flex-direction: column;
+        width: 100%;
+    }
+    .reset-btn {
+        width: 100%;
+    }
+}
