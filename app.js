@@ -86,17 +86,24 @@ function setupEventListeners() {
 }
 
 
-function formatShortThaiDate(dateObj) {
+function formatFullThaiDate(dateObj) {
     if (!dateObj) return '';
+    const thDays = ["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"];
     const thMonthsShort = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const dayName = thDays[dateObj.getDay()];
     const d = dateObj.getDate();
     const m = thMonthsShort[dateObj.getMonth()];
     const y = (dateObj.getFullYear() + 543).toString().slice(-2);
-    return `${d} ${m}.${y}`; // e.g. 12 มิ.ย.69
+    return `${dayName}ที่ ${d} ${m}${y}`; // e.g. วันพุธที่ 29 ก.ค.69
 }
 
 function updateDisplayDateLabel() {
-    displayDateLabel.innerText = "ข้อมูลประจำวันที่ " + formatShortThaiDate(selectedDate);
+    const fullDateStr = formatFullThaiDate(selectedDate);
+    displayDateLabel.innerText = "เวร ประจำ" + fullDateStr;
+    const missionTitle = document.getElementById('missionTitle');
+    if (missionTitle) {
+        missionTitle.innerText = "ภารกิจ ประจำ" + fullDateStr;
+    }
 }
 
 // Utility to parse Thai dates from sheet (dd/MM/yyyy)
