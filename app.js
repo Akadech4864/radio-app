@@ -98,16 +98,7 @@ async function loadData() {
             // Mock data for preview until user sets the URL
             console.log("Using mock data for preview. Please set API_URL in app.js.");
             appData = {
-                duty: [
-                    ["07/07/2026", "พ.ต.ท. เก่งกาจ ชาญชัย", "ส.ต.ท. มานะ อดทน", "พ.ต.ท. สมหมาย กล้าหาญ"],
-                    ["08/07/2026", "ร.ต.อ. สมชาย ใจดี", "ส.ต.อ. นักรบ ชาญชัย", "พ.ต.อ. เอก ยอดเยี่ยม"],
-                    ["09/07/2026", "ร.ต.ท. หญิง สุชาดา งามตา", "ส.ต.ต. สุดยอด อัศวิน"]
-                ],
-                mission: [
-                    ["07/07/2026", "09:00", "สภ.เมือง", "ประชุมคดีสำคัญ", "พงส. สมชาย", "ผกก.สภ.เมือง", "", "", "รอตรวจ"],
-                    ["07/07/2026", "14:00", "ศาลแขวง", "ผัดฟ้องฝากขัง", "ส.ต.ท. มานะ", "ผกก.", "", "", "รอตรวจ"],
-                    ["09/07/2026", "13:00", "ศาลจังหวัด", "เบิกความ", "พ.ต.ท. เก่งกาจ"]
-                ]
+                duty: [], mission: [], personnel: []
             };
         } else {
             const response = await fetch(`${API_URL}?api=radio`);
@@ -119,7 +110,16 @@ async function loadData() {
         renderCalendar();
     } catch (error) {
         console.error("Error loading data:", error);
+        
+        // Safeguard appData so renderCalendar doesn't crash
+        if (!appData || !appData.duty) {
+            appData = { duty: [], mission: [], personnel: [] };
+        }
+        
         showError("ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบ API URL: " + error.message);
+        // Ensure calendar and dashboard still render empty state
+        renderDashboard();
+        renderCalendar();
     }
 }
 
