@@ -62,6 +62,20 @@ function setupEventListeners() {
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
+
+    const resetHomeBtn = document.getElementById('resetHomeBtn');
+    if(resetHomeBtn) {
+        resetHomeBtn.addEventListener('click', () => {
+            selectedDate = new Date();
+            currentCalendarDate = new Date();
+            updateDateFilterInput();
+            updateDisplayDateLabel();
+            renderDashboard();
+            renderCalendar();
+            clearSearch();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 }
 
 function updateDateFilterInput() {

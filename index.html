@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางเวรสำหรับวิทยุ สน.ลำหิน</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=8">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -30,9 +30,14 @@
                             <option value="">เลือกรายชื่อจากตาราง...</option>
                         </select>
                     </div>
-                    <div class="date-picker-box">
-                        <i class="fa-regular fa-calendar"></i>
-                        <input type="date" id="dateFilter">
+                    <div style="display: flex; gap: 10px; width: 100%;">
+                        <div class="date-picker-box" style="flex: 1;">
+                            <i class="fa-regular fa-calendar"></i>
+                            <input type="date" id="dateFilter">
+                        </div>
+                        <button id="resetHomeBtn" class="glass-panel" style="border: 1px solid var(--primary); background: rgba(37, 99, 235, 0.2); color: white; padding: 0 16px; border-radius: 12px; cursor: pointer; white-space: nowrap; font-weight: 500; transition: all 0.2s;">
+                            <i class="fa-solid fa-house"></i> กลับหน้าแรก
+                        </button>
                     </div>
                 </div>
             </div>
@@ -102,6 +107,6 @@
         </div>
     </div>
     
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=8"></script>
 </body>
 </html>
