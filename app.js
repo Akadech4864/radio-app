@@ -284,9 +284,11 @@ function renderDashboard() {
                         <i class="fa-solid fa-location-dot"></i> ${m[2] || '-'}
                     </div>
                     <div class="mission-details" style="margin-top:4px">
-                        <i class="fa-solid fa-users"></i> ${shortNamesStr || '-'} 
-                        ${m[5] ? `(หมายเหตุ: ${m[5]})` : ''}
+                        <i class="fa-solid fa-users"></i> ${shortNamesStr || '-'}
                     </div>
+                    ${m[5] ? `<div class="mission-details" style="margin-top:4px; color: var(--primary); font-weight: 500;">
+                        <i class="fa-solid fa-user-tie"></i> ปธ. ${m[5]}
+                    </div>` : ''}
                     ${faceHtml ? `<div class="mission-faces-container">${faceHtml}</div>` : ''}
                 </div>
             </div>
