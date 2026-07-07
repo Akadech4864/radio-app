@@ -346,6 +346,35 @@ window.selectDate = function(y, m, d) {
     
     // Scroll down to the details view
     document.querySelector('.content-grid-bottom').scrollIntoView({ behavior: 'smooth' });
+    
+    // Scroll search results panel to the selected date if visible
+    scrollToSearchResult(selectedDate);
+}
+
+function scrollToSearchResult(dateObj) {
+    if (searchResultsPanel.style.display !== 'none') {
+        const day = dateObj.getDate();
+        const month = dateObj.getMonth() + 1;
+        const year = dateObj.getFullYear();
+        
+        const items = document.querySelectorAll('.search-item');
+        for (let el of items) {
+            const dStr = el.getAttribute('data-date');
+            const dObj = parseSheetDate(dStr);
+            if (dObj && dObj.getDate() === day && dObj.getMonth() + 1 === month && dObj.getFullYear() === year) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Add a brief highlight
+                el.style.transition = 'background-color 0.5s';
+                el.style.backgroundColor = 'rgba(37, 99, 235, 0.3)';
+                setTimeout(() => {
+                    el.style.backgroundColor = '';
+                }, 1500);
+                
+                break;
+            }
+        }
+    }
 }
 
 
@@ -401,7 +430,7 @@ function handleSearch(query) {
             let badgeClass = res.type === 'duty' ? 'badge-duty' : 'badge-mission';
             let badgeText = res.type === 'duty' ? 'เวร' : 'ภารกิจ';
             return `
-            <div class="search-item" style="cursor:pointer" onclick="goToDateStr('${res.date}')">
+            <div class="search-item" data-date="${res.date}" style="cursor:pointer" onclick="goToDateStr('${res.date}')">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <span class="date-tag"><i class="fa-regular fa-calendar-check"></i> ${formattedDate}</span>
                     <span class="badge ${badgeClass}">${badgeText}</span>
@@ -415,6 +444,27 @@ function handleSearch(query) {
     }
     
     searchResultsPanel.style.display = 'block';
+    
+    // Find closest date and scroll
+    let closestDateObj = null;
+    let minDiff = Infinity;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    results.forEach(res => {
+        const d = parseSheetDate(res.date);
+        const diff = Math.abs(d - today);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestDateObj = d;
+        }
+    });
+    
+    if (closestDateObj) {
+        setTimeout(() => {
+            scrollToSearchResult(closestDateObj);
+        }, 100);
+    }
 }
 
 window.goToDateStr = function(dateStr) {

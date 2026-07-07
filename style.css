@@ -461,6 +461,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-bottom: 1px solid var(--glass-border);
     padding-bottom: 0.5rem;
 }
+.search-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.search-list::-webkit-scrollbar {
+    width: 6px;
+}
+.search-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+.search-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 4px;
+}
 .search-item {
     padding: 0.8rem;
     background: rgba(0,0,0,0.2);
