@@ -136,9 +136,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Grid Layout */
-.content-grid {
-    display: grid;
-    grid-template-columns: 1fr 400px;
+.calendar-top-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.content-grid-bottom {
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
 }
 
@@ -202,6 +209,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-left: 3px solid var(--primary);
 }
 
+.duty-info-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.duty-face {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
 .duty-name {
     font-size: 1.1rem;
     font-weight: 500;
@@ -242,12 +264,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Calendar */
-.side-column {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
 .calendar-panel {
     padding: 1.5rem;
 }
@@ -299,9 +315,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     justify-content: center;
     align-items: center;
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: 1.2rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    height: 60px;
+}
+
+@media (min-width: 768px) {
+    .day-cell {
+        height: 80px;
+    }
 }
 
 .day-cell:hover:not(.empty) {
@@ -315,7 +339,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .day-cell.has-duty {
-    border-bottom: 2px solid var(--success);
+    border-bottom: 3px solid var(--success);
 }
 .day-cell.has-mission {
     position: relative;
@@ -323,10 +347,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .day-cell.has-mission::after {
     content: '';
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 6px;
-    height: 6px;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background-color: var(--warning);
 }
@@ -334,7 +358,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     cursor: default;
 }
 .day-cell.today {
-    border: 1px solid var(--primary);
+    border: 2px solid var(--primary);
 }
 
 /* Search Results */
@@ -368,9 +392,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Responsive */
 @media (max-width: 900px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
     .header-content {
         flex-direction: column;
         align-items: flex-start;

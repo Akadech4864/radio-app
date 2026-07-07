@@ -129,6 +129,22 @@ function showError(msg) {
     dailyMissions.innerHTML = `<div class="empty-state" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
 }
 
+function getPersonImage(name) {
+    if (!appData.personnel) return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+    let nameClean = name.replace(/ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|พ\.ต\.ท\.|พ\.ต\.อ\.|พ\.ต\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ดาบตำรวจ|จ\.ส\.ต\.|นาย|นางสาว|นาง/g, '').trim().toLowerCase();
+    
+    for (let row of appData.personnel) {
+        if (!row) continue;
+        let rowStr = row.join(' ').toLowerCase();
+        if (nameClean.length > 2 && rowStr.includes(nameClean)) {
+            // Find a URL in this row
+            let urlCell = row.find(cell => cell && typeof cell === 'string' && cell.startsWith('http'));
+            if (urlCell) return urlCell;
+        }
+    }
+    return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; // default avatar
+}
+
 // Rendering Dashboard
 function renderDashboard() {
     const targetDateStr = String(selectedDate.getDate()).padStart(2,'0') + '/' + String(selectedDate.getMonth()+1).padStart(2,'0') + '/' + selectedDate.getFullYear();
@@ -145,11 +161,25 @@ function renderDashboard() {
     });
 
     investigatorDuty.innerHTML = invs.length > 0 
-        ? invs.map(i => `<div class="duty-item"><span class="duty-name">${i}</span><span class="badge">เวร</span></div>`).join('') 
+        ? invs.map(i => `
+            <div class="duty-item">
+                <div class="duty-info-wrapper">
+                    <img src="${getPersonImage(i)}" alt="${i}" class="duty-face">
+                    <span class="duty-name">${i}</span>
+                </div>
+                <span class="badge">เวร</span>
+            </div>`).join('') 
         : '<div class="empty-state">ไม่มีข้อมูลพนักงานสอบสวนเวร</div>';
         
     assistantDuty.innerHTML = assts.length > 0 
-        ? assts.map(a => `<div class="duty-item"><span class="duty-name">${a}</span><span class="badge">ผู้ช่วยฯ</span></div>`).join('') 
+        ? assts.map(a => `
+            <div class="duty-item">
+                <div class="duty-info-wrapper">
+                    <img src="${getPersonImage(a)}" alt="${a}" class="duty-face">
+                    <span class="duty-name">${a}</span>
+                </div>
+                <span class="badge">ผู้ช่วยฯ</span>
+            </div>`).join('') 
         : '<div class="empty-state">ไม่มีข้อมูลผู้ช่วยพนักงานสอบสวน</div>';
 
     // Find missions
