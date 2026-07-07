@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางเวร/ภารกิจ งานสอบสวน สน.ลำหิน</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=26">
+    <link rel="stylesheet" href="style.css?v=27">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -80,20 +80,21 @@
                 <div class="card glass-panel highlight-border duty-card">
                     <div class="card-header">
                         <i class="fa-solid fa-user-shield"></i>
-                        <h3>พนักงานสอบสวนเวร</h3>
+                        <h3>พนักงานสอบสวนเวร / ผู้ช่วย พงส.</h3>
                     </div>
-                    <div class="card-body" id="investigatorDuty">
-                        <div class="loading-spinner"><div class="spinner"></div></div>
-                    </div>
-                </div>
-
-                <div class="card glass-panel duty-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-user-tie"></i>
-                        <h3>ผู้ช่วยพนักงานสอบสวน</h3>
-                    </div>
-                    <div class="card-body" id="assistantDuty">
-                        <div class="loading-spinner"><div class="spinner"></div></div>
+                    <div class="card-body" style="min-height: auto;">
+                        <div class="duty-section">
+                            <div class="duty-section-label">พนักงานสอบสวนเวร</div>
+                            <div id="investigatorDuty">
+                                <div class="loading-spinner"><div class="spinner"></div></div>
+                            </div>
+                        </div>
+                        <div class="duty-section" style="margin-top: 1.2rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                            <div class="duty-section-label">ผู้ช่วยพนักงานสอบสวน</div>
+                            <div id="assistantDuty">
+                                <div class="loading-spinner"><div class="spinner"></div></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -113,6 +114,6 @@
         </div>
     </div>
     
-    <script src="app.js?v=26"></script>
+    <script src="app.js?v=27"></script>
 </body>
 </html>

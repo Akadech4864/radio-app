@@ -230,6 +230,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-left: 4px solid var(--success);
 }
 
+.duty-section-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    padding-left: 0.4rem;
+    border-left: 3px solid var(--success);
+}
+
 .mission-item {
     border-left: 4px solid var(--warning);
 }
