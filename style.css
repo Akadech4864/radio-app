@@ -224,9 +224,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     box-shadow: 0 0 10px var(--primary-glow);
 }
 
+.duty-details {
+    display: flex;
+    flex-direction: column;
+}
+
 .duty-name {
     font-size: 1.1rem;
     font-weight: 500;
+}
+
+.duty-phone {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.3s;
+}
+
+.duty-phone:hover {
+    color: var(--primary);
 }
 
 .badge {
@@ -245,6 +265,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .mission-details {
     font-size: 0.85rem;
     color: var(--text-muted);
+}
+
+.mission-faces-container {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.mission-face {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .loading-spinner {
