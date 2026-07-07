@@ -49,7 +49,7 @@ function setupEventListeners() {
         }
     });
 
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('change', (e) => {
         handleSearch(e.target.value);
     });
 
@@ -104,6 +104,17 @@ async function loadData() {
             const response = await fetch(`${API_URL}?api=radio`);
             const data = await response.json();
             appData = data;
+        }
+        
+        if (appData && appData.personnel) {
+            let optionsHtml = '<option value="">เลือกรายชื่อจากตาราง...</option>';
+            for (let i = 1; i < appData.personnel.length; i++) {
+                let row = appData.personnel[i];
+                if (row && row[1]) {
+                    optionsHtml += `<option value="${row[1]}">${row[1]}</option>`;
+                }
+            }
+            searchInput.innerHTML = optionsHtml;
         }
         
         renderDashboard();

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางเวรสำหรับวิทยุ สน.ลำหิน</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -25,8 +25,10 @@
                 </div>
                 <div class="search-container">
                     <div class="search-box">
-                        <i class="fa-solid fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="ค้นหาชื่อ หรือ ยศ...">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <select id="searchInput" class="search-select">
+                            <option value="">เลือกรายชื่อจากตาราง...</option>
+                        </select>
                     </div>
                     <div class="date-picker-box">
                         <i class="fa-regular fa-calendar"></i>
