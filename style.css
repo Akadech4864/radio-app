@@ -516,15 +516,30 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border: 2px solid var(--primary);
     position: relative;
 }
+@keyframes pulse-red {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
 .day-cell.today::before {
     content: '';
     position: absolute;
     top: 6px;
     left: 6px;
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background-color: red;
+    animation: pulse-red 1.5s infinite ease-in-out;
 }
 
 /* Search Results */

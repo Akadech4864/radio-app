@@ -96,6 +96,15 @@ function formatFullThaiDate(dateObj) {
     return `${dayName}ที่ ${d} ${m}${y}`; // e.g. วันพุธที่ 29 ก.ค.69
 }
 
+function formatShortThaiDate(dateObj) {
+    if (!dateObj) return '';
+    const thMonthsShort = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const d = dateObj.getDate();
+    const m = thMonthsShort[dateObj.getMonth()];
+    const y = (dateObj.getFullYear() + 543).toString().slice(-2);
+    return `${d} ${m}${y}`;
+}
+
 function updateDisplayDateLabel() {
     const fullDateStr = formatFullThaiDate(selectedDate);
     displayDateLabel.innerText = "เวร ประจำ" + fullDateStr;
@@ -372,7 +381,7 @@ function renderCalendar() {
             hasDuty = appData.duty.some(r => isSameDate(r[0], cellDate) && ((r[1] && r[1].toLowerCase().includes(currentSearchQuery)) || (r[2] && r[2].toLowerCase().includes(currentSearchQuery))));
             hasMission = appData.mission.some(r => isSameDate(r[0], cellDate) && (r.join(' ').toLowerCase().includes(currentSearchQuery)));
             
-            if (hasDuty) {
+            if (hasDuty && cellDate.toDateString() !== today.toDateString()) {
                 classes.push('highlight-search-day');
             }
         } else {
