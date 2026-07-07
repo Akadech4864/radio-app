@@ -145,16 +145,25 @@ function getPersonImage(name) {
     return 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; // default avatar
 }
 
+function isSameDate(dateStr, targetDate) {
+    if (!dateStr) return false;
+    let parts = String(dateStr).split('/');
+    if (parts.length !== 3) return false;
+    let d = parseInt(parts[0], 10);
+    let m = parseInt(parts[1], 10) - 1;
+    let y = parseInt(parts[2], 10);
+    if (y > 2500) y -= 543;
+    return (d === targetDate.getDate() && m === targetDate.getMonth() && y === targetDate.getFullYear());
+}
+
 // Rendering Dashboard
 function renderDashboard() {
-    const targetDateStr = String(selectedDate.getDate()).padStart(2,'0') + '/' + String(selectedDate.getMonth()+1).padStart(2,'0') + '/' + selectedDate.getFullYear();
-    
     // Find duties
     let invs = [];
     let assts = [];
     
     // Assume Duty sheet structure: [Date, Investigator, Assistant, ...]
-    const dutyRows = appData.duty.filter(r => r[0] === targetDateStr);
+    const dutyRows = appData.duty.filter(r => isSameDate(r[0], selectedDate));
     dutyRows.forEach(row => {
         if(row[1]) invs.push(row[1]);
         if(row[2]) assts.push(row[2]);
@@ -184,7 +193,7 @@ function renderDashboard() {
 
     // Find missions
     // Assume Mission sheet: [Date, Time, Location, Title, Participants, ...]
-    const missionRows = appData.mission.filter(r => r[0] === targetDateStr);
+    const missionRows = appData.mission.filter(r => isSameDate(r[0], selectedDate));
     dailyMissions.innerHTML = missionRows.length > 0
         ? missionRows.map(m => `
             <div class="mission-item">
@@ -226,7 +235,6 @@ function renderCalendar() {
     const today = new Date();
     for(let i=1; i<=daysInMonth; i++) {
         const cellDate = new Date(year, month, i);
-        const cellDateStr = String(i).padStart(2,'0') + '/' + String(month+1).padStart(2,'0') + '/' + year;
         
         let classes = ['day-cell'];
         
@@ -234,8 +242,8 @@ function renderCalendar() {
         if (cellDate.toDateString() === selectedDate.toDateString()) classes.push('active');
         
         // Check duty and mission for indicators
-        const hasDuty = appData.duty.some(r => r[0] === cellDateStr);
-        const hasMission = appData.mission.some(r => r[0] === cellDateStr);
+        const hasDuty = appData.duty.some(r => isSameDate(r[0], cellDate));
+        const hasMission = appData.mission.some(r => isSameDate(r[0], cellDate));
         
         if (hasDuty) classes.push('has-duty');
         if (hasMission) classes.push('has-mission');
