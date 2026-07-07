@@ -358,18 +358,19 @@ function scrollToSearchResult(dateObj) {
         const year = dateObj.getFullYear();
         
         const items = document.querySelectorAll('.search-item');
+        // Remove active class from all items
+        for (let el of items) {
+            el.classList.remove('active-search-item');
+        }
+        
         for (let el of items) {
             const dStr = el.getAttribute('data-date');
             const dObj = parseSheetDate(dStr);
             if (dObj && dObj.getDate() === day && dObj.getMonth() + 1 === month && dObj.getFullYear() === year) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
-                // Add a brief highlight
-                el.style.transition = 'background-color 0.5s';
-                el.style.backgroundColor = 'rgba(37, 99, 235, 0.3)';
-                setTimeout(() => {
-                    el.style.backgroundColor = '';
-                }, 1500);
+                // Add persistent highlight
+                el.classList.add('active-search-item');
                 
                 break;
             }
