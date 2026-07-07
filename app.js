@@ -60,6 +60,7 @@ function setupEventListeners() {
         renderDashboard();
         
         renderCalendar();
+        handleSearch(e.target.value);
     });
 
     prevMonthBtn.addEventListener('click', () => {
@@ -79,6 +80,7 @@ function setupEventListeners() {
             currentCalendarDate = new Date();
             currentSearchQuery = '';
             searchInput.value = '';
+            searchResultsPanel.style.display = 'none';
             updateDateFilterInput();
             updateDisplayDateLabel();
             renderDashboard();
@@ -358,3 +360,83 @@ window.selectDate = function(y, m, d) {
 
 // Run
 init();
+
+// Searching
+function handleSearch(query) {
+    if(!query || query.trim() === '') {
+        searchResultsPanel.style.display = 'none';
+        return;
+    }
+    
+    query = query.toLowerCase();
+    let results = [];
+    
+    // Search Duty
+    appData.duty.forEach(r => {
+        const inv = r[1] ? r[1].toLowerCase() : '';
+        const asst = r[2] ? r[2].toLowerCase() : '';
+        
+        if (inv.includes(query) || asst.includes(query)) {
+            let matches = [];
+            if (inv.includes(query)) matches.push(`พงส.: ${r[1]}`);
+            if (asst.includes(query)) matches.push(`ผู้ช่วยฯ: ${r[2]}`);
+            
+            results.push({
+                date: r[0],
+                type: 'duty',
+                text: matches.join(' / ')
+            });
+        }
+    });
+    
+    // Search Mission
+    appData.mission.forEach(r => {
+        const rowStr = r.join(' ').toLowerCase();
+        if (rowStr.includes(query)) {
+            results.push({
+                date: r[0],
+                type: 'mission',
+                text: `ภารกิจ: ${r[3]} - ${r[4]}`
+            });
+        }
+    });
+    
+    if (results.length > 0) {
+        // Sort by date (assuming dd/mm/yyyy)
+        results.sort((a,b) => parseSheetDate(a.date) - parseSheetDate(b.date));
+        
+        searchResultsList.innerHTML = results.map(res => {
+            let formattedDate = formatShortThaiDate(parseSheetDate(res.date));
+            let badgeClass = res.type === 'duty' ? 'badge-duty' : 'badge-mission';
+            let badgeText = res.type === 'duty' ? 'เวร' : 'ภารกิจ';
+            return `
+            <div class="search-item" style="cursor:pointer" onclick="goToDateStr('${res.date}')">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span class="date-tag"><i class="fa-regular fa-calendar-check"></i> ${formattedDate}</span>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                </div>
+                <div>${res.text}</div>
+            </div>
+            `;
+        }).join('');
+    } else {
+        searchResultsList.innerHTML = '<div class="empty-state">ไม่พบข้อมูล</div>';
+    }
+    
+    searchResultsPanel.style.display = 'block';
+}
+
+window.goToDateStr = function(dateStr) {
+    const d = parseSheetDate(dateStr);
+    if(d) {
+        selectedDate = d;
+        currentCalendarDate = new Date(d);
+        updateDateFilterInput();
+        updateDisplayDateLabel();
+        renderDashboard();
+        renderCalendar();
+        
+        // On mobile, might want to scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}

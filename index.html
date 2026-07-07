@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางเวรสำหรับวิทยุ สน.ลำหิน</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=12">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -51,6 +51,14 @@
                     <div class="weekday">อา</div><div class="weekday">จ</div><div class="weekday">อ</div><div class="weekday">พ</div><div class="weekday">พฤ</div><div class="weekday">ศ</div><div class="weekday">ส</div>
                 </div>
                 <div id="calendarDays" class="calendar-days"></div>
+            </div>
+
+            <!-- Search Results panel (hidden by default) -->
+            <div class="glass-panel search-results-panel" id="searchResultsPanel" style="display: none; margin-top: 20px;">
+                <h3><i class="fa-solid fa-list-ul"></i> ผลการค้นหา</h3>
+                <div id="searchResultsList" class="search-list">
+                    <!-- Results injected here -->
+                </div>
             </div>
         </div>
 
