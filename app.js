@@ -18,8 +18,7 @@ let currentSearchQuery = '';
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
 const displayDateLabel = document.getElementById('displayDateLabel');
-const investigatorDuty = document.getElementById('investigatorDuty');
-const assistantDuty = document.getElementById('assistantDuty');
+const dutyContainer = document.getElementById('dutyContainer');
 const dailyMissions = document.getElementById('dailyMissions');
 const prevMonthBtn = document.getElementById('prevMonth');
 const nextMonthBtn = document.getElementById('nextMonth');
@@ -165,8 +164,9 @@ async function loadData() {
 }
 
 function showError(msg) {
-    investigatorDuty.innerHTML = `<div class="empty-state" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
-    assistantDuty.innerHTML = `<div class="empty-state" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
+    if (dutyContainer) {
+        dutyContainer.innerHTML = `<div class="empty-state" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
+    }
     dailyMissions.innerHTML = `<div class="empty-state" style="color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i> ${msg}</div>`;
 }
 
@@ -239,33 +239,53 @@ function renderDashboard() {
         if(row[2]) assts.push(row[2]);
     });
 
-    investigatorDuty.innerHTML = invs.length > 0 
+    let dutyHtml = '';
+
+    // Render พงส.เวร sub-card
+    let invHtml = invs.length > 0
         ? invs.map(i => {
             let phoneInfo = getPersonPhone(i);
             let phoneLink = phoneInfo ? `<a href="tel:${phoneInfo.dial}" class="duty-phone-large" onclick="event.stopPropagation();"><i class="fa-solid fa-phone"></i> ${phoneInfo.display}</a>` : '';
             return `
-            <div class="duty-item-large">
+            <div class="duty-person-item" style="display:flex; align-items:center; gap:12px; margin-top:8px;">
                 <img src="${getPersonImage(i)}" alt="${i}" class="duty-face-large">
                 <div class="duty-details-large">
                     <span class="duty-name-large">${i}</span>
                     ${phoneLink}
                 </div>
-            </div>`}).join('') 
+            </div>`;
+        }).join('')
         : '<div class="empty-state">ไม่มีข้อมูล พงส.เวร</div>';
-        
-    assistantDuty.innerHTML = assts.length > 0 
+
+    dutyHtml += `
+    <div class="duty-sub-card">
+        <div class="duty-sub-card-title">พงส.เวร</div>
+        ${invHtml}
+    </div>`;
+
+    // Render ผู้ช่วย พงส. sub-card
+    let asstHtml = assts.length > 0
         ? assts.map(a => {
             let phoneInfo = getPersonPhone(a);
             let phoneLink = phoneInfo ? `<a href="tel:${phoneInfo.dial}" class="duty-phone-large" onclick="event.stopPropagation();"><i class="fa-solid fa-phone"></i> ${phoneInfo.display}</a>` : '';
             return `
-            <div class="duty-item-large">
+            <div class="duty-person-item" style="display:flex; align-items:center; gap:12px; margin-top:8px;">
                 <img src="${getPersonImage(a)}" alt="${a}" class="duty-face-large">
                 <div class="duty-details-large">
                     <span class="duty-name-large">${a}</span>
                     ${phoneLink}
                 </div>
-            </div>`}).join('') 
+            </div>`;
+        }).join('')
         : '<div class="empty-state">ไม่มีข้อมูลผู้ช่วย พงส.</div>';
+
+    dutyHtml += `
+    <div class="duty-sub-card">
+        <div class="duty-sub-card-title">ผู้ช่วย พงส.</div>
+        ${asstHtml}
+    </div>`;
+
+    dutyContainer.innerHTML = dutyHtml;
 
     // Find missions
     // Assume Mission sheet: [Date, Time, Location, Title, Participants, ...]
