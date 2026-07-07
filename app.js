@@ -229,7 +229,7 @@ function renderDashboard() {
     const missionRows = appData.mission.filter(r => isSameDate(r[0], selectedDate));
     dailyMissions.innerHTML = missionRows.length > 0
         ? missionRows.map(m => {
-            let participants = m[4] ? m[4].split(',').map(p => p.trim()).filter(p => p) : [];
+            let participants = m[4] ? m[4].split(/,|\n/).map(p => p.trim()).filter(p => p) : [];
             let faceHtml = participants.map(p => `<img src="${getPersonImage(p)}" alt="${p}" class="mission-face" title="${p}">`).join('');
             
             return `
