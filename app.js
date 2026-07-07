@@ -322,7 +322,7 @@ function renderCalendar() {
             hasDuty = appData.duty.some(r => isSameDate(r[0], cellDate) && ((r[1] && r[1].toLowerCase().includes(currentSearchQuery)) || (r[2] && r[2].toLowerCase().includes(currentSearchQuery))));
             hasMission = appData.mission.some(r => isSameDate(r[0], cellDate) && (r.join(' ').toLowerCase().includes(currentSearchQuery)));
             
-            if (hasDuty || hasMission) {
+            if (hasDuty) {
                 classes.push('highlight-search-day');
             }
         } else {
