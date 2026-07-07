@@ -239,6 +239,57 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-left: 3px solid var(--success);
 }
 
+.duty-item-large {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border-left: 4px solid var(--success);
+    margin-bottom: 0.8rem;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.duty-item-large:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
+}
+
+.duty-face-large {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--success);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.duty-details-large {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.duty-name-large {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.duty-phone-large {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--success);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.duty-phone-large:hover {
+    text-decoration: underline;
+}
+
 .mission-item {
     border-left: 4px solid var(--warning);
 }

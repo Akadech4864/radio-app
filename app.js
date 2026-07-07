@@ -242,36 +242,30 @@ function renderDashboard() {
     investigatorDuty.innerHTML = invs.length > 0 
         ? invs.map(i => {
             let phoneInfo = getPersonPhone(i);
-            let phoneLink = phoneInfo ? `<a href="tel:${phoneInfo.dial}" class="duty-phone" onclick="event.stopPropagation();"><i class="fa-solid fa-phone"></i> ${phoneInfo.display}</a>` : '';
+            let phoneLink = phoneInfo ? `<a href="tel:${phoneInfo.dial}" class="duty-phone-large" onclick="event.stopPropagation();"><i class="fa-solid fa-phone"></i> ${phoneInfo.display}</a>` : '';
             return `
-            <div class="duty-item">
-                <div class="duty-info-wrapper">
-                    <img src="${getPersonImage(i)}" alt="${i}" class="duty-face">
-                    <div class="duty-details">
-                        <span class="duty-name">${i}</span>
-                        ${phoneLink}
-                    </div>
+            <div class="duty-item-large">
+                <img src="${getPersonImage(i)}" alt="${i}" class="duty-face-large">
+                <div class="duty-details-large">
+                    <span class="duty-name-large">${i}</span>
+                    ${phoneLink}
                 </div>
-                <span class="badge badge-duty">เวร</span>
             </div>`}).join('') 
-        : '<div class="empty-state">ไม่มีข้อมูลพนักงานสอบสวนเวร</div>';
+        : '<div class="empty-state">ไม่มีข้อมูล พงส.เวร</div>';
         
     assistantDuty.innerHTML = assts.length > 0 
         ? assts.map(a => {
             let phoneInfo = getPersonPhone(a);
-            let phoneLink = phoneInfo ? `<a href="tel:${phoneInfo.dial}" class="duty-phone" onclick="event.stopPropagation();"><i class="fa-solid fa-phone"></i> ${phoneInfo.display}</a>` : '';
+            let phoneLink = phoneInfo ? `<a href="tel:${phoneInfo.dial}" class="duty-phone-large" onclick="event.stopPropagation();"><i class="fa-solid fa-phone"></i> ${phoneInfo.display}</a>` : '';
             return `
-            <div class="duty-item">
-                <div class="duty-info-wrapper">
-                    <img src="${getPersonImage(a)}" alt="${a}" class="duty-face">
-                    <div class="duty-details">
-                        <span class="duty-name">${a}</span>
-                        ${phoneLink}
-                    </div>
+            <div class="duty-item-large">
+                <img src="${getPersonImage(a)}" alt="${a}" class="duty-face-large">
+                <div class="duty-details-large">
+                    <span class="duty-name-large">${a}</span>
+                    ${phoneLink}
                 </div>
-                <span class="badge badge-duty">ผู้ช่วยฯ</span>
             </div>`}).join('') 
-        : '<div class="empty-state">ไม่มีข้อมูลผู้ช่วยพนักงานสอบสวน</div>';
+        : '<div class="empty-state">ไม่มีข้อมูลผู้ช่วย พงส.</div>';
 
     // Find missions
     // Assume Mission sheet: [Date, Time, Location, Title, Participants, ...]
