@@ -425,14 +425,29 @@ var LamhinScene = (function () {
         // อาคารที่ทำการ — ฐานแดง ชั้นล่างน้ำตาล ชั้น 2 ยื่นมีครีบแนวตั้ง หลังคาแดง
         // ==========================================================
         var st = PLAN.station, g1 = new THREE.Group();
-        g1.add(plainBox(st, 0.16, 0.45, COL.baseRed));
+        // ชั้นล่าง: ด้านหน้าฝั่งเหนือ (ก่อนถึงบันไดทางเข้า) เจาะเป็นที่จอดใต้อาคาร ลึกครึ่งตัวตึก
+        // จอดได้ 4 คัน หันหน้าเข้าตึก — เสา 2 ต้นแนวหน้าอาคาร จอดช่วงละ 2 คัน
+        var CARPORT = { x: st.x, y: st.y + 0.15, w: st.w / 2, d: 2.5 };
+        var gfParts = [
+            { x: st.x + st.w / 2, y: st.y, w: st.w / 2, d: st.d },                                       // ครึ่งหลังตลอดแนว
+            { x: st.x, y: CARPORT.y + CARPORT.d, w: st.w / 2, d: st.y + st.d - CARPORT.y - CARPORT.d },  // ครึ่งหน้า ส่วนโถงทางเข้า
+            { x: st.x, y: st.y, w: st.w / 2, d: CARPORT.y - st.y }                                       // ผนังหัวมุมด้านเหนือ
+        ];
         var l1tex = wallTexture(1, 0xe8ebef, COL.glass, 0xd3d8df);
-        var low = new THREE.Mesh(new THREE.BoxGeometry(st.w, 1.9, st.d),
-            texMats(l1tex, st, Math.round(st.w / 2.6), Math.round(st.d / 2.6), 0xe4e8ec));
-        low.position.set(wx(st.x + st.w / 2), 0.61 + 0.95, wz(st.y + st.d / 2));
-        low.castShadow = low.receiveShadow = true;
-        g1.add(low);
-        g1.add(plainBox(grow(st, 0.03), 0.61, 0.75, COL.trim));
+        var lows = gfParts.map(function (r) {
+            g1.add(plainBox(r, 0.16, 0.45, COL.baseRed));
+            var m = new THREE.Mesh(new THREE.BoxGeometry(r.w, 1.9, r.d),
+                texMats(l1tex, r, Math.max(1, Math.round(r.w / 2.6)), Math.max(1, Math.round(r.d / 2.6)), 0xe4e8ec));
+            m.position.set(wx(r.x + r.w / 2), 0.61 + 0.95, wz(r.y + r.d / 2));
+            m.castShadow = m.receiveShadow = true;
+            g1.add(m);
+            g1.add(plainBox(grow(r, 0.03), 0.61, 0.75, COL.trim));
+            return m;
+        });
+        g1.add(plainBox(CARPORT, 0.16, 0.05, COL.concrete));
+        [CARPORT.y + CARPORT.d / 2 - 0.09, CARPORT.y + CARPORT.d - 0.2].forEach(function (py) {
+            g1.add(plainBox({ x: CARPORT.x + 0.02, y: py, w: 0.18, d: 0.18 }, 0.2, 2.31, 0xf4f6f9));
+        });
         var up = grow(st, 0.42);
         var upMesh = new THREE.Mesh(new THREE.BoxGeometry(up.w, 2.25, up.d),
             texMats(finTexture(), up, Math.round(up.w / 3.4), Math.round(up.d / 3.4), 0xf2f4f7));
@@ -458,7 +473,8 @@ var LamhinScene = (function () {
         sgn2.position.set(wx(up.x - 0.1), 4.25, wz(SB.y + SB.d / 2));
         sgn2.rotation.y = -Math.PI / 2; g1.add(sgn2);
         // เสาค้ำชั้น 2 + บันไดทางเข้า
-        [st.y + 0.6, st.y + st.d * 0.5, st.y + st.d - 0.9].forEach(function (py) {
+        // (เสาต้นเหนือเดิมย้ายไปเป็นเสาของที่จอดใต้อาคารแล้ว)
+        [st.y + st.d * 0.5, st.y + st.d - 0.9].forEach(function (py) {
             g1.add(plainBox({ x: st.x - 0.38, y: py, w: 0.24, d: 0.24 }, 0.16, 2.35, 0xf4f6f9));
         });
         [0, 1, 2].forEach(function (k) {
@@ -466,12 +482,12 @@ var LamhinScene = (function () {
                 0.16 + k * 0.09, 0.09, 0xc3cad3));
         });
         scene.add(g1);
-        [low, upMesh].forEach(function (m) { m.userData.key = 'station'; pickables.push(m); });
+        lows.concat([upMesh]).forEach(function (m) { m.userData.key = 'station'; pickables.push(m); });
 
         // ==========================================================
         // อาคารที่พัก 2 หลัง — ขนาด/จำนวนชั้นเท่ากันทุกอย่าง ต่างแค่สีหลังคา
         // ==========================================================
-        var FLOORS = 4, FLOOR_H = 1.2;
+        var FLOORS = 4, FLOOR_H = 1.2, FLAT_BAY = 0.56;
         [[PLAN.flat1, 'flat1', COL.roofGrey], [PLAN.flat2, 'flat2', COL.roofRed]].forEach(function (cfg) {
             var r = cfg[0], g = new THREE.Group();
             // ชั้นล่าง 3/4 ฝั่งที่ไม่ติดอาคารที่ทำการ (ฝั่งใต้) เปิดโล่งเป็นที่จอดรถใต้ตึก มีเสารับ
@@ -491,10 +507,11 @@ var LamhinScene = (function () {
             upper.position.set(wx(r.x + r.w / 2), 0.51 + FLOOR_H + (FLOORS - 1) * FLOOR_H / 2, wz(rS.y + rS.d / 2));
             upper.castShadow = upper.receiveShadow = true;
             g.add(upper);
-            for (var pk = 0; pk <= 4; pk++) {
-                var pyy = rS.y + 0.1 + pk * (rS.d - 0.3) / 4;
-                [r.x + 0.06, r.x + r.w - 0.24].forEach(function (pxx) {
-                    g.add(plainBox({ x: pxx, y: pyy, w: 0.18, d: 0.18 }, 0.2, 0.51 + FLOOR_H - 0.2, 0xe2e8f0));
+            // เสาใต้ตึกห่างกันพอดีความกว้างรถ 1 คัน = ช่องจอดแบบเข้าซอง (FLAT_BAY)
+            for (var pk = 0; pk <= Math.floor(rS.d / FLAT_BAY); pk++) {
+                var pyy = rS.y + pk * FLAT_BAY - 0.06;
+                [r.x + 0.04, r.x + r.w - 0.16].forEach(function (pxx) {
+                    g.add(plainBox({ x: pxx, y: pyy, w: 0.12, d: 0.12 }, 0.2, 0.51 + FLOOR_H - 0.2, 0xe2e8f0));
                 });
             }
             var top = 0.51 + FLOORS * FLOOR_H;
@@ -539,8 +556,14 @@ var LamhinScene = (function () {
         var S = PLAN.parkS;
         [0x9aa3ad, 0x2b2f36, 0x1f3f8f, 0xd8dde4, 0x5b6472, 0xb8453a, 0x44506a, 0xe8eaed, 0x2b2f36]
             .forEach(function (c, k) {
-                scene.add(car(S.x + S.w - 0.56, S.y + S.d * (k + 0.5) / 9, c, 0));
+                var cy = S.y + S.d * (k + 0.5) / 9;
+                if (cy > PLAN.flat1.y + PLAN.flat1.d * 0.25 - 0.2) return;   // ช่วงหน้าที่จอดใต้ตึก เว้นไว้เป็นทางเข้าซอง
+                scene.add(car(S.x + S.w - 0.56, cy, c, 0));
             });
+        // ที่จอดใต้อาคารที่ทำการ: 4 คัน หันหน้าเข้าตึก (ช่วงละ 2 คันระหว่างเสา)
+        [[0.29, 0x9aa3ad], [0.87, 0x1f3f8f], [1.58, 0xe8eaed], [2.05, 0x2b2f36]].forEach(function (c) {
+            scene.add(car(PLAN.station.x + 0.55, PLAN.station.y + 0.15 + c[0], c[1], 0));
+        });
         // ทิศหัวรถ: 0 = ตะวันออก, PI = ตะวันตก, PI/2 = เหนือ, -PI/2 = ใต้
         // ข้าง สน. (เหนือ): 2 คันชิดตึก หันไปทางด้านหลัง สน.
         [[10.0, 0xe8eaed], [11.1, 0x28527a]].forEach(function (c) {
@@ -550,21 +573,25 @@ var LamhinScene = (function () {
         [[6.6, 0xf8fafc], [7.7, 0x2b2f36], [8.8, 0x9aa3ad]].forEach(function (c) {
             scene.add(car(15.4, c[0], c[1], -Math.PI / 2));
         });
-        // ถนนกลาง: 2 คันจอดต่อท้ายกัน หันไปทางออก (หน้าอาคารที่พักหลังตะวันตก)
-        [[7.6, 0x2b2f36], [8.7, 0xb8453a]].forEach(function (c) {
-            scene.add(car(c[0], PLAN.driveMid.y + PLAN.driveMid.d - 0.27, c[1], Math.PI));
+        // ถนนกลาง: 2 คันจอดต่อท้ายกัน ชิดอาคารที่ทำการ หันไปทางออก
+        [[8.2, 0x2b2f36], [9.3, 0xb8453a]].forEach(function (c) {
+            scene.add(car(c[0], PLAN.driveMid.y + 0.27, c[1], Math.PI));
         });
         // ระหว่างอาคารที่พัก: จอดชิดอาคารทั้ง 2 ฝั่ง ฝั่งละ 3 คัน หันไปทาง สน.
+        // อยู่ช่วงใต้ ไม่ขวางทางเข้าตึกด้านเหนือ และพ้นช่องบันไดของหลังตะวันตก
         [PLAN.driveBtw.x + 0.26, PLAN.driveBtw.x + PLAN.driveBtw.w - 0.26].forEach(function (cx, side) {
             [0x44506a, 0x8b929c, 0x1f3f8f].forEach(function (col, k) {
-                scene.add(car(cx, PLAN.driveBtw.y + 0.8 + k * 1.1, side ? col : [0xd8dde4, 0x2b2f36, 0x5b6472][k], Math.PI / 2));
+                scene.add(car(cx, PLAN.driveBtw.y + 6.45 + k * 1.1, side ? col : [0xd8dde4, 0x2b2f36, 0x5b6472][k], Math.PI / 2));
             });
         });
-        // ใต้อาคารที่พัก (ชั้นล่างเปิดโล่ง 3/4 ฝั่งใต้): ราว 5 คันต่อหลัง
-        [PLAN.flat1, PLAN.flat2].forEach(function (f, fi) {
-            var y0 = f.y + f.d * 0.25 + 0.8, step = (f.d * 0.75 - 1.6) / 4;
-            [0x9aa3ad, 0x2b2f36, 0xe8eaed, 0x28527a, 0xb8453a].forEach(function (col, k) {
-                scene.add(car(f.x + f.w / 2, y0 + k * step, fi ? col : [0x5b6472, 0xd8dde4, 0x1f3f8f, 0x8b929c, 0x2b2f36][k], Math.PI / 2));
+        // ใต้อาคารที่พัก (ชั้นล่างเปิดโล่ง 3/4 ฝั่งใต้): จอดเข้าซองระหว่างเสา หันหน้าเข้าตึก ราว 5 คันต่อหลัง
+        // ทั้งสองหลังเปิดออกด้านตะวันตก — หลังตะวันตกเข้าจากลานหน้าแฟลต / หลังตะวันออกเข้าจากช่องทางระหว่างอาคาร
+        // (หลังตะวันออกใช้ซองช่วงเหนือ เพราะช่วงใต้มีรถจอดเรียงริมทางอยู่)
+        [[PLAN.flat1, [0, 2, 4, 7, 9]], [PLAN.flat2, [0, 1, 2, 4, 5]]].forEach(function (cfg, fi) {
+            var f = cfg[0], y0 = f.y + f.d * 0.25;
+            var cols = fi ? [0x9aa3ad, 0x2b2f36, 0xe8eaed, 0x28527a, 0xb8453a] : [0x5b6472, 0xd8dde4, 0x1f3f8f, 0x8b929c, 0x2b2f36];
+            cfg[1].forEach(function (bay, k) {
+                scene.add(car(f.x + 0.55, y0 + (bay + 0.5) * FLAT_BAY, cols[k], 0));
             });
         });
 
