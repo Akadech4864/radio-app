@@ -3,101 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ตารางเวร/ภารกิจ งานสอบสวน สน.ลำหิน</title>
+    <title>กระดานงานสอบสวน สน.ลำหิน</title>
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=40">
+    <link rel="stylesheet" href="dash/dash.css?v=50">
+    <link rel="stylesheet" href="style.css?v=50">
 </head>
 <body>
-    <div class="page">
+    <!--
+        กระดานแดชบอร์ดสำหรับผู้บังคับบัญชา — ใช้โค้ดแดชบอร์ดชุดเดียวกับเว็บแอป (โฟลเดอร์ dash/ สร้างจาก _dev ด้วย sync_shared.js)
+        ลำดับความสำคัญ: หัวกระดาน → แผนที่ 3 มิติ + ใครปฏิบัติหน้าที่วันนี้ → เมนู (เวร/ภารกิจ ขึ้นก่อน)
+    -->
+    <div id="dash-root" class="dash-root board">
+        <div id="slot-hero" class="slot"><div class="loading"><span class="spin"></span> กำลังโหลดกระดาน…</div></div>
+        <div id="slot-stage" class="slot"></div>
 
-        <!-- ===== แถบหัวเรื่อง ===== -->
-        <header class="hero">
-            <img src="logo.png" alt="ตราสถานีตำรวจนครบาลลำหิน" class="hero-logo">
-            <div class="hero-txt">
-                <h1>ตารางเวร / ภารกิจ งานสอบสวน</h1>
-                <span>สถานีตำรวจนครบาลลำหิน</span>
-            </div>
-            <div class="hero-right">
-                <div class="hero-clock" id="clock">--:--</div>
-                <div class="hero-date" id="clockDate">-</div>
-            </div>
-        </header>
+        <!-- ===== เมนูหัวข้อ ===== -->
+        <nav class="rtabs dash-noprint" id="rtabs">
+            <button type="button" data-tab="duty" class="on"><i class="fa-solid fa-user-shield"></i><span>เวร / ภารกิจ</span></button>
+            <button type="button" data-tab="crew"><i class="fa-solid fa-sitemap"></i><span>กำลังพล & รูปแบบเวร</span></button>
+            <button type="button" data-tab="cases"><i class="fa-solid fa-scale-balanced"></i><span>สถิติคดี</span></button>
+            <button type="button" data-tab="work"><i class="fa-solid fa-list-ol"></i><span>ภาระงาน & คดีค้าง</span></button>
+        </nav>
 
-        <!-- ===== ค้นหา ===== -->
-        <section class="search-bar">
-            <div class="search-field">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input id="q" type="search" list="peopleList" autocomplete="off"
-                       placeholder="ค้นหาชื่อ หรือ ภารกิจ…">
-                <datalist id="peopleList"></datalist>
-            </div>
-            <div class="search-field search-date">
-                <i class="fa-regular fa-calendar"></i>
-                <input id="dateInput" type="date" title="เลือกวันที่">
-            </div>
-            <button id="todayBtn" class="btn-today" type="button"><i class="fa-solid fa-rotate-left"></i> วันนี้</button>
-        </section>
-
-        <!-- ===== ผลการค้นหา (แสดงเมื่อค้นหา) ===== -->
-        <section class="card results" id="results" hidden>
-            <div class="card-h">
-                <i class="fa-solid fa-list-check"></i>
-                <span id="resultsTitle">ผลการค้นหา</span>
-                <button class="chip-btn" id="pastToggle" type="button">แสดงย้อนหลัง</button>
-                <button class="icon-x" id="closeResults" type="button" title="ปิด"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div id="resultsList" class="res-list"></div>
-        </section>
-
-        <!-- ===== วันที่กำลังดู ===== -->
-        <div class="day-banner" id="dayBanner"></div>
-
-        <main class="day-grid">
-            <!-- เวร -->
-            <section class="card duty-card">
-                <div class="card-h">
-                    <i class="fa-solid fa-user-shield"></i>
-                    <span id="dutyTitle">เวรสอบสวน</span>
-                    <span class="card-sub" id="dutySub"></span>
+        <!-- ===== 1) เวร / ภารกิจ ===== -->
+        <section class="rpane" id="pane-duty">
+            <div class="print-h">เวรและภารกิจ</div>
+            <section class="search-bar dash-noprint">
+                <div class="search-field">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="q" type="search" list="peopleList" autocomplete="off" placeholder="ค้นหาชื่อ หรือ ภารกิจ…">
+                    <datalist id="peopleList"></datalist>
                 </div>
-                <div id="duty" class="duty-body"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+                <div class="search-field search-date">
+                    <i class="fa-regular fa-calendar"></i>
+                    <input id="dateInput" type="date" title="เลือกวันที่">
+                </div>
+                <button id="todayBtn" class="btn-today" type="button"><i class="fa-solid fa-rotate-left"></i> วันนี้</button>
             </section>
 
-            <!-- ภารกิจ -->
-            <section class="card mission-card">
+            <section class="card results dash-noprint" id="results" hidden>
                 <div class="card-h">
-                    <i class="fa-solid fa-clipboard-list"></i>
-                    <span id="missionTitle">ภารกิจ</span>
-                    <span class="card-sub" id="missionSub"></span>
+                    <i class="fa-solid fa-list-check"></i>
+                    <span id="resultsTitle">ผลการค้นหา</span>
+                    <button class="chip-btn" id="pastToggle" type="button">แสดงย้อนหลัง</button>
+                    <button class="icon-x" id="closeResults" type="button" title="ปิด"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div id="missions" class="mis-body"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+                <div id="resultsList" class="res-list"></div>
             </section>
-        </main>
 
-        <!-- ===== ปฏิทิน ===== -->
-        <section class="card cal-card">
-            <div class="cal-head">
-                <button id="prevMonth" class="icon-btn" type="button" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
-                <h3 id="monthLabel">-</h3>
-                <button id="nextMonth" class="icon-btn" type="button" title="เดือนถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
-            </div>
-            <div class="cal-week">
-                <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
-            </div>
-            <div id="calDays" class="cal-days"></div>
-            <div class="cal-legend" id="calLegend">
-                <span><i class="dot dot-today"></i>วันนี้</span>
-                <span><i class="dot dot-duty"></i>มีเวร</span>
-                <span><i class="dot dot-mis"></i>มีภารกิจ</span>
-                <span id="legendPerson" hidden><i class="dot dot-person"></i>วันที่คนที่ค้นหาเข้าเวร/ภารกิจ</span>
-            </div>
+            <div class="day-banner" id="dayBanner"></div>
+
+            <main class="day-grid">
+                <section class="card duty-card">
+                    <div class="card-h">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span id="dutyTitle">เวรสอบสวน</span>
+                        <span class="card-sub" id="dutySub"></span>
+                    </div>
+                    <div id="duty" class="duty-body"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+                </section>
+                <section class="card mission-card">
+                    <div class="card-h">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <span id="missionTitle">ภารกิจ</span>
+                        <span class="card-sub" id="missionSub"></span>
+                    </div>
+                    <div id="missions" class="mis-body"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+                </section>
+            </main>
+
+            <section class="card cal-card dash-noprint">
+                <div class="cal-head">
+                    <button id="prevMonth" class="icon-btn" type="button" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
+                    <h3 id="monthLabel">-</h3>
+                    <button id="nextMonth" class="icon-btn" type="button" title="เดือนถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-week">
+                    <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
+                </div>
+                <div id="calDays" class="cal-days"></div>
+                <div class="cal-legend" id="calLegend">
+                    <span><i class="dot dot-today"></i>วันนี้</span>
+                    <span><i class="dot dot-duty"></i>มีเวร</span>
+                    <span><i class="dot dot-mis"></i>มีภารกิจ</span>
+                    <span id="legendPerson" hidden><i class="dot dot-person"></i>วันที่คนที่ค้นหาเข้าเวร/ภารกิจ</span>
+                </div>
+            </section>
         </section>
 
-        <footer class="foot">ข้อมูลจากระบบงานสอบสวน สน.ลำหิน · อัปเดตอัตโนมัติทุก 5 นาที · <span id="lastSync">-</span></footer>
+        <!-- ===== 2) กำลังพล & รูปแบบเวร ===== -->
+        <section class="rpane" id="pane-crew" hidden><div class="print-h">กำลังพลและรูปแบบการเข้าเวร</div></section>
+
+        <!-- ===== 3) สถิติคดี ===== -->
+        <section class="rpane" id="pane-cases" hidden><div class="print-h">สถิติคดี <span id="print-range"></span></div></section>
+
+        <!-- ===== 4) ภาระงาน & คดีค้าง ===== -->
+        <section class="rpane" id="pane-work" hidden><div class="print-h">ภาระงานพนักงานสอบสวนและคดีค้าง</div></section>
+
+        <footer class="foot dash-noprint">ข้อมูลจากระบบงานสอบสวน สน.ลำหิน · อัปเดตอัตโนมัติทุก 5 นาที · <span id="lastSync">-</span></footer>
     </div>
 
-    <script src="app.js?v=40"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="dash/scene3d.js?v=50"></script>
+    <script src="dash/dashcalc.js?v=50"></script>
+    <script src="dash/dash.js?v=50"></script>
+    <script src="app.js?v=50"></script>
 </body>
 </html>

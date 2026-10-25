@@ -272,11 +272,64 @@ body {
 
 .foot { text-align: center; font-size: 0.74rem; color: var(--faint); padding: 4px 0 14px; }
 
+/* ==========================================================
+   กระดานแดชบอร์ด — โครงทั้งหน้าคือ .dash-root (จาก dash/dash.css ชุดเดียวกับเว็บแอป)
+   ========================================================== */
+.dash-root.board:not(.present) {
+    max-width: 1280px; margin: 0 auto; padding: 16px; gap: 14px;
+    border-radius: 0; background: transparent;
+}
+.board .dash-hero-badge { width: 62px; height: 62px; background: transparent; border: 0; }
+.board .dash-hero-badge img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35)); }
+.slot .loading { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); }
+
+/* เมนูหัวข้อ: ติดด้านบนเวลาเลื่อนจอ */
+.rtabs {
+    position: sticky; top: 8px; z-index: 50;
+    display: flex; gap: 6px; padding: 6px; border-radius: 18px; overflow-x: auto;
+    background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow); scrollbar-width: none;
+}
+.rtabs::-webkit-scrollbar { display: none; }
+.rtabs button {
+    flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 0; background: transparent; cursor: pointer; white-space: nowrap;
+    font: inherit; font-weight: 800; font-size: 0.92rem; color: var(--mute);
+    padding: 11px 16px; border-radius: 13px; transition: background 0.15s, color 0.15s;
+}
+.rtabs button:hover { background: var(--soft); color: var(--ink); }
+.rtabs button.on { color: #fff; background: linear-gradient(135deg, #1d4ed8, #3b82f6); box-shadow: 0 6px 16px rgba(29, 78, 216, 0.28); }
+.rpane { display: flex; flex-direction: column; gap: 14px; }
+.print-h { display: none; }
+
+/* โหมดนำเสนอบนกระดาน: การ์ดอยู่ในแท็บ จึงต้องเปิดแท็บที่มีสไลด์ปัจจุบันขึ้นมา */
+.dash-root.present .rpane:has(> .dash-slide-on) { display: block !important; max-width: 1280px; margin: 0 auto; }
+.dash-root.present .rpane > :not(.dash-slide-on) { display: none !important; }
+.dash-root.present .rpane > .dash-slide-on { display: block !important; zoom: 1.18; animation: dashSlideIn 0.42s cubic-bezier(.2, .8, .2, 1); }
+.dash-root.present .rpane > .dash-2col.dash-slide-on { display: grid !important; }
+
+/* หน้าพิมพ์ / PDF: หัวข้อแต่ละส่วน + กางทุกแท็บ */
+.dash-print-body .print-h {
+    display: block; margin: 10px 0 0; padding-bottom: 5px; border-bottom: 2px solid #1d4ed8;
+    font-size: 1.1rem; font-weight: 800; color: #0f172a; break-after: avoid;
+}
+.dash-print-body .rpane { display: flex !important; gap: 10px; }
+.dash-print-body .day-grid { grid-template-columns: 1fr 1fr; }
+.dash-print-body .call { display: none; }
+@media print {
+    .dash-print-body .person, .dash-print-body .mis { break-inside: avoid; }
+    .dash-print-body #pane-crew, .dash-print-body #pane-cases, .dash-print-body #pane-work { break-before: page; }
+}
+
 /* ---------- จอเล็ก ---------- */
 @media (max-width: 860px) {
     .day-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
+    .dash-root.board:not(.present) { padding: 10px; gap: 11px; }
+    .rtabs { top: 4px; }
+    .rtabs button { padding: 9px 12px; font-size: 0.82rem; gap: 6px; }
+    .dash-root.present .rpane > .dash-slide-on { zoom: 1; }
     .page { padding: 10px; gap: 11px; }
     .hero { padding: 13px 14px; gap: 10px; border-radius: 18px; }
     .hero-logo { width: 46px; height: 46px; }

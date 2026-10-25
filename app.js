@@ -1,12 +1,14 @@
 /**
- * ตารางเวร/ภารกิจ งานสอบสวน สน.ลำหิน
+ * กระดานงานสอบสวน สน.ลำหิน (หน้า GitHub สำหรับผู้บังคับบัญชา)
  *
- * เน้น "ตอนนี้ใครเข้าเวร / มีภารกิจอะไร" เป็นหลัก แล้วค่อยค้นหาตามวันที่หรือชื่อคน
+ * เน้น "ตอนนี้ใครเข้าเวร / มีภารกิจอะไร" เป็นหลัก แล้วค่อยดูกำลังพล สถิติคดี ภาระงาน/คดีค้าง
+ * ส่วนแดชบอร์ด (แผนที่ 3 มิติ, ผังกำลังพล, สถิติ, โหมดนำเสนอ, พิมพ์/PDF) ใช้โค้ดชุดเดียวกับเว็บแอป ในโฟลเดอร์ dash/
  *
  * ข้อมูลมาจาก API ของเว็บแอปหลัก (?api=radio) — แถวเวรเป็น "รูปแบบกลาง" (ดู dutySchedule.js)
  *   [0] วันที่ dd/MM/yyyy  [1] พงส. ช่องกลางวัน  [2] ผช.พงส.  [3] ส่งของกลาง
  *   [4] หมายเหตุ  [5] เวรเสริม  [6] พงส. ช่อง 24 ชม./ผลัดเย็น
- * ภารกิจ: [0] วันที่ [1] เวลา [2] สถานที่ [3] เรื่อง [4] ผู้เข้าร่วม [5] ประธาน
+ * ภารกิจ: [0] วันที่ [1] เวลา ("09:00" หรือ "09:00-12:00") [2] สถานที่ [3] เรื่อง [4] ผู้เข้าร่วม [5] ประธาน
+ * stats: สถิติคดีสรุปเป็นตัวเลข แยกตามช่วงปีงบ (คำนวณที่เซิร์ฟเวอร์ ไม่มีข้อมูลคดีรายเรื่อง)
  */
 const API_URL = "https://script.google.com/macros/s/AKfycbz_K2q9mnmi3K0q-nWSNkxjuSO7FaTFyqCgWC2XQ8DguhS43_ytySvn7QRp_tzpYRKA/exec";
 const REFRESH_MS = 5 * 60 * 1000;
@@ -20,7 +22,7 @@ const TH_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค."
 const TH_MON_FULL = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
 const TH_DOW = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 
-let data = { duty: [], mission: [], personnel: [] };
+let data = { duty: [], mission: [], personnel: [], leave: [], stats: null };
 let people = {};             // คีย์ชื่อ (ตัดยศ) -> { name, photo, phone, dial }
 let viewDate = null;         // วันที่กำลังดู (null = วันเวรปัจจุบัน)
 let calMonth = new Date();   // เดือนที่ปฏิทินแสดง
@@ -127,12 +129,25 @@ function dutyRowFor(dt) { const k = keyOf(dt); return data.duty.find((r) => rowK
 function missionsFor(dt) {
     const k = keyOf(dt);
     return data.mission.slice(1).filter((r) => r && r[3] && rowKey(r) === k)
-        .map((r) => ({ time: String(r[1] || '').trim(), place: String(r[2] || '').trim(), title: String(r[3] || '').trim(), who: splitNames(r[4]), chair: splitNames(r[5]), start: timeMin(r[1]) }))
+        .map((r) => {
+            const t = misTime(r[1]);
+            return { time: t.text, place: String(r[2] || '').trim(), title: String(r[3] || '').trim(), who: splitNames(r[4]), chair: splitNames(r[5]), start: t.start, end: t.end };
+        })
         .sort((a, b) => (a.start == null ? 9999 : a.start) - (b.start == null ? 9999 : b.start));
 }
-function timeMin(t) {
-    const m = String(t || '').match(/(\d{1,2})[:.](\d{2})/);
-    return m ? (+m[1]) * 60 + (+m[2]) : null;
+/**
+ * เวลาภารกิจ "09:00" หรือช่วง "09:00-12:00" → { text, start, end } (นาทีนับจากเที่ยงคืน)
+ * end = null เมื่อไม่ได้ระบุเวลาสิ้นสุด · ข้ามคืน (22:00-02:00) end จะเกิน 1440
+ */
+function misTime(v) {
+    const s = String(v || '').replace(/น\.?/g, ' ').replace(/\./g, ':');
+    const m = s.match(/(\d{1,2}):(\d{2})(?:\s*(?:-|–|—|ถึง)\s*(\d{1,2}):(\d{2}))?/);
+    if (!m) return { text: String(v || '').trim(), start: null, end: null };
+    const two = (n) => String(+n).padStart(2, '0');
+    const start = (+m[1]) * 60 + (+m[2]);
+    let end = m[3] ? (+m[3]) * 60 + (+m[4]) : null;
+    if (end != null && end <= start) end += 1440;
+    return { text: two(m[1]) + ':' + m[2] + (m[3] ? '–' + two(m[3]) + ':' + m[4] : ''), start, end };
 }
 
 // ==========================================================
@@ -142,10 +157,11 @@ async function loadData() {
     try {
         const res = await fetch(API_URL + '?api=radio', { cache: 'no-store' });
         const json = await res.json();
-        data = { duty: json.duty || [], mission: json.mission || [], personnel: json.personnel || [] };
+        data = { duty: json.duty || [], mission: json.mission || [], personnel: json.personnel || [], leave: json.leave || [], stats: json.stats || null };
         buildPeople();
         $('lastSync').textContent = 'ข้อมูลล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
         renderAll();
+        try { renderBoard(); } catch (err) { console.error('board', err); }
     } catch (e) {
         console.error(e);
         const msg = '<div class="err"><i class="fa-solid fa-triangle-exclamation"></i> โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง (' + esc(e.message) + ')</div>';
@@ -225,8 +241,10 @@ function renderDay() {
     list.forEach((m) => {
         m.state = '';
         if (!live || keyOf(calDay) !== keyOf(new Date()) || m.start == null) return;
+        // ระบุเวลาสิ้นสุด = ใช้ตามจริง · ไม่ระบุ = ถือว่าใช้เวลา 3 ชม.
+        const end = m.end != null ? m.end : m.start + 180;
         if (now < m.start) m.state = 'next';
-        else if (now < m.start + 180) m.state = 'now';
+        else if (now < end) m.state = 'now';
         else m.state = 'past';
     });
     if (live) {
@@ -315,7 +333,7 @@ function matches() {
         const names = splitNames(r[4]).concat(splitNames(r[5]));
         const byName = names.some(hitName);
         const byText = ql.length >= 2 && (String(r[3]).toLowerCase().indexOf(ql) > -1 || String(r[2] || '').toLowerCase().indexOf(ql) > -1);
-        if (byName || byText) out.push({ key: k, date: parseDate(r[0]), type: 'mission', title: String(r[3]), sub: [r[1] ? r[1] + ' น.' : '', r[2] || ''].filter(Boolean).join(' · ') });
+        if (byName || byText) out.push({ key: k, date: parseDate(r[0]), type: 'mission', title: String(r[3]), sub: [r[1] ? misTime(r[1]).text + ' น.' : '', r[2] || ''].filter(Boolean).join(' · ') });
     });
     return out.sort((a, b) => a.key - b.key);
 }
@@ -371,27 +389,119 @@ function setView(dt) {
     $('dateInput').value = show.getFullYear() + '-' + String(show.getMonth() + 1).padStart(2, '0') + '-' + String(show.getDate()).padStart(2, '0');
     renderDay();
     renderCalendar();
+    showTab('duty');
     $('dayBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ==========================================================
-// นาฬิกา + เริ่มต้น
+// เมนูหัวข้อ (แท็บ)
 // ==========================================================
-function tick() {
-    const n = new Date();
-    $('clock').textContent = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0') + ' น.';
-    $('clockDate').textContent = thFull(n);
+let curTab = 'duty';
+function showTab(name) {
+    curTab = name;
+    document.querySelectorAll('.rpane').forEach((p) => { p.hidden = p.id !== 'pane-' + name; });
+    document.querySelectorAll('#rtabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+    // จอแคบเมนูเลื่อนซ้าย-ขวาได้ — เลื่อนให้เห็นหัวข้อที่เลือกอยู่
+    const nav = $('rtabs'), ob = nav.querySelector('.on');
+    if (ob) nav.scrollTo({ left: ob.offsetLeft - 16, behavior: 'smooth' });
+    try { history.replaceState(null, '', '#' + name); } catch (e) { }
 }
 
+// ==========================================================
+// กระดานแดชบอร์ด (ใช้ dash/*.js ชุดเดียวกับเว็บแอป)
+// ==========================================================
+// ตัวแปร DB / ฟังก์ชันที่ dash.js เรียกหา — ให้ชี้มาที่ข้อมูลของหน้านี้
+var DB = {};
+window._dsPhoto = function (name) { const p = person(name); return p.photo && p.photo !== DEFAULT_AVATAR ? p.photo : ''; };
+// คลิกหน้าคน = ค้นหาเวร/ภารกิจของคนนั้น
+window.showPersonProfile = function (name) {
+    if (typeof dashPresentExit === 'function' && DASH.present) dashPresentExit();
+    query = String(name || ''); $('q').value = query; showPast = false;
+    showTab('duty'); renderResults(); renderCalendar();
+    $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+window.showMissionPopup = function () { setView(null); };
+
+// ปีงบที่มีข้อมูล / สถิติแต่ละช่วง มาจากเซิร์ฟเวอร์ (หน้านี้ไม่มีข้อมูลคดีรายเรื่อง)
+window.dashAvailableFy = function () {
+    const f = data.stats && data.stats.fys;
+    return f && f.length ? f.slice() : [dashFyOf(new Date())];
+};
+function statsFor(rv) {
+    const today = midnight(new Date());
+    const st = data.stats && data.stats.ranges && data.stats.ranges[rv];
+    if (!st) return Object.assign(dashComputeCases([], [], dashRangeOf(rv, today), today), { prevSerious: 0, empty: true });
+    const s = Object.assign({}, st);
+    s.from = new Date(st.from); s.to = new Date(st.to);
+    return s;
+}
+window.dashRecompute = function () {
+    const today = midnight(new Date());
+    DASH.range = dashRangeOf(DASH.rangeVal, today);
+    DASH.fy = DASH.range.fy;
+    DASH.stats = statsFor(DASH.rangeVal);
+    DASH.prevSerious = DASH.stats.prevSerious || 0;
+    DASH.pattern = dashDutyPattern(DB.duty, today);
+    DASH.crew = dashComputeCrew(DB.personnel, DB.duty, DB.mission, DB.leave, today, { split: splitNames });
+    const pr = $('print-range'); if (pr) pr.textContent = '· ' + DASH.stats.rangeLabel;
+};
+
+/** วางกล่องต่าง ๆ ของแดชบอร์ดลงตำแหน่งในหน้านี้ (ครั้งแรก) แล้วเติมข้อมูล */
+function renderBoard() {
+    DB = { duty: data.duty, mission: data.mission, personnel: data.personnel, leave: data.leave };
+    if (!DASH.rangeVal) DASH.rangeVal = dashDefaultRange();
+    dashRecompute();
+
+    if (!DASH.booted) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = dashMarkup();
+        const take = (id) => tmp.querySelector('#' + id);
+        const hero = take('dash-hero');
+        // ใช้ตรา สน. แทนไอคอน
+        const badge = hero.querySelector('.dash-hero-badge');
+        if (badge) badge.innerHTML = '<img src="logo.png" alt="ตรา สน.ลำหิน">';
+        const h3 = hero.querySelector('.dash-hero-txt h3'); if (h3) h3.textContent = 'กระดานงานสอบสวน';
+        $('slot-hero').replaceWith(hero);
+        $('slot-stage').replaceWith(take('dash-stagewrap'));
+        $('pane-crew').appendChild(take('dash-org'));
+        ['dash-cases', 'dash-serious', 'dash-ranks', 'dash-damage', 'dash-trend'].forEach((id) => $('pane-cases').appendChild(take(id)));
+        $('pane-work').appendChild(take('dash-workload'));
+        const root = $('dash-root');
+        tmp.querySelectorAll('.dash-pres-top, .dash-pres-nav, .dash-pres-bar').forEach((el) => root.appendChild(el));
+        dashPaint();
+        dashBoot3D();
+        DASH.booted = true;
+    } else {
+        dashPaint();
+        dashUpdateLabels();
+    }
+    if (data.stats == null) {
+        $('dash-cases').insertAdjacentHTML('afterbegin', '<div class="err">ยังไม่มีสถิติคดีจากระบบ (เว็บแอปหลักยังไม่ได้อัปเดต) — ตัวเลขด้านล่างเป็นศูนย์ชั่วคราว</div>');
+    }
+}
+
+// โหมดนำเสนอ: จำไว้ว่ากำลังนำเสนออยู่ — คลิกหน้าคนระหว่างนำเสนอจะออกจากสไลด์ก่อนไปหน้าค้นหา
+(function () {
+    if (typeof dashPresent !== 'function') return;
+    const on = dashPresent, off = dashPresentExit;
+    window.dashPresent = function () { DASH.present = true; on(); };
+    window.dashPresentExit = function () { DASH.present = false; off(); };
+})();
+
+// ==========================================================
+// เริ่มต้น
+// ==========================================================
 function init() {
-    tick();
     setInterval(() => {
         const before = keyOf(currentDutyDate());
-        tick();
         // สถานะ "กำลังเข้าเวร/ภารกิจถัดไป" ขึ้นกับเวลา จึงวาดใหม่ทุกนาที
         if (!viewDate || keyOf(currentDutyDate()) !== before) renderDay();
     }, 60 * 1000);
     setInterval(loadData, REFRESH_MS);
+
+    document.querySelectorAll('#rtabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    const want = (location.hash || '').slice(1);
+    if (['duty', 'crew', 'cases', 'work'].indexOf(want) > -1) showTab(want);
 
     let t = 0;
     $('q').addEventListener('input', (e) => {
