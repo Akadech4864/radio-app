@@ -35,6 +35,19 @@ function renderStationDuty() {
     svaLoad(false);
 }
 
+// เปิดเมนูนี้ได้หลายทาง (แถบเมนู / เมนู 3 ขีด / แถบข้าง) และบางทางเปิดแท็บด้วย bootstrap.Tab โดยไม่ได้คลิกปุ่ม
+// onclick ของปุ่มจึงไม่ทำงาน — วาดเมื่อแท็บแสดงแล้ว (shown.bs.tab) แทน เหมือนแดชบอร์ด
+(function () {
+    function bind() {
+        var btn = document.getElementById('tab-station');
+        if (!btn || btn.__svaBound) return;
+        btn.__svaBound = true;
+        btn.addEventListener('shown.bs.tab', function () { renderStationDuty(); });
+    }
+    if (typeof document === 'undefined') return;
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+
 // โหลดครั้งละ 3 เดือน (เดือนก่อน–เดือนถัดไป) พอสำหรับเลื่อนดูและคัดลอกจากวันก่อน
 function svaLoad(force) {
     var root = document.getElementById('sv-root'); if (!root) return;

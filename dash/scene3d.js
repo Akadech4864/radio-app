@@ -556,9 +556,7 @@ var LamhinScene = (function () {
         var S = PLAN.parkS;
         [0x9aa3ad, 0x2b2f36, 0x1f3f8f, 0xd8dde4, 0x5b6472, 0xb8453a, 0x44506a, 0xe8eaed, 0x2b2f36]
             .forEach(function (c, k) {
-                var cy = S.y + S.d * (k + 0.5) / 9;
-                if (cy > PLAN.flat1.y + PLAN.flat1.d * 0.25 - 0.2) return;   // ช่วงหน้าที่จอดใต้ตึก เว้นไว้เป็นทางเข้าซอง
-                scene.add(car(S.x + S.w - 0.56, cy, c, 0));
+                scene.add(car(S.x + S.w - 0.56, S.y + S.d * (k + 0.5) / 9, c, 0));   // ลานหน้าแฟลต จอดเต็มแถว
             });
         // ที่จอดใต้อาคารที่ทำการ: 4 คัน หันหน้าเข้าตึก (ช่วงละ 2 คันระหว่างเสา)
         [[0.29, 0x9aa3ad], [0.87, 0x1f3f8f], [1.58, 0xe8eaed], [2.05, 0x2b2f36]].forEach(function (c) {
