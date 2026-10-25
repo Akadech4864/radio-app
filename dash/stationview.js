@@ -390,7 +390,7 @@ function svExportPdf(title, sheetHtml, landscape, opts) {
 }
 
 // ---------- เวรรวม สน. รายเดือน → กระดาษ A4 แนวนอน (ไม่พอ = หน้า 2, 3 … พร้อมหัวตารางทุกหน้า) ----------
-var SV_LAND = { w: 1414, h: 1000, pad: 22 };   // สัดส่วน A4 แนวนอน (กว้าง:สูง = 1.414:1)
+var SV_LAND = { w: 1414, h: 1000, pad: 16 };   // สัดส่วน A4 แนวนอน (กว้าง:สูง = 1.414:1)
 function svChunks(n, parts) {   // แบ่งวันที่ 1..n เป็น parts ช่วง ขนาดต่างกันไม่เกิน 1
     var out = [], from = 1;
     for (var i = 0; i < parts; i++) {
@@ -417,16 +417,16 @@ function svMonthPlan(data, year, month, sec) {
         while (parts < rows.length && !svChunks(rows.length, parts).every(fits)) parts++;
         return { fs: fs, cols: cols, chunks: svChunks(rows.length, parts) };
     }
-    // ตัวใหญ่สุดที่ความกว้างพอดี (ชื่อขึ้นบรรทัดใหม่ระหว่างยศกับชื่อได้) และไม่เกิน 2 หน้า
-    for (var f = 92; f >= 62; f -= 4) {
+    // ตัวใหญ่สุดที่ยศ+ชื่ออยู่บรรทัดเดียวแล้วตารางยังพอดีความกว้างกระดาษ (หัวคอลัมน์ขึ้นบรรทัดใหม่ได้)
+    for (var f = 100; f >= 50; f -= 2) {
         var fs = (f / 100).toFixed(2) + 'rem';
         box.style.setProperty('--sv-lf', fs);
         t.style.width = '1px';
         var minW = t.offsetWidth;   // ความกว้างน้อยสุดที่ตารางบีบได้
         t.style.width = '';
-        if (minW > cw && f > 62) continue;
+        if (minW > cw && f > 50) continue;
         best = measure(fs);
-        if (best.chunks.length <= 2) break;
+        break;
     }
     document.body.removeChild(box);
     return best;
@@ -667,8 +667,8 @@ var SV_CSS = ''
     + '.sv-land .sv-sheet{flex:1;display:flex;flex-direction:column;min-width:0!important}'
     + '.sv-land .sv-scroll{flex:1;display:flex;flex-direction:column}'
     + '.sv-land .sv-mtable{flex:1;min-width:0;font-size:var(--sv-lf,.9rem)}'
-    + '.sv-nm{display:inline-block;white-space:nowrap}.sv-land .sv-mtable td{white-space:normal;line-height:1.25}'
-    + '.sv-land .sv-mtable td{padding:3px 5px}.sv-land .sv-mtable th{padding:5px 4px}'
+    + '.sv-nm{white-space:nowrap}.sv-land .sv-mtable td{white-space:nowrap;line-height:1.25}'
+    + '.sv-land .sv-mtable td{padding:3px 3px}.sv-land .sv-mtable th{padding:5px 3px}'
     + '.sv-land .sv-m-role{font-size:.88em}.sv-land .sv-mtable th small{font-size:.8em}'
     + '.sv-land .sv-m-date{width:auto}.sv-land .sv-m-date b{font-size:1.15em}.sv-land .sv-m-date span{font-size:.8em}'
     + '.sv-land .sv-title{padding:12px 18px}.sv-land .sv-title-t{font-size:1.3rem}.sv-land .sv-title-t span{font-size:1rem}'
