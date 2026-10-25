@@ -105,6 +105,7 @@ function svaPaint() {
             return '<option value="' + svEsc(s.name) + '">' + svEsc(s.pos) + '</option>';
         }).join('') + '</datalist>'
         + '</div>';
+    if (SVA.view === 'month') svScrollToToday(document.getElementById('sva-view'));   // เลื่อนมาเวรวันนี้รอไว้
     if (SVA.mode === 'edit') svaEditPaint();
     else if (SVA.mode === 'import') svaImportPaint();
     else if (SVA.mode === 'staff') svaStaffPaint();
@@ -131,7 +132,8 @@ function svaExport(kind) {
     var html = day ? svDayHtml(SVA.data, d, { foot: true, plain: true })
         : svMonthHtml(SVA.data, d.getFullYear(), d.getMonth(), SVA.sec, { foot: true });
     var landscape = !day && !SVA.sec;   // ทุกฝ่ายทั้งเดือนคอลัมน์เยอะ ใช้แนวนอน
-    if (kind === 'img') svExportImage(title, html, landscape); else svExportPdf(title, html, landscape);
+    var opt = { a4: day };   // ใบเวรประจำวัน = ยืดเต็มหน้า A4 ตัวอักษรใหญ่
+    if (kind === 'img') svExportImage(title, html, landscape, opt); else svExportPdf(title, html, landscape, opt);
 }
 function svaClose() { SVA.mode = ''; var p = document.getElementById('sva-panel'); if (p) p.innerHTML = ''; }
 
@@ -205,9 +207,16 @@ function svaEditPaint() {
                     + (known ? '' : '<span>ไม่มีในทะเบียน</span>') + '</div>';
             });
             var open = SVA.pick && SVA.pick.si === si && SVA.pick.ri === ri;
-            html += '<div class="sva-ed-btns">'
+            // ชื่อประจำ: หัวหน้าสถานี (และหน้าที่อื่นที่ตั้งไว้) แสดงทุกวันอัตโนมัติ ไม่ต้องกรอก
+            var fixedName = (SVA.data.fixed || {})[s.sec + '|' + (s.time || '') + '|' + r.role];
+            var canFix = fixedName || r.role === 'หัวหน้าสถานี';
+            html += (fixedName ? '<div class="sva-fixed"><i class="fas fa-thumbtack"></i> ชื่อประจำ: <b>' + svEsc(fixedName)
+                    + '</b> — แสดงทุกวันอัตโนมัติ กรอกชื่ออื่นเฉพาะวันที่เปลี่ยนตัว</div>' : '')
+                + '<div class="sva-ed-btns">'
                 + '<button type="button" class="sva-pickbtn' + (open ? ' on' : '') + '" onclick="svaPickOpen(' + si + ',' + ri + ')"><i class="fas fa-list-check"></i> เลือกจากรายชื่อ</button>'
-                + '<button type="button" class="sva-add" onclick="svaEditAdd(' + si + ',' + ri + ')"><i class="fas fa-plus"></i> ช่องพิมพ์</button></div>'
+                + '<button type="button" class="sva-add" onclick="svaEditAdd(' + si + ',' + ri + ')"><i class="fas fa-plus"></i> ช่องพิมพ์</button>'
+                + (canFix ? '<button type="button" class="sva-fixbtn" onclick="svaSetFixed(' + si + ',' + ri + ')" title="ใช้ชื่อในช่องนี้ทุกวัน"><i class="fas fa-thumbtack"></i> ตั้งเป็นชื่อประจำ</button>' : '')
+                + '</div>'
                 + '</div></div>'
                 + (open ? svaPickHtml(s, r) : '');
         });
@@ -229,6 +238,23 @@ function svaEditPaint() {
     p.innerHTML = html;
 }
 function svaEditAdd(si, ri) { svaEditSync(); SVA.ed[si].roles[ri].names.push(''); svaEditPaint(); }
+
+// ตั้งชื่อในช่องเป็น "ชื่อประจำ" ของหน้าที่นั้น (เช่น เปลี่ยน ผกก. → หัวหน้าสถานีคนใหม่) — มีผลทุกวันที่ไม่ได้กรอกชื่ออื่น
+function svaSetFixed(si, ri) {
+    svaEditSync();
+    var s = SVA.ed[si], r = s.roles[ri];
+    var name = (r.names.filter(function (n) { return String(n || '').trim(); })[0] || '').trim();
+    var st = name ? svaFindStaff(name) : null;
+    if (!name) { alert('พิมพ์หรือเลือกชื่อในช่อง "' + r.role + '" ก่อน แล้วค่อยกดตั้งเป็นชื่อประจำ'); return; }
+    if (!confirm('ตั้ง "' + (st ? st.name : name) + '" เป็นชื่อประจำของ "' + r.role + '"\nแสดงทุกวันอัตโนมัติ (วันที่กรอกชื่ออื่นไว้จะยังเป็นชื่อนั้น)')) return;
+    google.script.run
+        .withSuccessHandler(function (map) {
+            SVA.data.fixed = map;
+            svaLoad(true);   // โหลดใหม่ให้ทุกวันแสดงชื่อประจำใหม่ (หน้าจอกรอกยังคงค่าที่กรอกค้างไว้)
+        })
+        .withFailureHandler(function (e) { alert('ตั้งชื่อประจำไม่สำเร็จ: ' + ((e && e.message) || e)); })
+        .setStationFixed(s.sec, s.time, r.role, st ? st.name : name);
+}
 
 // ---------- เลือกชื่อจากทะเบียน: เปิดที่ "งานของหัวข้อนั้น" ก่อน เลือกข้ามงานได้อิสระ ----------
 var SVA_SEC_DEPT = { 'ฝ่ายป้องกันปราบปราม': 'ป้องกันปราบปราม', 'ฝ่ายสืบสวน': 'สืบสวน', 'ฝ่ายจราจร': 'จราจร', 'ฝ่ายสอบสวน': 'สอบสวน', 'ผู้บังคับบัญชา': '*หัวหน้า' };
@@ -542,6 +568,8 @@ var SVA_CSS = ''
     + '.sva-ed-name.unk input{border-color:#f59e0b;background:#fffbeb}.sva-ed-name span,.sva-unk{font-size:.68rem;color:#b45309;font-weight:700}'
     + '.sva-add{border:1px dashed #94a3b8;background:#fff;border-radius:8px;font-size:.74rem;padding:3px 9px;cursor:pointer;color:#475569}'
     + '.sva-ed-btns{display:flex;gap:6px;flex-wrap:wrap}'
+    + '.sva-fixed{font-size:.72rem;color:#0f766e;background:#ccfbf1;border-radius:8px;padding:3px 8px;margin:2px 0 4px}.sva-fixed i{margin-right:3px}'
+    + '.sva-fixbtn{border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;border-radius:8px;font-size:.76rem;font-weight:800;padding:3px 10px;cursor:pointer}'
     + '.sva-pickbtn{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:8px;font-size:.76rem;font-weight:800;padding:3px 10px;cursor:pointer}'
     + '.sva-pickbtn.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}'
     + '.sva-tel{flex-basis:100%;font-size:.7rem;color:#047857;font-weight:700}.sva-tel i{margin-right:3px}'

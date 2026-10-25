@@ -158,7 +158,7 @@ function svMonthHtml(data, year, month, secFilter, opts) {
     for (var dd = 1; dd <= days; dd++) {
         var dt = new Date(year, month, dd), k = svKey(dt), dow = dt.getDay();
         var row = idx[k] || {};
-        body += '<tr class="' + (dow === 0 || dow === 6 ? 'sv-we' : '') + (k === todayK ? ' sv-today' : '') + '">'
+        body += '<tr class="' + (dow === 0 || dow === 6 ? 'sv-we' : '') + (k === todayK ? ' sv-today' : '') + (k < todayK ? ' sv-past' : '') + '">'
             + '<td class="sv-m-date"><b>' + dd + '</b><span>' + SV_DOW_S[dow] + '</span></td>'
             + cols.map(function (c) {
                 var list = (row[svSlotKey(c.t.sec, c.t.time)] || {})[c.role] || [];
@@ -170,7 +170,7 @@ function svMonthHtml(data, year, month, secFilter, opts) {
     var secName = secFilter ? secFilter.replace('|', ' ').trim() : 'ทุกสายงาน';
     return '<div class="sv-sheet sv-month">'
         + svTitle('ตารางเวร' + svEsc(secName) + ' สน.ลำหิน', 'ประจำเดือน ' + SV_TH_MON[month] + ' ' + (year + 543))
-        + '<div class="sv-scroll"><table class="sv-table sv-mtable"><thead>' + h1 + h2 + '</thead><tbody>' + body + '</tbody></table></div>'
+        + '<div class="sv-scroll sv-vscroll"><table class="sv-table sv-mtable"><thead>' + h1 + h2 + '</thead><tbody>' + body + '</tbody></table></div>'
         + svFoot(opts) + '</div>';
 }
 
@@ -217,15 +217,28 @@ function svInvestMonthHtml(duty, year, month, opts) {
         + (has.evi ? '<th>ส่งของกลาง</th>' : '') + (has.extra ? '<th>เวรเสริม</th>' : '') + '</tr>';
     var body = rows.map(function (x) {
         var dow = x.dt.getDay();
-        return '<tr class="' + (dow === 0 || dow === 6 ? 'sv-we' : '') + (x.k === todayK ? ' sv-today' : '') + '">'
+        return '<tr class="' + (dow === 0 || dow === 6 ? 'sv-we' : '') + (x.k === todayK ? ' sv-today' : '') + (x.k < todayK ? ' sv-past' : '') + '">'
             + '<td class="sv-m-date"><b>' + x.dt.getDate() + '</b><span>' + SV_DOW_S[dow] + '</span></td>'
             + cell(x.main, x.mainNote) + (has.day ? cell(x.day, x.dayNote) : '') + cell(x.asst)
             + (has.evi ? cell(x.evi) : '') + (has.extra ? cell(x.extra) : '') + '</tr>';
     }).join('');
     return '<div class="sv-sheet sv-month sv-invest">'
         + svTitle('ตารางเวรพนักงานสอบสวน สน.ลำหิน', 'ประจำเดือน ' + SV_TH_MON[month] + ' ' + (year + 543))
-        + '<div class="sv-scroll"><table class="sv-table sv-mtable sv-itable"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>'
+        + '<div class="sv-scroll sv-vscroll"><table class="sv-table sv-mtable sv-itable"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>'
         + svFoot(opts) + '</div>';
+}
+
+/** เลื่อนกล่องตารางรายเดือนทุกกล่องใน root ให้แถว "วันนี้" อยู่กลางกล่อง (ไม่มีแถววันนี้ = ไม่เลื่อน) */
+function svScrollToToday(root) {
+    if (!root || !root.querySelectorAll) return;
+    [].forEach.call(root.querySelectorAll('.sv-vscroll'), function (box) {
+        var tr = box.querySelector('tr.sv-today');
+        if (!tr) { box.scrollTop = 0; return; }
+        var head = box.querySelector('thead');
+        var hh = head ? head.offsetHeight : 0;
+        var top = tr.offsetTop - hh - (box.clientHeight - hh - tr.offsetHeight) / 2;
+        box.scrollTop = Math.max(0, top);
+    });
 }
 
 // ==========================================================
@@ -233,7 +246,9 @@ function svInvestMonthHtml(duty, year, month, opts) {
 // ==========================================================
 // PDF / พิมพ์: หน้าใหม่ที่มีแต่ตาราง วางในกรอบ A4 แล้วย่อ/ขยายให้พอดีแผ่นเดียวอัตโนมัติ
 // ในหน้าต่างพิมพ์เลือกเครื่องพิมพ์ หรือ "บันทึกเป็น PDF"
-function svExportPdf(title, sheetHtml, landscape) {
+// opts.a4 = ใบเวรประจำวัน: ยืดตารางเต็มหน้ากระดาษ ตัวอักษรใหญ่ (แทนการย่อเนื้อหาให้พอดีแผ่น)
+function svExportPdf(title, sheetHtml, landscape, opts) {
+    var a4 = !!(opts && opts.a4);
     var w = window.open('', '_blank');
     if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
     var pw = landscape ? 281 : 194, ph = landscape ? 194 : 281;   // พื้นที่พิมพ์ได้ของ A4 (ขอบ 8 มม.)
@@ -247,10 +262,10 @@ function svExportPdf(title, sheetHtml, landscape) {
         + '@media print{@page{size:A4 ' + (landscape ? 'landscape' : 'portrait') + ';margin:8mm}}</style></head><body class="sv-print">'
         + '<div class="sv-tools"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ปรับให้พอดีกระดาษ A4 '
         + (landscape ? 'แนวนอน' : 'แนวตั้ง') + ' 1 แผ่นแล้ว</span></div>'
-        + '<div class="sv-page"><div class="sv-fit">' + sheetHtml + '</div></div>'
+        + '<div class="sv-page"><div class="sv-fit' + (a4 ? ' sv-a4' : '') + '">' + sheetHtml + '</div></div>'
         + '<script>(function(){'
         + 'function fit(){var p=document.querySelector(".sv-page"),f=document.querySelector(".sv-fit");f.style.zoom=1;'
-        + 'var s=Math.min(1.8,p.clientWidth/f.scrollWidth,p.clientHeight/f.scrollHeight);f.style.zoom=s;}'
+        + 'var s=Math.min(f.classList.contains("sv-a4")?1:1.8,p.clientWidth/f.scrollWidth,p.clientHeight/f.scrollHeight);f.style.zoom=s;}'
         + 'var go=function(){fit();setTimeout(function(){window.print();},350);};'
         + 'if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){setTimeout(go,150);});}else{window.onload=go;}'
         + '})();<\/script></body></html>');
@@ -260,7 +275,9 @@ function svExportPdf(title, sheetHtml, landscape) {
 // บันทึกเป็นภาพ PNG (ความละเอียด 2 เท่า อ่านชัดบนมือถือ)
 // มือถือ: เปิดภาพในแท็บใหม่ให้กดค้างแล้วบันทึก (iPhone ไม่รองรับการดาวน์โหลดตรง)
 // คอมพิวเตอร์: ดาวน์โหลดไฟล์ทันที
-function svExportImage(title, sheetHtml, landscape) {
+function svExportImage(title, sheetHtml, landscape, opts) {
+    var a4 = !!(opts && opts.a4) && !landscape;
+    var W = landscape ? 1240 : (a4 ? 1000 : 860);
     var touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
     var w = touch ? window.open('', '_blank') : null;   // เปิดตอนกด (หลังรอสร้างภาพเบราว์เซอร์จะบล็อก)
     if (w) w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#334155">กำลังสร้างภาพ…</p>');
@@ -269,8 +286,9 @@ function svExportImage(title, sheetHtml, landscape) {
         svInjectCss();
         var box = document.createElement('div');
         box.className = 'sv-shot';
-        box.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + (landscape ? 1240 : 860) + 'px;background:#fff;padding:18px';
-        box.innerHTML = sheetHtml;
+        box.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + W + 'px;background:#fff;padding:' + (a4 ? 24 : 18) + 'px';
+        // A4 แนวตั้ง = กว้าง:สูง 1:1.414 — ให้ใบเวรยืดเต็มความสูงนั้น
+        box.innerHTML = a4 ? '<div class="sv-a4" style="min-height:' + Math.round(W * 1.4142 - 48) + 'px">' + sheetHtml + '</div>' : sheetHtml;
         document.body.appendChild(box);
         var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
         ready.then(function () {
@@ -344,15 +362,35 @@ var SV_CSS = ''
     + '.sv-we td{background:#fff7ed}'
     + '.sv-today td{background:#dcfce7!important;font-weight:800}.sv-today .sv-m-date b{color:#047857}'
     + '.sv-dash{color:#cbd5e1}.sv-cnote{display:block;font-size:.62rem;color:#b45309;font-weight:700}'
+    // ---- ตารางรายเดือนบนจอ: กล่องเลื่อนสูงราวหนึ่งจอ หัวตารางตรึง วันที่ผ่านไปแล้วตัวจาง ----
+    + '.sv-vscroll{max-height:calc(100vh - 170px);min-height:320px;overflow:auto;overscroll-behavior:contain}'
+    + '.sv-vscroll thead{position:sticky;top:0;z-index:3;box-shadow:0 2px 6px rgba(15,23,42,.12)}'
+    + '.sv-vscroll thead .sv-m-date{z-index:4}'
+    + '.sv-past td{color:#a3b0c2}.sv-past td div{opacity:.55}.sv-past .sv-m-date b{color:#a3b0c2}'
     + '.sv-itable{min-width:0;font-size:.84rem}.sv-itable td{padding:5px 8px}.sv-i-main{background:#fef3c7!important}.sv-i-day{background:#e0f2fe!important}.sv-i-asst{background:#ede9fe!important}'
     + '.sv-xbtns{display:inline-flex;gap:6px}.sv-xbtns button{border:0;border-radius:10px;padding:7px 12px;font:inherit;font-weight:800;font-size:.82rem;color:#fff;cursor:pointer;white-space:nowrap}'
     + '.sv-x-pdf{background:#dc2626}.sv-x-img{background:#059669}'
     + '@media (max-width:560px){.sv-c-pos{display:none}.sv-name-pos{display:block}.sv-table{font-size:.82rem}.sv-c-role{width:30%}.sv-title{padding:10px 12px}.sv-title-t{font-size:.95rem}.sv-badge{display:none}}'
     // ตอนสร้างภาพ/พิมพ์ ให้แสดงแบบเต็ม (ไม่ซ่อนคอลัมน์แบบจอมือถือ)
     + '.sv-shot .sv-c-pos,.sv-print .sv-c-pos{display:table-cell}.sv-shot .sv-name-pos,.sv-print .sv-name-pos{display:none}'
-    + '.sv-shot .sv-badge,.sv-print .sv-badge{display:block}.sv-shot .sv-scroll,.sv-print .sv-scroll{overflow:visible}'
+    + '.sv-shot .sv-badge,.sv-print .sv-badge{display:block}.sv-shot .sv-scroll,.sv-print .sv-scroll{overflow:visible;max-height:none!important}'
+    + '.sv-shot .sv-past td,.sv-print .sv-past td{color:inherit!important}.sv-shot .sv-past td div,.sv-print .sv-past td div{opacity:1!important}'
+    + '.sv-shot thead,.sv-print thead{position:static!important}'
     + '.sv-shot .sv-sheet,.sv-print .sv-sheet{box-shadow:none;border:1px solid #cbd5e1;border-radius:12px}'
-    + '.sv-shot .sv-m-date,.sv-print .sv-m-date{position:static}';
+    + '.sv-shot .sv-m-date,.sv-print .sv-m-date{position:static}'
+    // ---- ใบเวรประจำวันแบบเต็มหน้า A4 ----
+    + '.sv-a4{display:flex;flex-direction:column}'
+    + '.sv-a4 .sv-sheet{flex:1;display:flex;flex-direction:column;min-width:0!important}'
+    + '.sv-a4 .sv-table{flex:1;height:100%;font-size:1.06rem}'
+    + '.sv-a4 .sv-title{padding:18px 22px}.sv-a4 .sv-title-t{font-size:1.5rem}.sv-a4 .sv-title-t span{font-size:1.12rem}'
+    + '.sv-a4 .sv-badge{font-size:.95rem;padding:8px 12px}'
+    + '.sv-a4 .sv-table thead th{font-size:1rem;padding:10px 12px}'
+    + '.sv-a4 .sv-table td{padding:8px 12px}'
+    + '.sv-a4 .sv-role{font-size:1.02rem}.sv-a4 .sv-name{font-size:1.14rem}'
+    + '.sv-a4 .sv-c-pos{font-size:1rem}.sv-a4 .sv-c-tel{font-size:1.1rem}'
+    + '.sv-a4 .sv-sec td{font-size:1.1rem;padding:10px 12px}.sv-a4 .sv-sec small{font-size:.95rem}'
+    + '.sv-a4 .sv-note{font-size:.82rem}.sv-a4 .sv-foot{font-size:.88rem;padding:9px 14px}'
+    + '.sv-print .sv-fit.sv-a4{width:100%;height:100%}';
 var SV_PRINT_CSS = ''
     + 'body.sv-print{margin:0;padding:12px;background:#e2e8f0;font-family:Sarabun,system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
     + '.sv-tools{display:flex;gap:10px;align-items:center;justify-content:center;margin:0 0 12px;font-size:13px;color:#475569}'

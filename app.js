@@ -417,6 +417,7 @@ function renderDutyMonth() {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
     $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
     $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m);
+    svScrollToToday($('dutyMonth'));   // เลื่อนมาเวรวันนี้รอไว้
     $('dutyExport').innerHTML = svExportButtons("exportDutyMonth('pdf')", "exportDutyMonth('img')");
 }
 window.exportDutyMonth = function (kind) {
@@ -440,9 +441,10 @@ function renderStation() {
     sel.innerHTML = svSecOptions(data.station, stSec);
     $('stLabel').textContent = stView === 'day' ? thFull(stDate) : (TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543));
     box.innerHTML = stView === 'day'
-        ? svDayHtml(data.station, stDate, { emptyHint: 'ธุรการเพิ่มได้ที่เว็บแอป เมนู "เวรทุกสายงาน"' })
+        ? svDayHtml(data.station, stDate, { emptyHint: 'งานธุรการกดปุ่ม "แก้ไข/เพิ่มเวร" ด้านบน' })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec);
     $('stExport').innerHTML = svExportButtons("exportStation('pdf')", "exportStation('img')");
+    if (stView === 'month') svScrollToToday(box);   // เลื่อนมาเวรวันนี้รอไว้
 }
 window.stStep = function (n) {
     stDate = stView === 'day' ? addDays(stDate, n) : new Date(stDate.getFullYear(), stDate.getMonth() + n, 1);
@@ -456,7 +458,8 @@ window.exportStation = function (kind) {
     const html = day ? svDayHtml(data.station, stDate, { foot: true, plain: true })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec, { foot: true });
     const landscape = !day && !stSec;   // ทุกฝ่ายทั้งเดือนคอลัมน์เยอะ ใช้แนวนอน
-    if (kind === 'img') svExportImage(title, html, landscape); else svExportPdf(title, html, landscape);
+    const opt = { a4: day };   // ใบเวรประจำวัน = ยืดเต็มหน้า A4 ตัวอักษรใหญ่
+    if (kind === 'img') svExportImage(title, html, landscape, opt); else svExportPdf(title, html, landscape, opt);
 };
 
 // ==========================================================
