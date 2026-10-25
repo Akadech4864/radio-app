@@ -7,8 +7,8 @@
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="dash/dash.css?v=63">
-    <link rel="stylesheet" href="style.css?v=63">
+    <link rel="stylesheet" href="dash/dash.css?v=64">
+    <link rel="stylesheet" href="style.css?v=64">
 </head>
 <body>
     <!--
@@ -122,9 +122,26 @@
                 </div>
                 <select id="stSec" class="st-sec" hidden></select>
                 <div class="xslot" id="stExport"></div>
+                <button type="button" class="st-editbtn" onclick="stEditOpen()"><i class="fa-solid fa-pen-to-square"></i> แก้ไข/เพิ่มเวร</button>
             </div>
             <div id="stView"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+            <!-- โหมดแก้ไขสำหรับงานธุรการ (ต้องใส่รหัส) — หน้าจอชุดเดียวกับเว็บแอป -->
+            <div id="svEditor" hidden><div id="sv-root"></div></div>
         </section>
+
+        <!-- ใส่รหัสธุรการ -->
+        <div class="pin-modal" id="pinModal" hidden>
+            <div class="pin-box">
+                <div class="pin-h"><i class="fa-solid fa-key"></i> กรอกเวรทุกสายงาน</div>
+                <p>สำหรับงานธุรการ ใส่รหัสเพื่อเพิ่ม/แก้ไขตารางเวร ข้อมูลบันทึกลง Google Sheet ทันที</p>
+                <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="รหัสธุรการ">
+                <div class="pin-err" id="pinErr"></div>
+                <div class="pin-btns">
+                    <button type="button" id="pinCancel">ยกเลิก</button>
+                    <button type="button" id="pinOk" class="pri">เข้าสู่โหมดแก้ไข</button>
+                </div>
+            </div>
+        </div>
 
         <!-- ===== 3) กำลังพล & รูปแบบเวร ===== -->
         <section class="rpane" id="pane-crew" hidden></section>
@@ -139,10 +156,12 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="dash/scene3d.js?v=63"></script>
-    <script src="dash/dashcalc.js?v=63"></script>
-    <script src="dash/dash.js?v=63"></script>
-    <script src="dash/stationview.js?v=63"></script>
-    <script src="app.js?v=63"></script>
+    <script src="dash/scene3d.js?v=64"></script>
+    <script src="dash/dashcalc.js?v=64"></script>
+    <script src="dash/dash.js?v=64"></script>
+    <script src="dash/stationview.js?v=64"></script>
+    <script src="dash/stationapp.js?v=64"></script>
+    <script src="app.js?v=64"></script>
+    <script src="stationedit.js?v=64"></script>
 </body>
 </html>
