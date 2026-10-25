@@ -73,6 +73,7 @@ function svaPaint() {
     var dateVal = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
     var monthVal = dateVal.slice(0, 7);
     var pv = document.querySelector('#sva-view .sv-vscroll'), keepLeft = pv ? pv.scrollLeft : 0;
+    var nMis = (SVA.data.rows || []).filter(function (r) { return r[10] && String(r[0]).slice(3) === monthVal.slice(5, 7) + '/' + monthVal.slice(0, 4); }).length;
     root.innerHTML = '<div class="sva">'
         + '<div class="sva-head"><i class="fas fa-building-shield"></i><span>ตารางเวรทุกสายงาน สน.ลำหิน</span></div>'
         + '<div class="sva-bar">'
@@ -91,6 +92,8 @@ function svaPaint() {
         + (SVA.view === 'month' ? '<select class="sva-sel" onchange="SVA.sec=this.value;svaPaint()">' + svSecOptions(SVA.data, SVA.sec) + '</select>' : '')
         + '  <div class="sva-act">'
         + '    <button type="button" onclick="svaEditOpen()"><i class="fas fa-pen-to-square"></i> เพิ่ม/แก้ไขเวร</button>'
+        + '    <button type="button" class="sva-plbtn' + (SVA.mode === 'plan' ? ' on' : '') + '" onclick="svaPlanOpen()" title="ไฟล์และตารางเวรของ ป. / จร. / สส. / ศปก. / อำนวยการ แยกรายเดือน">'
+        + '<i class="fas fa-folder-open"></i> ตารางเวรแต่ละงาน' + (nMis ? ' <span class="sva-pl-bad" title="ตารางรายวันไม่ตรงกับตารางเวร">' + nMis + '</span>' : '') + '</button>'
         + '    <button type="button" onclick="svaImportOpen()"><i class="fas fa-wand-magic-sparkles"></i> นำเข้าจากรูป/ไฟล์</button>'
         + '    <button type="button" onclick="svaStaffOpen()"><i class="fas fa-address-book"></i> ทะเบียน</button>'
         // เว็บแอป: ตั้งรหัสให้ธุรการใช้กรอกเวรบนหน้า GitHub · หน้า GitHub: ปุ่มออกจากโหมดแก้ไข
@@ -118,6 +121,7 @@ function svaPaint() {
     if (SVA.mode === 'edit') svaEditPaint();
     else if (SVA.mode === 'import') svaImportPaint();
     else if (SVA.mode === 'staff') svaStaffPaint();
+    else if (SVA.mode === 'plan') svaPlanPaint();
 }
 
 function svaSetView(v) { SVA.view = v; svaPaint(); }
@@ -547,6 +551,311 @@ function svaStaffSave() {
         .saveStationStaff(p);
 }
 
+// ==========================================================
+// ตารางเวรของแต่ละงาน (ป. / จร. / สส. / ศปก. / อำนวยการ) — แยกหมวดตามงาน รายเดือน
+// ไฟล์ต้นฉบับ (ดู / อ่านด้วย AI / แก้ชื่อ / ลบ) + ตารางเวรของงาน (แก้ในตาราง / วนรอบต่อเดือนถัดไป / ลบ)
+// + จุดที่ตารางรายวันไม่ตรงกับตารางเวร (เลือก "ตามตารางเวร" / "ตามตารางรายวัน")
+// ==========================================================
+var SVA_PL_MAX_MB = 15;
+function svaYm(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+var SVA_MON_S = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+function svaDayText(ds) { var d = svParse(ds); return d ? SV_DOW_S[d.getDay()] + ' ' + d.getDate() + ' ' + SVA_MON_S[d.getMonth()] : ds; }
+function svaYmText(ym) { return SV_TH_MON[+ym.slice(5, 7) - 1] + ' ' + (+ym.slice(0, 4) + 543); }
+function svaPlanOpen() {
+    SVA.mode = 'plan';
+    SVA.pl = SVA.pl || { unit: 'ป.' };
+    SVA.pl.ym = svaYm(SVA.date);
+    SVA.pl.d = null; SVA.pl.ed = null;
+    svaPaint();
+    svaPlanLoad();
+}
+function svaPlanLoad() {
+    var pl = SVA.pl, ym = pl.ym;
+    svaPlanBusy('กำลังโหลดตารางเวรของแต่ละงาน…');
+    google.script.run
+        .withSuccessHandler(function (d) { if (SVA.pl.ym !== ym) return; pl.d = d; pl.ed = null; svaPlanPaint(); })
+        .withFailureHandler(function (e) { svaPlanBusy('โหลดไม่สำเร็จ: ' + ((e && e.message) || e), true); })
+        .getStationPlan(ym);
+}
+function svaPlanBusy(msg, err) {
+    var p = document.getElementById('sva-panel'); if (!p) return;
+    p.innerHTML = '<div class="sva-card"><div class="sva-wait' + (err ? ' sva-err' : '') + '">'
+        + (err ? '' : '<i class="fas fa-circle-notch fa-spin"></i> ') + svEsc(msg) + '</div></div>';
+}
+function svaPlanStep(n) {
+    var p = SVA.pl.ym.split('-'), d = new Date(+p[0], +p[1] - 1 + n, 1);
+    SVA.pl.ym = svaYm(d); svaPlanLoad();
+}
+function svaPlanUnit(id) { SVA.pl.unit = id; SVA.pl.ed = null; svaPlanPaint(); }
+function svaPlanCall(fn, args, done, label) {
+    svaPlanBusy(label || 'กำลังบันทึก…');
+    var r = google.script.run
+        .withSuccessHandler(function (res) { if (done) done(res); })
+        .withFailureHandler(function (e) { alert('ไม่สำเร็จ: ' + ((e && e.message) || e)); svaPlanPaint(); });
+    r[fn].apply(r, args);
+}
+// บันทึกแล้วโหลดใหม่ทั้งหน้าตารางงานและตารางเวรรายวัน (ชื่อตามตารางงานเติมให้ทุกวันที่ไม่ได้กรอก)
+function svaPlanReload(msg) { svaPlanLoad(); svaLoad(true); if (msg) setTimeout(function () { alert(msg); }, 60); }
+
+/** ช่องของงาน: [{sec,time,role}] ตามแม่แบบ + หน้าที่อื่นที่มีในตารางงานจริง */
+function svaPlanCols(u, plan) {
+    var cols = [], seen = {};
+    function add(sec, time, role) { var k = svSlotKey(sec, time) + '|' + role; if (!seen[k]) { seen[k] = 1; cols.push({ sec: sec, time: time || '', role: role }); } }
+    (SVA.pl.d.template || []).forEach(function (t) { if (u.secs.indexOf(t.sec) >= 0) t.roles.forEach(function (r) { add(t.sec, t.time, r); }); });
+    plan.forEach(function (x) { add(x.sec, x.time, x.role); });
+    return cols;
+}
+function svaPlanUnitObj() { return (SVA.pl.d.units || []).filter(function (u) { return u.id === SVA.pl.unit; })[0] || SVA.pl.d.units[0]; }
+function svaPlanOf(uid) { return (SVA.pl.d.plan || []).filter(function (x) { return x.unit === uid; }); }
+
+function svaPlanPaint() {
+    var p = document.getElementById('sva-panel'), pl = SVA.pl;
+    if (!p || SVA.mode !== 'plan' || !pl || !pl.d) return;
+    var d = pl.d, u = svaPlanUnitObj(), plan = svaPlanOf(u.id);
+    var files = (d.files || []).filter(function (f) { return f.unit === u.id; });
+    var mis = d.mismatches || [], umis = mis.filter(function (m) { return m.unit === u.id; });
+    var tabs = (d.units || []).map(function (x) {
+        var days = {}; svaPlanOf(x.id).forEach(function (e) { days[e.date] = 1; });
+        var nd = Object.keys(days).length, nf = (d.files || []).filter(function (f) { return f.unit === x.id; }).length;
+        var nm = mis.filter(function (m) { return m.unit === x.id; }).length;
+        return '<button type="button" class="' + (x.id === u.id ? 'on' : '') + '" onclick="svaPlanUnit(\'' + x.id + '\')">'
+            + '<b>' + svEsc(x.short) + '</b><small>' + (nd ? nd + ' วัน' : 'ยังไม่มีตาราง') + (nf ? ' · ' + nf + ' ไฟล์' : '') + '</small>'
+            + (nm ? '<span class="sva-pl-bad">' + nm + '</span>' : '') + '</button>';
+    }).join('');
+    var html = '<div class="sva-card sva-pl"><div class="sva-card-h"><i class="fas fa-folder-open"></i> ตารางเวรของแต่ละงาน'
+        + '<div class="sva-pl-nav"><button type="button" onclick="svaPlanStep(-1)" title="เดือนก่อน"><i class="fas fa-chevron-left"></i></button>'
+        + '<b>' + svaYmText(pl.ym) + '</b><button type="button" onclick="svaPlanStep(1)" title="เดือนถัดไป"><i class="fas fa-chevron-right"></i></button></div>'
+        + '<button type="button" class="sva-x" onclick="svaClose()" title="ปิด"><i class="fas fa-xmark"></i></button></div>'
+        + '<div class="sva-hint"><i class="fas fa-circle-info"></i> เวรรายวันที่กรอกไว้เป็นหลัก · วันที่ไม่ได้กรอกใช้ตามตารางของงานอัตโนมัติ · '
+        + 'ชื่อไม่ตรงกันจะกระพริบสีส้มในตารางเวร</div>'
+        + (mis.length ? svaPlanMisHtml(mis) : '<div class="sva-pl-ok"><i class="fas fa-circle-check"></i> ตารางรายวันเดือนนี้ตรงกับตารางเวรของทุกงาน</div>')
+        + '<div class="sva-pl-tabs">' + tabs + '</div>'
+        // ---- ไฟล์ต้นฉบับ ----
+        + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-paperclip"></i> ไฟล์ตารางเวร' + svEsc(u.name) + ' เดือน' + svaYmText(pl.ym) + '</div>'
+        + (files.length ? files.map(svaPlanFileHtml).join('') : '<div class="sva-none">ยังไม่มีไฟล์ — อัปโหลดคำสั่ง/ตารางเวรของงานนี้ (PDF รูปภาพ หรือ Excel)</div>')
+        + '<div class="sva-imp sva-pl-up"><input type="file" id="sva-pl-file" class="form-control form-control-sm" multiple accept="image/*,.pdf,.xlsx,.xls,.csv">'
+        + '<input id="sva-pl-note" class="form-control form-control-sm" placeholder="หมายเหตุไฟล์ (ถ้ามี) เช่น ฉบับแก้ไข">'
+        + '<button type="button" class="sva-save" onclick="svaPlanUpload()"><i class="fas fa-upload"></i> อัปโหลด</button></div></div>'
+        // ---- ตารางเวรของงาน ----
+        + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-table-list"></i> ตารางเวร' + svEsc(u.name)
+        + (plan.length ? ' <small>(' + Object.keys(plan.reduce(function (a, e) { a[e.date] = 1; return a; }, {})).length + ' วัน)</small>' : '') + '</div>'
+        + (pl.ed ? svaPlanEdHtml(u) : svaPlanViewHtml(u, plan, umis))
+        + '</div></div>';
+    p.innerHTML = html;
+}
+
+function svaPlanMisHtml(mis) {
+    return '<div class="sva-pl-mis"><div class="sva-pl-mis-h"><i class="fas fa-triangle-exclamation"></i> ตารางรายวันไม่ตรงกับตารางเวร ' + mis.length + ' จุด — เลือกว่าจะใช้ชื่อตามตารางไหน</div>'
+        + mis.map(function (m, i) {
+            return '<div class="sva-pl-mi"><div class="sva-pl-mt"><b>' + svEsc(svaDayText(m.date)) + '</b> · ' + svEsc(m.unit) + ' ' + svEsc(m.role)
+                + (m.time ? ' <small>' + svEsc(m.time) + '</small>' : '') + '</div>'
+                + '<div class="sva-pl-mv"><span>ตารางรายวัน: <b>' + svEsc(m.daily.join(', ')) + '</b></span><span>ตารางเวร: <b>' + svEsc(m.plan.join(', ')) + '</b></span></div>'
+                + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanFix(' + i + ',\'plan\')" title="ใช้ชื่อตามตารางเวรของงาน (ลบชื่อที่กรอกในตารางรายวันของวันนั้น)"><i class="fas fa-table-list"></i> ตามตารางเวร</button>'
+                + '<button type="button" onclick="svaPlanFix(' + i + ',\'daily\')" title="ใช้ชื่อตามตารางรายวัน (แก้ตารางเวรของงานให้ตรง เช่น มีการแลกเวร)"><i class="fas fa-calendar-day"></i> ตามตารางรายวัน</button>'
+                + '<button type="button" onclick="svaPlanGoDay(' + i + ')" title="เปิดเวรรายวันวันนั้น">เปิดวันนั้น</button></div></div>';
+        }).join('') + '</div>';
+}
+function svaPlanFix(i, mode) {
+    var m = SVA.pl.d.mismatches[i]; if (!m) return;
+    svaPlanCall('resolveStationMismatch', [m.date, m.sec, m.time, m.role, mode], function () { svaPlanReload(); });
+}
+function svaPlanGoDay(i) {
+    var m = SVA.pl.d.mismatches[i]; if (!m) return;
+    SVA.date = svParse(m.date); SVA.view = 'day'; SVA.mode = '';
+    svaLoad(false);
+}
+
+function svaPlanFileHtml(f) {
+    var ic = /pdf/.test(f.type) ? 'fa-file-pdf' : /image/.test(f.type) ? 'fa-file-image' : 'fa-file-excel';
+    var kb = f.size > 1048576 ? (f.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(f.size / 1024)) + ' KB';
+    var canAi = /pdf|image/.test(f.type);
+    return '<div class="sva-pl-f"><i class="fas ' + ic + '"></i><div class="sva-pl-fn"><b>' + svEsc(f.name) + '</b>'
+        + '<small>' + kb + ' · ' + svEsc(f.at) + (f.note ? ' · ' + svEsc(f.note) : '') + '</small></div>'
+        + '<div class="sva-pl-fb"><button type="button" onclick="svaPlanFileView(\'' + f.id + '\')"><i class="fas fa-eye"></i> ดู</button>'
+        + (canAi ? '<button type="button" onclick="svaPlanAI(\'' + f.id + '\')" title="ให้ AI อ่านไฟล์นี้เป็นตารางเวรของงาน แล้วตรวจก่อนบันทึก"><i class="fas fa-robot"></i> อ่านด้วย AI</button>' : '')
+        + '<button type="button" onclick="svaPlanFileEdit(\'' + f.id + '\')"><i class="fas fa-pen"></i> แก้ไข</button>'
+        + '<button type="button" class="del" onclick="svaPlanFileDel(\'' + f.id + '\')"><i class="fas fa-trash-can"></i> ลบ</button></div></div>';
+}
+function svaPlanFileOf(id) { return (SVA.pl.d.files || []).filter(function (f) { return f.id === id; })[0]; }
+function svaPlanUpload() {
+    var inp = document.getElementById('sva-pl-file');
+    var files = inp && inp.files ? [].slice.call(inp.files) : [];
+    if (!files.length) { alert('กรุณาเลือกไฟล์ก่อน'); return; }
+    var big = files.filter(function (f) { return f.size > SVA_PL_MAX_MB * 1048576; })[0];
+    if (big) { alert('ไฟล์ "' + big.name + '" ใหญ่เกิน ' + SVA_PL_MAX_MB + ' MB'); return; }
+    var note = document.getElementById('sva-pl-note').value.trim(), pl = SVA.pl, i = 0;
+    function next() {
+        if (i >= files.length) { svaPlanReload(); return; }
+        var f = files[i++];
+        svaPlanBusy('กำลังอัปโหลด ' + f.name + ' (' + i + '/' + files.length + ')…');
+        var r = new FileReader();
+        r.onload = function (e) {
+            google.script.run
+                .withSuccessHandler(next)
+                .withFailureHandler(function (err) { alert('อัปโหลด ' + f.name + ' ไม่สำเร็จ: ' + ((err && err.message) || err)); svaPlanReload(); })
+                .uploadStationFile(pl.unit, pl.ym, { name: f.name, mimeType: f.type || 'application/pdf', data: String(e.target.result).split(',')[1] }, note);
+        };
+        r.onerror = function () { alert('อ่านไฟล์ ' + f.name + ' ไม่สำเร็จ'); svaPlanReload(); };
+        r.readAsDataURL(f);
+    }
+    next();
+}
+// เปิดดูไฟล์: เปิดหน้าต่างก่อน (หลังรอโหลดเบราว์เซอร์จะบล็อก) แล้วใส่ไฟล์ตามมา
+function svaPlanFileView(id) {
+    var f = svaPlanFileOf(id); if (!f) return;
+    var w = window.open('', '_blank');
+    if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — กรุณาอนุญาตป๊อปอัป'); return; }
+    w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><title>' + svEsc(f.name) + '</title>'
+        + '<p style="font-family:sans-serif;padding:24px;color:#334155">กำลังเปิด ' + svEsc(f.name) + '…</p>');
+    google.script.run
+        .withSuccessHandler(function (x) {
+            var bin = atob(x.data), arr = new Uint8Array(bin.length);
+            for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
+            var url = URL.createObjectURL(new Blob([arr], { type: x.mimeType }));
+            var body = /^image\//.test(x.mimeType) ? '<img src="' + url + '" style="max-width:100%;display:block;margin:0 auto">'
+                : /pdf/.test(x.mimeType) ? '<iframe src="' + url + '" style="border:0;width:100%;height:calc(100vh - 52px)"></iframe>'
+                : '<p style="padding:24px">ไฟล์ชนิดนี้เปิดในเบราว์เซอร์ไม่ได้ — กดดาวน์โหลด</p>';
+            w.document.open();
+            w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + svEsc(x.name) + '</title></head>'
+                + '<body style="margin:0;background:#e2e8f0;font-family:sans-serif"><div style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:#0f172a;color:#fff">'
+                + '<b style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + svEsc(x.name) + '</b>'
+                + '<a href="' + url + '" download="' + svEsc(x.name) + '" style="color:#fff;background:#1d4ed8;padding:6px 12px;border-radius:8px;text-decoration:none;font-weight:700">ดาวน์โหลด</a></div>'
+                + body + '</body></html>');
+            w.document.close();
+        })
+        .withFailureHandler(function (e) { w.close(); alert('เปิดไฟล์ไม่สำเร็จ: ' + ((e && e.message) || e)); })
+        .getStationFileData(id);
+}
+function svaPlanFileEdit(id) {
+    var f = svaPlanFileOf(id); if (!f) return;
+    var name = prompt('ชื่อไฟล์', f.name); if (name == null) return;
+    var note = prompt('หมายเหตุไฟล์ (เว้นว่างได้)', f.note || ''); if (note == null) return;
+    svaPlanCall('updateStationFile', [id, { name: name.trim() || f.name, note: note.trim() }], function () { svaPlanLoad(); });
+}
+function svaPlanFileDel(id) {
+    var f = svaPlanFileOf(id); if (!f) return;
+    if (!confirm('ลบไฟล์ "' + f.name + '" ?\n(ไฟล์ย้ายไปถังขยะของ Google Drive กู้คืนได้ภายใน 30 วัน · ตารางเวรที่บันทึกไว้ไม่ถูกลบ)')) return;
+    svaPlanCall('deleteStationFile', [id], function () { svaPlanLoad(); }, 'กำลังลบไฟล์…');
+}
+function svaPlanAI(id) {
+    var f = svaPlanFileOf(id); if (!f) return;
+    svaPlanCall('extractStationPlanFromFile', [id], function (res) {
+        if (!res.entries.length) { alert('AI อ่านไม่พบรายชื่อเวรของงานนี้ในเดือน' + svaYmText(res.ym) + ' จากไฟล์นี้'); svaPlanPaint(); return; }
+        SVA.pl.unit = res.unit;
+        svaPlanEditStart(res.entries, 'AI อ่านจาก "' + f.name + '" ได้ ' + res.entries.length + ' รายการ — ตรวจ/แก้ในตารางแล้วกดบันทึก (ยังไม่ได้บันทึก)');
+    }, 'AI กำลังอ่าน ' + f.name + '… (อาจใช้เวลาราว 30 วินาที)');
+}
+
+// ---- ดูตารางของงาน (อ่านอย่างเดียว) ----
+function svaPlanViewHtml(u, plan, umis) {
+    var btns = '<div class="sva-pl-acts"><button type="button" class="sva-save" onclick="svaPlanEditStart()"><i class="fas fa-pen-to-square"></i> ' + (plan.length ? 'แก้ไขตาราง' : 'สร้างตาราง') + '</button>'
+        + (plan.length ? '<button type="button" onclick="svaPlanContinue()" title="สร้างตารางเดือนถัดไปโดยวนรอบเวรเดิม"><i class="fas fa-rotate-right"></i> วนรอบต่อเดือนถัดไป</button>'
+            + '<button type="button" class="del" onclick="svaPlanDelete()"><i class="fas fa-trash-can"></i> ลบตารางเดือนนี้</button>' : '') + '</div>';
+    if (!plan.length) return '<div class="sva-none">ยังไม่มีตารางของงานนี้ในเดือนนี้ — กด "สร้างตาราง" หรือ "อ่านด้วย AI" จากไฟล์ด้านบน</div>' + btns;
+    var cols = svaPlanCols(u, plan), cell = {}, bad = {};
+    plan.forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; (cell[k] = cell[k] || []).push(x.name); });
+    umis.forEach(function (m) { bad[m.date + '|' + svSlotKey(m.sec, m.time) + '|' + m.role] = m.daily.join(', '); });
+    var p = SVA.pl.ym.split('-'), last = new Date(+p[0], +p[1], 0).getDate(), todayK = svKey(new Date());
+    var body = '';
+    for (var dd = 1; dd <= last; dd++) {
+        var dt = new Date(+p[0], +p[1] - 1, dd), ds = svDateStr(dt), dow = dt.getDay();
+        body += '<tr class="' + (dow === 0 || dow === 6 ? 'we' : '') + (svKey(dt) === todayK ? ' td' : '') + '"><th>' + dd + ' <small>' + SV_DOW_S[dow] + '</small></th>'
+            + cols.map(function (c) {
+                var k = ds + '|' + svSlotKey(c.sec, c.time) + '|' + c.role, n = cell[k];
+                return '<td' + (bad[k] ? ' class="sv-mis" title="ตารางรายวัน: ' + svEsc(bad[k]) + '"' : '') + '>' + (n ? n.map(function (x) { return svEsc(svShort(x)); }).join('<br>') : '<span class="sv-dash">—</span>') + '</td>';
+            }).join('') + '</tr>';
+    }
+    return btns + '<div class="sva-pl-grid"><table><thead><tr><th>วันที่</th>' + cols.map(svaPlanColHead).join('') + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+function svaPlanColHead(c) {
+    return '<th>' + svEsc(c.role) + (c.time ? '<small>' + svEsc(c.time.replace(' (ของวันรุ่งขึ้น)', '')) + '</small>' : '') + '</th>';
+}
+
+// ---- แก้ตารางของงานทั้งเดือน (ช่อง = ชื่อ คั่นหลายคนด้วย ,) ----
+function svaPlanEditStart(entries, banner) {
+    var u = svaPlanUnitObj(), plan = entries || svaPlanOf(u.id);
+    var cols = svaPlanCols(u, plan.concat(svaPlanOf(u.id))), val = {}, note = {};
+    plan.forEach(function (x) {
+        var k = svDateStr(svParse(x.date)) + '|' + svSlotKey(x.sec, x.time) + '|' + x.role;
+        (val[k] = val[k] || []).push(x.name);
+        if (x.note) note[k] = x.note;
+    });
+    // หมายเหตุเดิม (เช่น ชุด 3 / 05.00-21.00 น.) เก็บไว้ · ช่องใหม่ใช้หมายเหตุที่พบบ่อยของคอลัมน์ (เช่นช่วงเวลา)
+    svaPlanOf(u.id).forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; if (x.note && !note[k]) note[k] = x.note; });
+    SVA.pl.ed = { cols: cols, val: val, note: note, banner: banner || '' };
+    svaPlanPaint();
+}
+function svaPlanEdHtml(u) {
+    var ed = SVA.pl.ed, p = SVA.pl.ym.split('-'), last = new Date(+p[0], +p[1], 0).getDate();
+    var body = '';
+    for (var dd = 1; dd <= last; dd++) {
+        var dt = new Date(+p[0], +p[1] - 1, dd), ds = svDateStr(dt), dow = dt.getDay();
+        body += '<tr class="' + (dow === 0 || dow === 6 ? 'we' : '') + '"><th>' + dd + ' <small>' + SV_DOW_S[dow] + '</small></th>'
+            + ed.cols.map(function (c, ci) {
+                var k = ds + '|' + svSlotKey(c.sec, c.time) + '|' + c.role, v = (ed.val[k] || []).join(', ');
+                var unk = v && v.split(',').some(function (n) { return n.trim() && !svaFindStaff(n.trim()); });
+                return '<td><input class="' + (unk ? 'unk' : '') + '" list="sva-staff" data-k="' + svEsc(k) + '" value="' + svEsc(v) + '" onchange="svaPlanEdSet(this)"></td>';
+            }).join('') + '</tr>';
+    }
+    return (ed.banner ? '<div class="sva-pl-ai"><i class="fas fa-robot"></i> ' + svEsc(ed.banner) + '</div>' : '')
+        + '<div class="sva-hint"><i class="fas fa-keyboard"></i> พิมพ์/เลือกชื่อจากทะเบียน · หลายคนในช่องเดียวคั่นด้วย , · ช่องว่าง = ไม่มีเวร · ช่องสีส้ม = ชื่อไม่มีในทะเบียน</div>'
+        + '<div class="sva-pl-grid ed"><table><thead><tr><th>วันที่</th>' + ed.cols.map(svaPlanColHead).join('') + '</tr></thead><tbody>' + body + '</tbody></table></div>'
+        + '<div class="sva-foot"><button type="button" onclick="SVA.pl.ed=null;svaPlanPaint()">ยกเลิก</button>'
+        + '<button type="button" class="sva-save" onclick="svaPlanSave()"><i class="fas fa-floppy-disk"></i> บันทึกตาราง' + svEsc(u.short) + ' ทั้งเดือน</button></div>';
+}
+function svaPlanEdSet(inp) {
+    var names = inp.value.split(/[,\n]/).map(function (n) { return n.trim(); }).filter(function (n) { return n; }).map(function (n) {
+        var st = svaFindStaff(n); return st ? st.name : n;
+    });
+    SVA.pl.ed.val[inp.dataset.k] = names;
+    inp.value = names.join(', ');
+    inp.classList.toggle('unk', names.some(function (n) { return !svaFindStaff(n); }));
+}
+function svaPlanSave() {
+    var ed = SVA.pl.ed, u = svaPlanUnitObj(), entries = [], colNote = {};
+    // หมายเหตุประจำคอลัมน์ (เช่นช่วงเวลา 05.00-21.00 น.) = ช่องเดิมเกือบทั้งหมดใช้ข้อความเดียวกัน → ใช้กับช่องที่เพิ่มใหม่ด้วย
+    var colCells = {};
+    Object.keys(ed.note).forEach(function (k) { var c = k.split('|').slice(1).join('|'); colNote[c] = colNote[c] || {}; colNote[c][ed.note[k]] = (colNote[c][ed.note[k]] || 0) + 1; });
+    Object.keys(ed.val).forEach(function (k) { var c = k.split('|').slice(1).join('|'); colCells[c] = (colCells[c] || 0) + 1; });
+    Object.keys(ed.val).forEach(function (k) {
+        var parts = k.split('|'), c = parts.slice(1).join('|');
+        var top = Object.keys(colNote[c] || {}).sort(function (a, b) { return colNote[c][b] - colNote[c][a]; })[0] || '';
+        var common = top && colNote[c][top] >= 0.8 * (colCells[c] || 1) ? top : '';
+        ed.val[k].forEach(function (n) {
+            entries.push({ date: parts[0], sec: parts[1], time: parts[2], role: parts[3], name: n, note: ed.note[k] || common });
+        });
+    });
+    svaPlanCall('saveStationPlan', [u.id, SVA.pl.ym, entries], function (res) {
+        svaPlanReload('บันทึกตาราง' + u.name + ' เดือน' + svaYmText(SVA.pl.ym) + ' แล้ว (' + res.saved + ' รายการ)');
+    });
+}
+function svaPlanContinue() {
+    var u = svaPlanUnitObj(), pl = SVA.pl;
+    var go = function (overwrite) {
+        svaPlanBusy('กำลังสร้างตารางเดือนถัดไป…');
+        google.script.run
+            .withSuccessHandler(function (res) {
+                pl.ym = res.ym;
+                svaPlanReload('สร้างตาราง' + u.name + ' เดือน' + svaYmText(res.ym) + ' แล้ว (วนรอบทุก ' + res.period + ' วัน · ' + res.saved + ' รายการ)\nตรวจทานได้ที่หน้านี้');
+            })
+            .withFailureHandler(function (e) {
+                var m = (e && e.message) || String(e);
+                if (/EXISTS/.test(m)) {
+                    if (confirm('เดือนถัดไปมีตาราง' + u.name + 'อยู่แล้ว — แทนที่ด้วยการวนรอบจากเดือนนี้?')) go(true); else svaPlanPaint();
+                    return;
+                }
+                alert(m); svaPlanPaint();
+            })
+            .continueStationPlan(u.id, pl.ym, !!overwrite);
+    };
+    go(false);
+}
+function svaPlanDelete() {
+    var u = svaPlanUnitObj();
+    if (!confirm('ลบตาราง' + u.name + ' เดือน' + svaYmText(SVA.pl.ym) + ' ทั้งเดือน?\n(ไฟล์ต้นฉบับไม่ถูกลบ · เวรรายวันที่กรอกเองไม่ถูกลบ)')) return;
+    svaPlanCall('deleteStationPlan', [u.id, SVA.pl.ym], function () { svaPlanReload(); }, 'กำลังลบ…');
+}
+
 // ---------- สไตล์ของเมนูนี้ (ฉีดครั้งเดียว) ----------
 var SVA_CSS = ''
     // เว็บแอป: กรอบแท็บตัดขอบ (overflow:hidden) ทำให้หัวตารางรายเดือนตรึงกับหน้าไม่ได้ — เปิดเฉพาะตอนอยู่เมนูนี้
@@ -610,6 +919,41 @@ var SVA_CSS = ''
     + '.sva-imp-t td{padding:4px 6px;border-top:1px solid #f1f5f9;vertical-align:middle}.sva-imp-t small{display:block;color:#64748b;font-size:.68rem}'
     + '.sva-imp-t tr.unk td{background:#fffbeb}.sva-staff-t tr{cursor:pointer}.sva-staff-t tr:hover td{background:#eff6ff}'
     + '.sva-none{padding:12px;text-align:center;color:#64748b}'
+    // ---- ตารางเวรของแต่ละงาน ----
+    + '.sva-plbtn{position:relative}.sva-bar .sva-plbtn.on{background:#0f766e;color:#fff;border-color:#0f766e}'
+    + '.sva-pl-bad{display:inline-block;min-width:18px;padding:0 5px;border-radius:999px;background:#ea580c;color:#fff;font-size:.7rem;font-weight:800;line-height:18px;text-align:center;animation:svMisBlink 1.2s ease-in-out infinite}'
+    + '.sva-pl-nav{display:flex;align-items:center;gap:6px;margin-left:12px;font-size:.92rem}'
+    + '.sva-pl-nav button{border:1px solid #dbe3ee;background:#f8fafc;border-radius:8px;width:28px;height:28px;cursor:pointer}'
+    + '.sva-pl-ok{padding:8px 12px;border-radius:10px;background:#ecfdf5;color:#047857;font-weight:700;font-size:.84rem;margin-bottom:10px}'
+    + '.sva-pl-mis{border:1px solid #fdba74;background:#fff7ed;border-radius:12px;padding:8px 10px;margin-bottom:10px}'
+    + '.sva-pl-mis-h{font-weight:800;color:#c2410c;margin-bottom:6px}'
+    + '.sva-pl-mi{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;padding:6px 0;border-top:1px dashed #fed7aa;font-size:.82rem}'
+    + '.sva-pl-mi:first-of-type{border-top:0}.sva-pl-mt{min-width:200px}.sva-pl-mt small{color:#64748b}'
+    + '.sva-pl-mv{display:flex;flex-wrap:wrap;gap:4px 12px;flex:1}.sva-pl-mv span{white-space:nowrap}'
+    + '.sva-pl-mb{display:flex;gap:5px;flex-wrap:wrap}.sva-pl-mb button{border:1px solid #fdba74;background:#fff;color:#9a3412;border-radius:8px;padding:4px 9px;font-size:.76rem;font-weight:800;cursor:pointer}'
+    + '.sva-pl-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}'
+    + '.sva-pl-tabs button{position:relative;flex-shrink:0;text-align:left;border:1px solid #dbe3ee;background:#f8fafc;border-radius:12px;padding:6px 12px;cursor:pointer;color:#0f172a}'
+    + '.sva-pl-tabs button b{display:block;font-size:.9rem}.sva-pl-tabs button small{font-size:.68rem;color:#64748b}'
+    + '.sva-pl-tabs button.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}.sva-pl-tabs button.on small{color:#dbeafe}'
+    + '.sva-pl-tabs .sva-pl-bad{position:absolute;top:-6px;right:-6px}'
+    + '.sva-pl-sec{border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-bottom:10px}'
+    + '.sva-pl-sh{font-weight:800;font-size:.9rem;margin-bottom:8px;color:#1e293b}.sva-pl-sh i{color:#1d4ed8;margin-right:5px}.sva-pl-sh small{color:#64748b;font-weight:700}'
+    + '.sva-pl-f{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}'
+    + '.sva-pl-f>i{font-size:1.4rem;color:#dc2626;width:22px;text-align:center}.sva-pl-f>i.fa-file-image{color:#059669}.sva-pl-f>i.fa-file-excel{color:#15803d}'
+    + '.sva-pl-fn{flex:1;min-width:160px}.sva-pl-fn b{display:block;font-size:.84rem;word-break:break-word}.sva-pl-fn small{font-size:.7rem;color:#64748b}'
+    + '.sva-pl-fb,.sva-pl-acts{display:flex;gap:5px;flex-wrap:wrap}'
+    + '.sva-pl-fb button,.sva-pl-acts button{border:1px solid #dbe3ee;background:#f8fafc;color:#1e293b;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap}'
+    + '.sva-pl-fb button.del,.sva-pl-acts button.del{color:#b91c1c;border-color:#fecaca;background:#fef2f2}'
+    + '.sva-pl-up{margin-top:8px}.sva-pl-acts{margin-bottom:8px}'
+    + '.sva-pl-ai{padding:7px 10px;border-radius:10px;background:#eef2ff;color:#3730a3;font-size:.8rem;font-weight:700;margin-bottom:8px}'
+    + '.sva-pl-grid{max-height:62vh;overflow:auto;border:1px solid #e2e8f0;border-radius:10px}'
+    + '.sva-pl-grid table{border-collapse:collapse;font-size:.76rem;min-width:100%}'
+    + '.sva-pl-grid th,.sva-pl-grid td{border:1px solid #e2e8f0;padding:3px 6px;text-align:center;white-space:nowrap}'
+    + '.sva-pl-grid thead th{position:sticky;top:0;z-index:2;background:#f1f5f9;font-weight:800}.sva-pl-grid thead th small{display:block;font-weight:600;color:#64748b;font-size:.64rem}'
+    + '.sva-pl-grid tbody th{position:sticky;left:0;z-index:1;background:#f8fafc;text-align:left;font-weight:800}.sva-pl-grid tbody th small{color:#64748b;font-weight:600}'
+    + '.sva-pl-grid tr.we td{background:#fff7ed}.sva-pl-grid tr.td th,.sva-pl-grid tr.td td{background:#dcfce7}'
+    + '.sva-pl-grid.ed td{padding:2px}.sva-pl-grid.ed input{width:100%;min-width:150px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;font:inherit;font-size:.78rem}'
+    + '.sva-pl-grid.ed input.unk{border-color:#f59e0b;background:#fffbeb}'
     + '@media (max-width:640px){.sva-act{margin-left:0}.sva-ed{grid-template-columns:1fr}.sva-ed-role{flex-basis:88px}}';
 
 function svaInjectCss() {

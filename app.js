@@ -481,7 +481,7 @@ window.exportStation = function (kind) {
 // ==========================================================
 // เมนูหัวข้อ (แท็บ)
 // ==========================================================
-let curTab = 'duty';
+let curTab = 'station';   // เปิดหน้าแรก = เวร สน. รายวัน
 function showTab(name) {
     curTab = name;
     document.querySelectorAll('.rpane').forEach((p) => { p.hidden = p.id !== 'pane-' + name; });
@@ -555,18 +555,21 @@ function renderBoard() {
         tmp.innerHTML = dashMarkup();
         const take = (id) => tmp.querySelector('#' + id);
         const hero = take('dash-hero');
-        // หัวกระดานบรรทัดเดียว: ตรา สน. + ชื่อสั้น + ปีงบ + Present (ไม่มีนาฬิกา/ปุ่มเต็มจอ ประหยัดที่บนมือถือ)
+        // หัวบาร์: ตรา สน. สีทอง + "ตารางเวรทุกสายงาน สน.ลำหิน" เท่านั้น
+        // ปีงบ + Present เป็นของสถิติงานสอบสวน → ย้ายไปหัวแท็บ "สถิติคดี"
         const badge = hero.querySelector('.dash-hero-badge');
         if (badge) badge.innerHTML = '<img src="logo.png" alt="ตรา สน.ลำหิน">';
-        const h3 = hero.querySelector('.dash-hero-txt h3'); if (h3) h3.textContent = 'ภาพรวมงานสอบสวน สน.ลำหิน';
+        const h3 = hero.querySelector('.dash-hero-txt h3'); if (h3) h3.textContent = 'ตารางเวรทุกสายงาน สน.ลำหิน';
         hero.querySelectorAll('.dash-hero-txt span, #dash-clock, .dash-ic:not(.dash-ic-present)').forEach((el) => el.remove());
         const pres = hero.querySelector('.dash-ic-present span'); if (pres) pres.textContent = 'Present';
+        const right = hero.querySelector('.dash-hero-right');
+        if (right) { right.className = 'subbar cases-bar'; right.insertAdjacentHTML('afterbegin', '<b class="cases-bar-t"><i class="fa-solid fa-chart-column"></i> สถิติงานสอบสวน</b>'); $('pane-cases').appendChild(right); }
         $('slot-hero').replaceWith(hero);
         // แผนที่ 3 มิติอยู่เฉพาะแท็บ "เวร สน." (และเป็นหน้าปกตอน Present)
         // แผง "ปฏิบัติหน้าที่วันนี้" ข้างแผนที่ซ้ำกับแท็บเวรสอบสวน — เอาออก ให้แผนที่เต็มความกว้าง
         const stage = take('dash-stagewrap');
         const side = stage.querySelector('#dash-side'); if (side) side.remove();
-        $('pane-station').insertBefore(stage, $('pane-station').firstChild);
+        $('pane-station').appendChild(stage);
         $('pane-crew').appendChild(take('dash-org'));
         ['dash-cases', 'dash-serious', 'dash-ranks', 'dash-damage', 'dash-trend'].forEach((id) => $('pane-cases').appendChild(take(id)));
         $('pane-work').appendChild(take('dash-workload'));

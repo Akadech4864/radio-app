@@ -119,7 +119,8 @@ function svDayHtml(data, date, opts) {
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
                 html += '<tr data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
                     + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(role) + '</td>' : '')
-                    + '<td class="sv-name">' + svEsc(r[4]) + (r[7] ? ' <span class="sv-note">' + svEsc(r[7]) + '</span>' : '')
+                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + svEsc(r[4]) + (r[7] ? ' <span class="sv-note">' + svEsc(r[7]) + '</span>' : '')
+                    + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div></td>'
                     + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
                     + '<td class="sv-c-tel">' + (tel && !opts.plain ? '<a href="tel:' + tel + '">' + svEsc(r[6]) + '</a>' : svEsc(r[6] || '')) + '</td>'
@@ -165,7 +166,8 @@ function svMonthHtml(data, year, month, secFilter, opts) {
             + cols.map(function (c) {
                 var list = (row[svSlotKey(c.t.sec, c.t.time)] || {})[c.role] || [];
                 return '<td>' + (list.length ? list.map(function (r) {
-                    return '<div title="' + svEsc(r[4] + (r[7] ? ' · ' + r[7] : '')) + '">' + svNameParts(svShort(r[4])) + '</div>';
+                    return '<div' + (r[10] ? ' class="sv-mis"' : '') + ' title="' + svEsc(r[4] + (r[7] ? ' · ' + r[7] : '') + (r[10] ? ' — ไม่ตรงตารางเวร: ' + r[10] : '')) + '">'
+                        + svNameParts(svShort(r[4])) + '</div>';
                 }).join('') : '<span class="sv-dash">—</span>') + '</td>';
             }).join('') + '</tr>';
     }
@@ -632,6 +634,11 @@ var SV_CSS = ''
     + '.sv-we td{background:#fff7ed}'
     + '.sv-today td{background:#dcfce7!important;font-weight:800}.sv-today .sv-m-date b{color:#047857}'
     + '.sv-dash{color:#cbd5e1}.sv-cnote{display:block;font-size:.62rem;color:#b45309;font-weight:700}'
+    // เวรรายวันไม่ตรงตารางของงาน: กระพริบเตือนให้ธุรการกลับไปแก้
+    + '@keyframes svMisBlink{0%,100%{background-color:#fff7ed;box-shadow:inset 0 0 0 2px #fb923c}50%{background-color:#fed7aa;box-shadow:inset 0 0 0 2px #ea580c}}'
+    + '.sv-mis{animation:svMisBlink 1.2s ease-in-out infinite;border-radius:4px}'
+    + '.sv-mis-tag{margin-top:3px;font-size:.7rem;font-weight:800;color:#c2410c}.sv-mis-tag i{margin-right:3px}'
+    + '@media (prefers-reduced-motion:reduce){.sv-mis{animation:none;background:#fed7aa;box-shadow:inset 0 0 0 2px #ea580c}}'
     // ---- ตารางรายเดือนบนจอ: กล่องเลื่อนสูงราวหนึ่งจอ หัวตารางตรึง วันที่ผ่านไปแล้วตัวจาง ----
     // แผ่นตารางต้องไม่ตัดขอบ (overflow) ไม่งั้นหัวตารางตรึงกับหน้าไม่ได้ — มุมโค้งให้หัว/ท้ายแผ่นทำเอง
     + '.sv-month{overflow:visible}.sv-month>.sv-title{border-radius:16px 16px 0 0}'
@@ -650,6 +657,7 @@ var SV_CSS = ''
     + '.sv-shot thead th,.sv-print thead th{position:static!important}'
     + '.sv-shot .sv-sheet,.sv-print .sv-sheet{box-shadow:none;border:1px solid #cbd5e1;border-radius:12px}'
     + '.sv-shot .sv-m-date,.sv-print .sv-m-date{position:static}'
+    + '.sv-shot .sv-mis,.sv-print .sv-mis{animation:none!important;background:none!important;box-shadow:none!important}.sv-shot .sv-mis-tag,.sv-print .sv-mis-tag{display:none}'
     // ---- ใบเวรประจำวันแบบเต็มหน้า A4 ----
     + '.sv-a4{display:flex;flex-direction:column}'
     + '.sv-a4 .sv-sheet{flex:1;display:flex;flex-direction:column;min-width:0!important}'

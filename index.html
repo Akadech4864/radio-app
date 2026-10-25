@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>กระดานงานสอบสวน สน.ลำหิน</title>
+    <title>ตารางเวรทุกสายงาน สน.ลำหิน</title>
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="dash/dash.css?v=74">
-    <link rel="stylesheet" href="style.css?v=74">
+    <link rel="stylesheet" href="dash/dash.css?v=76">
+    <link rel="stylesheet" href="style.css?v=76">
 </head>
 <body>
     <!--
@@ -20,15 +20,15 @@
 
         <!-- ===== เมนูหัวข้อ ===== -->
         <nav class="rtabs" id="rtabs">
-            <button type="button" data-tab="duty" class="on"><i class="fa-solid fa-user-shield"></i><span>เวรสอบสวน</span></button>
-            <button type="button" data-tab="station"><i class="fa-solid fa-building-shield"></i><span>เวร สน.</span></button>
+            <button type="button" data-tab="station" class="on"><i class="fa-solid fa-building-shield"></i><span>เวร สน.</span></button>
+            <button type="button" data-tab="duty"><i class="fa-solid fa-user-shield"></i><span>เวรสอบสวน</span></button>
             <button type="button" data-tab="crew"><i class="fa-solid fa-sitemap"></i><span>กำลังพล</span></button>
             <button type="button" data-tab="cases"><i class="fa-solid fa-scale-balanced"></i><span>สถิติคดี</span></button>
             <button type="button" data-tab="work"><i class="fa-solid fa-list-ol"></i><span>ภาระงาน</span></button>
         </nav>
 
         <!-- ===== 1) เวรสอบสวน / ภารกิจ ===== -->
-        <section class="rpane" id="pane-duty">
+        <section class="rpane" id="pane-duty" hidden>
             <div class="subbar">
                 <div class="seg" id="dutySeg">
                     <button type="button" data-v="day" class="on"><i class="fa-solid fa-calendar-day"></i> รายวัน</button>
@@ -108,7 +108,7 @@
         </section>
 
         <!-- ===== 2) เวรทุกสายงาน สน. (อ่านอย่างเดียว — เพิ่ม/แก้ไขที่เว็บแอป) ===== -->
-        <section class="rpane" id="pane-station" hidden>
+        <section class="rpane" id="pane-station">
             <div class="subbar">
                 <div class="seg" id="stSeg">
                     <button type="button" data-v="day" class="on"><i class="fa-solid fa-calendar-day"></i> รายวัน</button>
@@ -156,13 +156,13 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="dash/scene3d.js?v=74"></script>
-    <script src="dash/dashcalc.js?v=74"></script>
-    <script src="dash/dash.js?v=74"></script>
-    <script src="dash/stationview.js?v=74"></script>
-    <script src="dash/stationapp.js?v=74"></script>
-    <script src="stationcheck.js?v=74"></script>
-    <script src="app.js?v=74"></script>
-    <script src="stationedit.js?v=74"></script>
+    <script src="dash/scene3d.js?v=76"></script>
+    <script src="dash/dashcalc.js?v=76"></script>
+    <script src="dash/dash.js?v=76"></script>
+    <script src="dash/stationview.js?v=76"></script>
+    <script src="dash/stationapp.js?v=76"></script>
+    <script src="stationcheck.js?v=76"></script>
+    <script src="app.js?v=76"></script>
+    <script src="stationedit.js?v=76"></script>
 </body>
 </html>
