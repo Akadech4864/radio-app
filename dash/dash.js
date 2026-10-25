@@ -758,7 +758,6 @@ function dashLabelDefs() {
     // ป้ายบนแผนที่เป็น "ชื่อสถานที่" ไม่มีตัวเลข — ตัวเลขทุกตัวอยู่ในการ์ดด้านล่างแล้ว
     return [
         { anchor: 'station', color: '#f59e0b', icon: 'fas fa-building-shield', val: '', unit: 'อาคารที่ทำการ' },
-        { anchor: 'parking', color: '#10b981', icon: 'fas fa-satellite-dish', val: '', unit: 'ภารกิจภายนอก' },
         { anchor: 'flat1', color: '#8b5cf6', icon: 'fas fa-house-user', val: '', unit: 'อาคารที่พัก' }
     ];
 }

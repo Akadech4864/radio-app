@@ -438,9 +438,5 @@ body.st-editing #pane-station .dash-stagewrap { display: none !important; }
 .ck-on td.sv-name, .ck-on thead th:nth-child(2) { position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: 2px 0 4px -2px rgba(15, 23, 42, .25); }
 .ck-on thead th:nth-child(2) { background: #f1f5f9; }
 
-/* หัวแท็บสถิติคดี: ปีงบ + Present (ย้ายมาจากหัวบาร์) */
-.cases-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.cases-bar-t { flex: 1; font-size: .95rem; color: var(--ink, #0f172a); }
-.cases-bar-t i { color: #1d4ed8; margin-right: 4px; }
-.cases-bar .dash-fy { border: 1px solid #dbe3ee; border-radius: 10px; padding: 6px 8px; font: inherit; font-size: .85rem; background: #fff; color: #0f172a; }
-.cases-bar .dash-ic-present { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 10px; padding: 7px 12px; background: #1d4ed8; color: #fff; font: inherit; font-weight: 800; font-size: .85rem; cursor: pointer; width: auto; height: auto; }
+/* หัวบาร์แท็บ "เวร สน." (ภาพรวม สน.): ตรา + ชื่อ เท่านั้น — ปีงบ/Present เป็นของงานสอบสวน */
+.board .dash-hero.hero-station .dash-hero-right { display: none; }

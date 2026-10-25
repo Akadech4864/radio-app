@@ -794,6 +794,7 @@ var LamhinScene = (function () {
         stripe.position.y = 0.21; g.add(stripe);
         var c = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.2, 0.36), new THREE.MeshLambertMaterial({ color: 0x9cc7e6 }));
         c.position.set(-0.04, 0.42, 0); c.castShadow = true; g.add(c);
+        g.userData.cabin = c;
         [[0.3, 0.19], [0.3, -0.19], [-0.3, 0.19], [-0.3, -0.19]].forEach(function (w) {
             var t = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.07, 8), new THREE.MeshLambertMaterial({ color: 0x1b1f26 }));
             t.rotation.x = Math.PI / 2; t.position.set(w[0], 0.1, w[1]); g.add(t);
@@ -844,8 +845,9 @@ var LamhinScene = (function () {
         var carObj = policeCar();
         scene.add(carObj);
         var dcam = new THREE.PerspectiveCamera(96, 1, 0.02, 160);   // เลนส์มุมกว้าง เห็นถนนและสองข้างทางได้มากขึ้น
+        var ccam = new THREE.PerspectiveCamera(62, 1, 0.05, 200);   // มุมติดตามตรงหลังรถ
         drive = {
-            route: R, car: carObj, cam: dcam, u: 0, t0: performance.now(), last: performance.now(),
+            route: R, car: carObj, cam: dcam, chase: ccam, cpos: null, clook: null, u: 0, t0: performance.now(), last: performance.now(),
             swap: false, look: null, cap: -1, onEnd: onEnd || null, y: 0.09, az: null
         };
         driveHud(true);
@@ -863,7 +865,7 @@ var LamhinScene = (function () {
 
     function driveStep(now) {
         var D = drive, R = D.route;
-        var dt = Math.min(0.05, (now - D.last) / 1000); D.last = now;
+        var dt = Math.min(0.25, (now - D.last) / 1000); D.last = now;   // เครื่องช้า/เฟรมตก รถยังวิ่งตามเวลาจริง
         var el = (now - D.t0) / 1000;
         var remain = (1 - D.u) * R.total;
         var k = Math.min(1, el / 1.6) * Math.min(1, 0.25 + remain / 2.5);    // ออกตัวนุ่ม ๆ / ชะลอก่อนจบ
@@ -880,17 +882,23 @@ var LamhinScene = (function () {
 
         // มุมมองคนขับ: ตาอยู่ในห้องโดยสาร มองไปข้างหน้าตามเส้นทาง
         var ahead = R.path.getPointAt(Math.min(1, D.u + 2.4 / R.total));
-        var eye = new THREE.Vector3(p.x - tg.x * 0.05, D.y + 0.5, p.z - tg.z * 0.05);   // ถอยหลังนิด ยกสูงนิด ให้เห็นฝากระโปรงหน้า
+        // ตาอยู่ด้านหน้าห้องโดยสาร (ห้องโดยสารกับไฟหลังคาไม่วาดในมุมนี้ — ไม่บังทาง) เห็นฝากระโปรงหน้านิดหน่อย
+        var eye = new THREE.Vector3(p.x + tg.x * 0.16, D.y + 0.44, p.z + tg.z * 0.16);
         var lookT = new THREE.Vector3(ahead.x, D.y + 0.4, ahead.z);
         if (!D.look) D.look = lookT.clone(); else D.look.lerp(lookT, 0.12);
         D.cam.position.copy(eye);
         D.cam.lookAt(D.look);
 
-        // มุมสูงติดตาม: กล้องหลักลอยตามหลังรถเฉียง ๆ
-        var behind = Math.atan2(-tg.x, -tg.z) + 0.55;
-        if (D.az == null) D.az = behind;
-        var dA = behind - D.az; dA = Math.atan2(Math.sin(dA), Math.cos(dA)); D.az += dA * 0.06;
-        want.az = D.az; want.pol = 0.62; want.dist = fitDist() * 0.4;   // มุมค่อนข้างสูง ตึกที่พัก 4 ชั้นไม่บังรถ
+        // มุมติดตาม: กล้องอยู่ตรงหลังรถบนเส้นทางที่รถเพิ่งผ่าน (เลี้ยวตามถนน ไม่ทะลุผ่านตึก) มองตรงไปข้างหน้ารถ
+        var BACK = 1.5, back = D.u * R.total - BACK, cp;
+        if (back >= 0) cp = R.path.getPointAt(back / R.total);
+        else { var t0 = R.path.getTangentAt(0); cp = R.path.getPointAt(0).clone().addScaledVector(t0, back); }   // ต้นทาง: ถอยตามแนวถนน
+        var cpos = new THREE.Vector3(cp.x, D.y + 0.85, cp.z);
+        var clook = new THREE.Vector3(p.x + tg.x * 0.7, D.y + 0.12, p.z + tg.z * 0.7);   // รถอยู่กลางภาพ เห็นถนนข้างหน้า
+        if (!D.cpos) { D.cpos = cpos.clone(); D.clook = clook.clone(); }
+        D.cpos.lerp(cpos, 0.2); D.clook.lerp(clook, 0.2);
+        D.chase.position.copy(D.cpos);
+        D.chase.lookAt(D.clook);
         want.tx = p.x; want.ty = 0.5; want.tz = p.z;
         idleAt = Date.now();
 
@@ -935,8 +943,8 @@ var LamhinScene = (function () {
     }
     function drivePipLabel() {
         if (!hud.pip || !drive) return;
-        hud.pip.querySelector('span').textContent = drive.swap ? 'มุมมองคนขับ' : 'มุมสูงติดตาม';
-        hud.tag.innerHTML = '<i class="fas ' + (drive.swap ? 'fa-plane' : 'fa-car') + '"></i> ' + (drive.swap ? 'มุมสูงติดตาม' : 'มุมมองคนขับ');
+        hud.pip.querySelector('span').textContent = drive.swap ? 'มุมมองคนขับ' : 'มุมติดตามหลังรถ';
+        hud.tag.innerHTML = '<i class="fas ' + (drive.swap ? 'fa-video' : 'fa-car') + '"></i> ' + (drive.swap ? 'มุมติดตามหลังรถ' : 'มุมมองคนขับ');
     }
     function driveCaption(t) {
         if (!hud.cap) return;
@@ -948,19 +956,28 @@ var LamhinScene = (function () {
         var iw = Math.round(Math.max(150, Math.min(w * 0.34, 380))), ih = Math.round(iw * 0.62);
         return { x: w - iw - 12, y: 12, w: iw, h: ih };
     }
+    // มุมคนขับ: ไม่วาดห้องโดยสาร/ไฟหลังคาของรถตัวเอง (อยู่ระดับสายตา บังทางวิ่ง)
+    function renderCam(c) {
+        var own = c === drive.cam, car = drive.car.userData;
+        car.cabin.visible = !own;
+        car.lights.forEach(function (m) { m.visible = !own; });
+        renderer.render(scene, c);
+        car.cabin.visible = true;
+        car.lights.forEach(function (m) { m.visible = true; });
+    }
     function renderDrive() {
         var w = host.clientWidth || 800, h = host.clientHeight || 460;
-        var mainCam = drive.swap ? camera : drive.cam, insetCam = drive.swap ? drive.cam : camera;
+        var mainCam = drive.swap ? drive.chase : drive.cam, insetCam = drive.swap ? drive.cam : drive.chase;
         renderer.setScissorTest(false);
         renderer.setViewport(0, 0, w, h);
         mainCam.aspect = w / h; mainCam.updateProjectionMatrix();
-        renderer.render(scene, mainCam);
+        renderCam(mainCam);
         var r = pipRect(w, h);
         renderer.setScissorTest(true);
         renderer.setScissor(r.x, h - r.y - r.h, r.w, r.h);
         renderer.setViewport(r.x, h - r.y - r.h, r.w, r.h);
         insetCam.aspect = r.w / r.h; insetCam.updateProjectionMatrix();
-        renderer.render(scene, insetCam);
+        renderCam(insetCam);
         renderer.setScissorTest(false);
         renderer.setViewport(0, 0, w, h);
         camera.aspect = w / h; camera.updateProjectionMatrix();

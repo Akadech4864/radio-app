@@ -885,7 +885,14 @@ html.dash-presenting, html.dash-presenting body { overflow: hidden !important; }
 @media (max-width: 767px) {
     .dash-cover { padding: 16px 18px; }
     .dash-cover h2 { font-size: 1.3rem; }
-    .dash3d-drive .dd-cap { font-size: 0.86rem; }
+    /* แผงจำลองรถบนมือถือ: บรรทัดเดียวชิดขอบล่าง ไม่บังรถ/ถนน */
+    .dash3d-drive { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; left: 8px; bottom: 8px; width: calc(100% - 16px); padding: 6px 8px; border-radius: 12px; }
+    .dash3d-drive .dd-cap { flex: 1; min-width: 0; font-size: 0.76rem; gap: 6px; }
+    .dash3d-drive .dd-cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash3d-drive .dd-bar { order: 3; flex-basis: 100%; height: 3px; margin: 2px 0 0; }
+    .dash3d-drive .dd-btns { gap: 5px; }
+    .dash3d-drive .dd-btns button { font-size: 0; padding: 6px 9px; }
+    .dash3d-drive .dd-btns button i { font-size: 0.85rem; }
 }
 /* หน้าปก: ซ่อนป้ายอาคารและคำแนะนำ ไม่ให้ทับชื่อรายงาน */
 .dash-cover:not([hidden]) ~ .dash3d-pin, .dash-cover:not([hidden]) ~ .dash3d-hint { display: none; }

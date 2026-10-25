@@ -482,8 +482,19 @@ window.exportStation = function (kind) {
 // เมนูหัวข้อ (แท็บ)
 // ==========================================================
 let curTab = 'station';   // เปิดหน้าแรก = เวร สน. รายวัน
+// หน้านี้เป็นกระดานงานสอบสวน ที่ให้ธุรการ สน. ยืมใช้แท็บ "เวร สน." — หัวบาร์จึงต่างกันตามแท็บ
+const HERO_TITLE = { station: 'ตารางเวรทุกสายงาน สน.ลำหิน', other: 'ภาพรวมงานสอบสวน สน.ลำหิน' };
+function heroFollowTab() {
+    const hero = $('dash-hero'); if (!hero) return;
+    const st = curTab === 'station';
+    hero.classList.toggle('hero-station', st);
+    const h3 = hero.querySelector('.dash-hero-txt h3');
+    if (h3) h3.textContent = st ? HERO_TITLE.station : HERO_TITLE.other;
+    document.title = st ? HERO_TITLE.station : 'กระดานงานสอบสวน สน.ลำหิน';
+}
 function showTab(name) {
     curTab = name;
+    heroFollowTab();
     document.querySelectorAll('.rpane').forEach((p) => { p.hidden = p.id !== 'pane-' + name; });
     document.querySelectorAll('#rtabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
     if (name === 'station') renderStation(true);
@@ -555,21 +566,19 @@ function renderBoard() {
         tmp.innerHTML = dashMarkup();
         const take = (id) => tmp.querySelector('#' + id);
         const hero = take('dash-hero');
-        // หัวบาร์: ตรา สน. สีทอง + "ตารางเวรทุกสายงาน สน.ลำหิน" เท่านั้น
-        // ปีงบ + Present เป็นของสถิติงานสอบสวน → ย้ายไปหัวแท็บ "สถิติคดี"
+        // หัวบาร์บรรทัดเดียว: ตรา สน. + ชื่อ (ไม่มีนาฬิกา/ปุ่มเต็มจอ ประหยัดที่บนมือถือ)
+        // เปลี่ยนตามแท็บ (heroFollowTab): แท็บ เวร สน. = ภาพรวม สน. · แท็บอื่น = งานสอบสวน + ปีงบ + Present
         const badge = hero.querySelector('.dash-hero-badge');
         if (badge) badge.innerHTML = '<img src="logo.png" alt="ตรา สน.ลำหิน">';
-        const h3 = hero.querySelector('.dash-hero-txt h3'); if (h3) h3.textContent = 'ตารางเวรทุกสายงาน สน.ลำหิน';
         hero.querySelectorAll('.dash-hero-txt span, #dash-clock, .dash-ic:not(.dash-ic-present)').forEach((el) => el.remove());
         const pres = hero.querySelector('.dash-ic-present span'); if (pres) pres.textContent = 'Present';
-        const right = hero.querySelector('.dash-hero-right');
-        if (right) { right.className = 'subbar cases-bar'; right.insertAdjacentHTML('afterbegin', '<b class="cases-bar-t"><i class="fa-solid fa-chart-column"></i> สถิติงานสอบสวน</b>'); $('pane-cases').appendChild(right); }
         $('slot-hero').replaceWith(hero);
+        heroFollowTab();
         // แผนที่ 3 มิติอยู่เฉพาะแท็บ "เวร สน." (และเป็นหน้าปกตอน Present)
         // แผง "ปฏิบัติหน้าที่วันนี้" ข้างแผนที่ซ้ำกับแท็บเวรสอบสวน — เอาออก ให้แผนที่เต็มความกว้าง
         const stage = take('dash-stagewrap');
         const side = stage.querySelector('#dash-side'); if (side) side.remove();
-        $('pane-station').appendChild(stage);
+        $('pane-station').insertBefore(stage, $('pane-station').firstChild);   // ภาพ 3 มิติอยู่บนสุดของแท็บ เวร สน.
         $('pane-crew').appendChild(take('dash-org'));
         ['dash-cases', 'dash-serious', 'dash-ranks', 'dash-damage', 'dash-trend'].forEach((id) => $('pane-cases').appendChild(take(id)));
         $('pane-work').appendChild(take('dash-workload'));
