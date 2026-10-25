@@ -157,10 +157,13 @@ async function loadData() {
     try {
         const res = await fetch(API_URL + '?api=radio', { cache: 'no-store' });
         const json = await res.json();
-        data = { duty: json.duty || [], mission: json.mission || [], personnel: json.personnel || [], leave: json.leave || [], stats: json.stats || null };
+        data = { duty: json.duty || [], mission: json.mission || [], personnel: json.personnel || [], leave: json.leave || [],
+            stats: json.stats || null, station: json.station || null };
         buildPeople();
         $('lastSync').textContent = 'ข้อมูลล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
         renderAll();
+        renderDutyMonth();
+        renderStation();
         try { renderBoard(); } catch (err) { console.error('board', err); }
     } catch (e) {
         console.error(e);
@@ -390,8 +393,71 @@ function setView(dt) {
     renderDay();
     renderCalendar();
     showTab('duty');
+    setDutyView('day');
     $('dayBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// ==========================================================
+// เวรสอบสวน: ดูทั้งเดือนเป็นตาราง + ส่งออก PDF/ภาพ (เฉพาะตาราง)
+// ==========================================================
+let dutyView = 'day';
+let dutyMonth = new Date();
+function setDutyView(v) {
+    dutyView = v;
+    document.querySelectorAll('#dutySeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+    $('dutyDay').hidden = v !== 'day';
+    $('dutyMonth').hidden = v !== 'month';
+    $('dutyMonthNav').hidden = v !== 'month';
+    $('dutyExport').hidden = v !== 'month';
+    if (v === 'month') renderDutyMonth();
+}
+window.dutyMonthStep = function (n) { dutyMonth = new Date(dutyMonth.getFullYear(), dutyMonth.getMonth() + n, 1); renderDutyMonth(); };
+function renderDutyMonth() {
+    if (dutyView !== 'month') return;
+    const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
+    $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
+    $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m);
+    $('dutyExport').innerHTML = svExportButtons("exportDutyMonth('pdf')", "exportDutyMonth('img')");
+}
+window.exportDutyMonth = function (kind) {
+    const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
+    const title = 'ตารางเวรพนักงานสอบสวน สน.ลำหิน ' + TH_MON_FULL[m] + ' ' + (y + 543);
+    const html = svInvestMonthHtml(data.duty, y, m, { foot: true });
+    if (kind === 'img') svExportImage(title, html, false); else svExportPdf(title, html, false);
+};
+
+// ==========================================================
+// เวรทุกสายงาน สน. (อ่านอย่างเดียว — เพิ่ม/แก้ไข/นำเข้าจากรูปที่เว็บแอปเมนู "เวรทุกสายงาน")
+// ==========================================================
+let stView = 'day', stDate = null, stSec = '';
+function renderStation() {
+    const box = $('stView'); if (!box) return;
+    if (!stDate) stDate = currentDutyDate();
+    if (!data.station) { box.innerHTML = '<div class="empty">ยังไม่มีข้อมูลเวรทุกสายงาน</div>'; return; }
+    document.querySelectorAll('#stSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === stView));
+    const sel = $('stSec');
+    sel.hidden = stView !== 'month';
+    sel.innerHTML = svSecOptions(data.station, stSec);
+    $('stLabel').textContent = stView === 'day' ? thFull(stDate) : (TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543));
+    box.innerHTML = stView === 'day'
+        ? svDayHtml(data.station, stDate, { emptyHint: 'ธุรการเพิ่มได้ที่เว็บแอป เมนู "เวรทุกสายงาน"' })
+        : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec);
+    $('stExport').innerHTML = svExportButtons("exportStation('pdf')", "exportStation('img')");
+}
+window.stStep = function (n) {
+    stDate = stView === 'day' ? addDays(stDate, n) : new Date(stDate.getFullYear(), stDate.getMonth() + n, 1);
+    renderStation();
+};
+window.stToday = function () { stDate = currentDutyDate(); renderStation(); };
+window.exportStation = function (kind) {
+    const day = stView === 'day';
+    const title = day ? 'ตารางเวร สน.ลำหิน ' + thShort(stDate)
+        : 'ตารางเวร สน.ลำหิน ' + TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543);
+    const html = day ? svDayHtml(data.station, stDate, { foot: true, plain: true })
+        : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec, { foot: true });
+    const landscape = !day && !stSec;   // ทุกฝ่ายทั้งเดือนคอลัมน์เยอะ ใช้แนวนอน
+    if (kind === 'img') svExportImage(title, html, landscape); else svExportPdf(title, html, landscape);
+};
 
 // ==========================================================
 // เมนูหัวข้อ (แท็บ)
@@ -401,10 +467,17 @@ function showTab(name) {
     curTab = name;
     document.querySelectorAll('.rpane').forEach((p) => { p.hidden = p.id !== 'pane-' + name; });
     document.querySelectorAll('#rtabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
-    // จอแคบเมนูเลื่อนซ้าย-ขวาได้ — เลื่อนให้เห็นหัวข้อที่เลือกอยู่
-    const nav = $('rtabs'), ob = nav.querySelector('.on');
-    if (ob) nav.scrollTo({ left: ob.offsetLeft - 16, behavior: 'smooth' });
+    if (name === 'station') renderStation();
+    scene3dFollowTab();
     try { history.replaceState(null, '', '#' + name); } catch (e) { }
+}
+// วาดฉาก 3 มิติเฉพาะตอนเปิดแท็บ "เวร สน." (แท็บอื่นหยุดวาด ประหยัดแบตมือถือ)
+function scene3dFollowTab() {
+    if (typeof LamhinScene === 'undefined' || !LamhinScene.isReady() || (DASH && DASH.present)) return;
+    const on = curTab === 'station';
+    if (!on && LamhinScene.isDriving()) LamhinScene.stopDrive();
+    LamhinScene.setVisible(on);
+    if (on) setTimeout(() => LamhinScene.resize(), 60);
 }
 
 // ==========================================================
@@ -443,7 +516,13 @@ window.dashRecompute = function () {
     DASH.prevSerious = DASH.stats.prevSerious || 0;
     DASH.pattern = dashDutyPattern(DB.duty, today);
     DASH.crew = dashComputeCrew(DB.personnel, DB.duty, DB.mission, DB.leave, today, { split: splitNames });
-    const pr = $('print-range'); if (pr) pr.textContent = '· ' + DASH.stats.rangeLabel;
+};
+// ตัวเลือกช่วงข้อมูลแบบสั้น: "ปีงบ 69", "ปีงบ 69–ปัจจุบัน"
+window.dashRangeOptions = function () {
+    const avail = dashAvailableFy();
+    const list = avail.map((y) => ({ v: 'fy:' + y, t: 'ปีงบ ' + (y % 100) }));
+    if (avail.indexOf(DASH_BASE_FY) > -1) list.push({ v: 'span:' + DASH_BASE_FY, t: 'ปีงบ ' + (DASH_BASE_FY % 100) + '–ปัจจุบัน' });
+    return list;
 };
 
 /** วางกล่องต่าง ๆ ของแดชบอร์ดลงตำแหน่งในหน้านี้ (ครั้งแรก) แล้วเติมข้อมูล */
@@ -457,12 +536,18 @@ function renderBoard() {
         tmp.innerHTML = dashMarkup();
         const take = (id) => tmp.querySelector('#' + id);
         const hero = take('dash-hero');
-        // ใช้ตรา สน. แทนไอคอน
+        // หัวกระดานบรรทัดเดียว: ตรา สน. + ชื่อสั้น + ปีงบ + Present (ไม่มีนาฬิกา/ปุ่มเต็มจอ ประหยัดที่บนมือถือ)
         const badge = hero.querySelector('.dash-hero-badge');
         if (badge) badge.innerHTML = '<img src="logo.png" alt="ตรา สน.ลำหิน">';
-        const h3 = hero.querySelector('.dash-hero-txt h3'); if (h3) h3.textContent = 'กระดานงานสอบสวน';
+        const h3 = hero.querySelector('.dash-hero-txt h3'); if (h3) h3.textContent = 'ภาพรวมงานสอบสวน สน.ลำหิน';
+        hero.querySelectorAll('.dash-hero-txt span, #dash-clock, .dash-ic:not(.dash-ic-present)').forEach((el) => el.remove());
+        const pres = hero.querySelector('.dash-ic-present span'); if (pres) pres.textContent = 'Present';
         $('slot-hero').replaceWith(hero);
-        $('slot-stage').replaceWith(take('dash-stagewrap'));
+        // แผนที่ 3 มิติอยู่เฉพาะแท็บ "เวร สน." (และเป็นหน้าปกตอน Present)
+        // แผง "ปฏิบัติหน้าที่วันนี้" ข้างแผนที่ซ้ำกับแท็บเวรสอบสวน — เอาออก ให้แผนที่เต็มความกว้าง
+        const stage = take('dash-stagewrap');
+        const side = stage.querySelector('#dash-side'); if (side) side.remove();
+        $('pane-station').insertBefore(stage, $('pane-station').firstChild);
         $('pane-crew').appendChild(take('dash-org'));
         ['dash-cases', 'dash-serious', 'dash-ranks', 'dash-damage', 'dash-trend'].forEach((id) => $('pane-cases').appendChild(take(id)));
         $('pane-work').appendChild(take('dash-workload'));
@@ -471,6 +556,7 @@ function renderBoard() {
         dashPaint();
         dashBoot3D();
         DASH.booted = true;
+        scene3dFollowTab();
     } else {
         dashPaint();
         dashUpdateLabels();
@@ -485,7 +571,7 @@ function renderBoard() {
     if (typeof dashPresent !== 'function') return;
     const on = dashPresent, off = dashPresentExit;
     window.dashPresent = function () { DASH.present = true; on(); };
-    window.dashPresentExit = function () { DASH.present = false; off(); };
+    window.dashPresentExit = function () { DASH.present = false; off(); setTimeout(scene3dFollowTab, 80); };
 })();
 
 // ==========================================================
@@ -499,9 +585,34 @@ function init() {
     }, 60 * 1000);
     setInterval(loadData, REFRESH_MS);
 
-    document.querySelectorAll('#rtabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    // กดเมนูล่าง = สลับหัวข้อแล้วเลื่อนไปต้นหัวข้อนั้น (ข้ามแผนที่ด้านบน)
+    document.querySelectorAll('#rtabs button').forEach((b) => b.addEventListener('click', () => {
+        showTab(b.dataset.tab);
+        const pane = $('pane-' + b.dataset.tab);
+        if (pane) window.scrollTo({ top: Math.max(0, pane.getBoundingClientRect().top + window.scrollY - 8), behavior: 'smooth' });
+    }));
+    // เมนูล่าง: เลื่อนลง = ซ่อนให้เห็นเนื้อหาเต็มจอ · เลื่อนขึ้น / หยุดเลื่อน / อยู่บนสุดหรือล่างสุด = แสดงให้กดได้
+    (function () {
+        const bar = $('rtabs');
+        let lastY = window.scrollY, idle = 0;
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY, max = document.documentElement.scrollHeight - window.innerHeight;
+            if (y < 80 || y > max - 40 || y < lastY - 6) bar.classList.remove('hide');
+            else if (y > lastY + 6) bar.classList.add('hide');
+            lastY = y;
+            clearTimeout(idle);
+            idle = setTimeout(() => bar.classList.remove('hide'), 1200);
+        }, { passive: true });
+    })();
     const want = (location.hash || '').slice(1);
-    if (['duty', 'crew', 'cases', 'work'].indexOf(want) > -1) showTab(want);
+    if (['duty', 'station', 'crew', 'cases', 'work'].indexOf(want) > -1) showTab(want);
+    document.querySelectorAll('#dutySeg button').forEach((b) => b.addEventListener('click', () => setDutyView(b.dataset.v)));
+    document.querySelectorAll('#stSeg button').forEach((b) => b.addEventListener('click', () => {
+        stView = b.dataset.v; if (stView === 'month' && stDate) stDate = new Date(stDate.getFullYear(), stDate.getMonth(), 1);
+        if (stView === 'day') stDate = currentDutyDate();
+        renderStation();
+    }));
+    $('stSec').addEventListener('change', (e) => { stSec = e.target.value; renderStation(); });
 
     let t = 0;
     $('q').addEventListener('input', (e) => {

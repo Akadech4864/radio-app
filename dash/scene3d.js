@@ -57,11 +57,10 @@ var LamhinScene = (function () {
         guard: { x: 5.0, y: 11.3, w: 0.85, d: 0.85 }      // ป้อมยามประตูหลัก
     };
 
-    // ช่องเปิดของรั้ว — มีเฉพาะด้านตะวันตก (ติดซอย) เท่านั้น
-    // ด้านเหนือ/ตะวันออก/ใต้ เป็นกำแพงทึบ ไม่มีทางออกด้านหลัง
+    // ช่องเปิดของรั้ว — มีเฉพาะด้านตะวันตก (ติดซอย) ช่วงกลางลงมาเท่านั้น
+    // หน้าอาคารที่ทำการเป็นกำแพงทึบตลอดแนว (ไม่มีประตูด้านเหนือ) · ด้านเหนือ/ตะวันออก/ใต้ เป็นกำแพงทึบ
     var GATES = [
-        { y: 3.9, d: 1.5 },      // ประตูเหนือ
-        { y: 12.1, d: 12.6 }     // ประตูหลัก + หน้าอาคารที่พัก (เปิดโล่ง) + ทางออกท้ายแปลง
+        { y: 12.1, d: 12.6 }     // ประตูหลัก (ช่องกลาง) + หน้าอาคารที่พัก (เปิดโล่ง) + ทางออกท้ายแปลง
     ];
 
     // ฟุตบาธปูนเลียบรั้ว — มีทุกด้านที่มีกำแพง
@@ -353,6 +352,11 @@ var LamhinScene = (function () {
         slab(PLAN.canal, COL.water, -0.14, 0.22);
         slab(PLAN.mainRoad, COL.road, 0, 0.1);
         slab(PLAN.soi, COL.road, 0, 0.1);
+        // สะพานข้ามคลองสนาม ตรงปากซอย (ทางเข้า สน. จากถนนใหญ่)
+        slab({ x: PLAN.soi.x, y: PLAN.canal.y, w: PLAN.soi.w, d: PLAN.canal.d }, COL.road, 0, 0.1);
+        [PLAN.soi.x - 0.08, PLAN.soi.x + PLAN.soi.w - 0.04].forEach(function (rx) {
+            scene.add(plainBox({ x: rx, y: PLAN.canal.y, w: 0.12, d: PLAN.canal.d }, 0.1, 0.22, 0xe5e7eb));
+        });
 
         // ---- ลานโรงพัก: ลาดยางทั้งแปลง แล้วทับด้วยถนน/ลานจอด/ทางเท้า ----
         slab(PLAN.yard, COL.asphalt, 0, 0.16);
@@ -431,9 +435,9 @@ var LamhinScene = (function () {
         var sgn = signPlane('POLICE', null, '#ffffff', 3.4, 0.5);
         sgn.position.set(wx(st.x - 0.2), 5.43, wz(st.y + st.d / 2));
         sgn.rotation.y = -Math.PI / 2; g1.add(sgn);
-        // ป้ายชื่อสถานี: แผ่นแดงเข้มติดหน้าชั้น 2 ช่วงบน (สูงกว่าหัวเสาไฟ 3.7) ค่อนไปทางใต้
-        // หน้าอาคารมีเสาธง (กึ่งกลาง สูง 7.4) และเสาไฟ 2 ต้นขนาบ ป้ายที่อยู่ต่ำหรืออยู่กลางจะโดนเสาบังเสมอ
-        var SB = { y: st.y + 4.15, d: 3.0 };
+        // ป้ายชื่อสถานี: แผ่นแดงเข้มติดหน้าชั้น 2 ช่วงบน กึ่งกลางอาคาร
+        // วางสูงกว่าหัวเสาไฟ (3.7) เสาไฟ 2 ต้นที่ขนาบหน้าอาคารจึงไม่บังตัวอักษร
+        var SB = { y: st.y + st.d / 2 - 1.5, d: 3.0 };
         var board = plainBox({ x: up.x - 0.06, y: SB.y, w: 0.06, d: SB.d }, 3.95, 0.6, 0x8e2c20);
         g1.add(board);
         var sgn2 = signPlane('สถานีตำรวจนครบาลลำหิน', null, '#ffffff', 2.85, 0.46);
@@ -507,15 +511,15 @@ var LamhinScene = (function () {
                 scene.add(car(S.x + S.w - 0.56, S.y + S.d * (k + 0.5) / 9, c, 0));
             });
         // รถสายตรวจบนถนนเลียบด้านตะวันออก + รถในช่องระหว่างอาคาร
-        scene.add(car(14.2, 6.0, 0xe8eaed, Math.PI / 2));
-        scene.add(car(14.2, 9.2, 0x28527a, Math.PI / 2));
+        scene.add(car(13.85, 6.0, 0xe8eaed, Math.PI / 2));   // จอดชิดอาคาร เหลือช่องวิ่งกลางถนน
+        scene.add(car(13.85, 9.2, 0x28527a, Math.PI / 2));
         scene.add(car(10.7, 16.0, 0x44506a, Math.PI / 2));
         scene.add(car(10.7, 20.4, 0x8b929c, Math.PI / 2));
-        scene.add(car(11.2, 18.2, 0x2b2f36, Math.PI / 2));
+        scene.add(car(10.55, 18.2, 0x2b2f36, Math.PI / 2));   // ชิดซ้าย เหลือช่องให้รถวิ่งผ่านได้
         scene.add(car(8.6, 12.95, 0x2b2f36, 0));
 
-        // ---- ลูกศรบอกทางเดินรถ (วนทางเดียว ไม่มีทางออกด้านหลัง) ----
-        [[6.6, 4.15, 0], [9.5, 4.15, 0], [12.2, 4.15, 0],            // เข้าประตูเหนือ มุ่งตะวันออก
+        // ---- ลูกศรบอกทางเดินรถ (เข้าประตูหลัก วนรอบอาคารที่ทำการทางเดียว) ----
+        [[6.6, 4.15, 0], [9.5, 4.15, 0], [12.2, 4.15, 0],            // ถนนเลียบด้านเหนือ มุ่งตะวันออก
         [14.6, 6.6, Math.PI], [14.6, 10.0, Math.PI],                 // เลี้ยวลงใต้ เลียบด้านตะวันออก
         [12.2, 12.95, Math.PI / 2], [9.6, 12.95, Math.PI / 2], [6.2, 12.95, Math.PI / 2],  // ออกประตูหลัก
         [7.0, 9.0, 0], [7.0, 5.6, 0],                                // เลนสัญจรหน้า สน.
@@ -532,7 +536,7 @@ var LamhinScene = (function () {
         [16.9, 23.4, 1.95], [18.4, 23.8, 1.75], [17.4, 26.0, 1.6], [18.7, 18.8, 1.6],
         [17.2, 12.6, 1.3], [18.2, 10.4, 1.15], [17.0, 7.6, 1.0], [17.8, 5.2, 0.95],
         // ในแปลง ริมรั้วตะวันออก
-        [15.0, 8.4, 0.8], [15.0, 11.0, 0.75],
+        [15.4, 8.4, 0.8], [15.4, 11.0, 0.75],
         // ริมซอยฝั่งตะวันตก
         [2.3, 4.6, 1.0], [2.5, 9.0, 0.9], [2.2, 15.4, 1.05], [2.5, 20.6, 0.95], [2.3, 25.2, 0.9]
         ].forEach(function (t) { scene.add(tree(t[0], t[1], t[2])); });
@@ -598,6 +602,7 @@ var LamhinScene = (function () {
     function bindControls(el) {
         function down(e) {
             dragging = true; moved = false;
+            spin = null;   // แตะจอระหว่างหมุนหน้าปก = หยุดหมุน ให้ผู้ใช้หมุนเอง
             lastP = { x: e.clientX, y: e.clientY };
             idleAt = Date.now();
             el.setPointerCapture && e.pointerId != null && el.setPointerCapture(e.pointerId);
@@ -669,14 +674,241 @@ var LamhinScene = (function () {
     }
 
     // ==========================================================
+    // หมุนรอบแบบภาพยนตร์ 1 รอบ (หน้าปกโหมดนำเสนอ)
+    // ==========================================================
+    var spin = null, autoRotate = true;
+    function spinOnce(ms, done) {
+        resetView();
+        spin = { t0: performance.now(), dur: ms || 16000, az0: want.az, done: done || null };
+    }
+    function spinStep() {
+        var p = Math.min(1, (performance.now() - spin.t0) / spin.dur);
+        var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;   // ค่อย ๆ เร่ง แล้วค่อย ๆ ผ่อน
+        var s = Math.sin(p * Math.PI);
+        want.az = spin.az0 + Math.PI * 2 * e;
+        want.pol = 0.74 + 0.16 * s;                // กลางรอบโฉบต่ำลงเห็นด้านข้างอาคาร
+        want.dist = fitDist() * (1 - 0.22 * s);    // และเข้าใกล้ขึ้นเล็กน้อย
+        idleAt = Date.now();
+        if (p >= 1) { var d = spin.done; spin = null; if (d) d(); }
+    }
+
+    // ==========================================================
+    // จำลองรถสายตรวจวิ่งเข้า สน. — มุมมองคนขับ + ภาพมุมสูงติดตาม (ภาพซ้อน)
+    // เส้นทาง: ถนนใหญ่ → ข้ามสะพานเข้าซอย → เลี้ยวซ้ายเข้าประตูหลัก (ช่องกลาง — ด้านหน้าอาคารที่ทำการเป็นกำแพงทึบ)
+    // → วนรอบอาคารที่ทำการ 1 รอบตามลูกศร (เลนหน้าอาคาร → ด้านเหนือ → ด้านตะวันออก → ถนนกลาง)
+    // → เลี้ยวซ้ายไปหน้าอาคารที่พัก → เลี้ยวขวาออกด้านหน้า → วิ่งตามซอยผ่านหน้า สน. ออกถนนใหญ่
+    // ==========================================================
+    var DRIVE_ROUTE = [
+        { p: [12.0, 0.55], say: 'ถนนคลองสิบ–คลองสิบสี่' },
+        { p: [3.85, 0.55], say: 'เลี้ยวข้ามสะพาน เข้าซอยคลองสิบ–สิบสี่ 7' },
+        { p: [3.85, 12.85], say: 'เลี้ยวซ้ายเข้าประตูหลัก (ช่องกลาง)' },
+        { p: [7.0, 12.85], say: 'เลี้ยวซ้าย เลนหน้าอาคารที่ทำการ' },
+        { p: [7.0, 4.1], say: 'ถนนเลียบด้านเหนืออาคารที่ทำการ' },
+        { p: [14.6, 4.1], say: 'เลียบด้านตะวันออกอาคารที่ทำการ' },
+        { p: [14.6, 13.45], say: 'วนครบรอบอาคารที่ทำการ' },
+        { p: [4.98, 13.45], say: 'เลี้ยวซ้ายไปอาคารที่พัก' },
+        { p: [4.98, 22.7], say: 'เลี้ยวขวาออกด้านหน้า' },
+        { p: [3.85, 22.7], say: 'วิ่งตามซอยผ่านหน้า สน.ลำหิน' },
+        { p: [3.85, 0.55], say: 'เลี้ยวขวาออกถนนคลองสิบ–คลองสิบสี่' },
+        { p: [10.5, 0.55], say: 'สิ้นสุดการจำลอง' }
+    ];
+    var DRIVE_SPEED = 2.8;      // หน่วยผัง/วินาที (1 หน่วย ≈ 6 ม.) → ราว 35 วินาทีทั้งเส้นทาง
+    var drive = null;
+
+    function policeCar() {
+        var g = new THREE.Group();
+        var white = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        var b = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.26, 0.42), white);
+        b.position.y = 0.2; b.castShadow = true; g.add(b);
+        var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.06, 0.43), new THREE.MeshLambertMaterial({ color: 0x1e3a8a }));
+        stripe.position.y = 0.21; g.add(stripe);
+        var c = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.2, 0.36), new THREE.MeshLambertMaterial({ color: 0x9cc7e6 }));
+        c.position.set(-0.04, 0.42, 0); c.castShadow = true; g.add(c);
+        [[0.3, 0.19], [0.3, -0.19], [-0.3, 0.19], [-0.3, -0.19]].forEach(function (w) {
+            var t = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.07, 8), new THREE.MeshLambertMaterial({ color: 0x1b1f26 }));
+            t.rotation.x = Math.PI / 2; t.position.set(w[0], 0.1, w[1]); g.add(t);
+        });
+        // ไฟไซเรนแดง-น้ำเงินบนหลังคา (กะพริบตอนวิ่ง)
+        var red = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.15), new THREE.MeshLambertMaterial({ color: 0xef4444, emissive: 0x000000 }));
+        var blue = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.15), new THREE.MeshLambertMaterial({ color: 0x3b82f6, emissive: 0x000000 }));
+        red.position.set(-0.04, 0.545, 0.085); blue.position.set(-0.04, 0.545, -0.085);
+        g.add(red); g.add(blue);
+        // ไฟหน้า
+        [0.11, -0.11].forEach(function (z) {
+            var hl = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 0.08), new THREE.MeshLambertMaterial({ color: 0xfff7cc, emissive: 0x665c1f }));
+            hl.position.set(0.48, 0.24, z); g.add(hl);
+        });
+        g.userData.lights = [red, blue];
+        return g;
+    }
+
+    function buildRoute() {
+        var pts = DRIVE_ROUTE.map(function (w) { return new THREE.Vector3(wx(w.p[0]), 0, wz(w.p[1])); });
+        var path = new THREE.CurvePath(), cur = pts[0].clone(), corner = [0];
+        for (var i = 1; i < pts.length; i++) {
+            var a = pts[i - 1], b = pts[i];
+            if (i < pts.length - 1) {
+                var c = pts[i + 1];
+                var r = Math.min(0.7, a.distanceTo(b) / 2, b.distanceTo(c) / 2);   // มุมเลี้ยวโค้งมน
+                var p1 = b.clone().addScaledVector(b.clone().sub(a).normalize(), -r);
+                var p2 = b.clone().addScaledVector(c.clone().sub(b).normalize(), r);
+                path.add(new THREE.LineCurve3(cur, p1));
+                corner.push(path.curves.length);             // คำบรรยายจุดที่ i เริ่มที่โค้งนี้
+                path.add(new THREE.QuadraticBezierCurve3(p1, b.clone(), p2));
+                cur = p2;
+            } else {
+                path.add(new THREE.LineCurve3(cur, b));
+                corner.push(path.curves.length);
+            }
+        }
+        var lens = path.getCurveLengths(), total = path.getLength();
+        var at = corner.map(function (ci) { return ci ? lens[ci - 1] / total : 0; });
+        return { path: path, total: total, at: at };
+    }
+
+    function startDrive(onEnd) {
+        if (!renderer) return;
+        stopDrive(true);
+        spin = null;
+        var R = buildRoute();
+        var carObj = policeCar();
+        scene.add(carObj);
+        var dcam = new THREE.PerspectiveCamera(70, 1, 0.02, 160);
+        drive = {
+            route: R, car: carObj, cam: dcam, u: 0, t0: performance.now(), last: performance.now(),
+            swap: false, look: null, cap: -1, onEnd: onEnd || null, y: 0.09, az: null
+        };
+        driveHud(true);
+        idleAt = Date.now();
+    }
+    function stopDrive(silent) {
+        if (!drive) return;
+        if (drive.car && scene) scene.remove(drive.car);
+        var cb = drive.onEnd;
+        drive = null;
+        driveHud(false);
+        if (!silent) { resetView(); if (cb) cb(); }
+    }
+    function inYard(x, y) { return x >= PLAN.yard.x && x <= PLAN.yard.x + PLAN.yard.w && y >= PLAN.yard.y && y <= PLAN.yard.y + PLAN.yard.d; }
+
+    function driveStep(now) {
+        var D = drive, R = D.route;
+        var dt = Math.min(0.05, (now - D.last) / 1000); D.last = now;
+        var el = (now - D.t0) / 1000;
+        var remain = (1 - D.u) * R.total;
+        var k = Math.min(1, el / 1.6) * Math.min(1, 0.25 + remain / 2.5);    // ออกตัวนุ่ม ๆ / ชะลอก่อนจบ
+        D.u = Math.min(1, D.u + DRIVE_SPEED * k * dt / R.total);
+
+        var p = R.path.getPointAt(D.u), tg = R.path.getTangentAt(D.u);
+        var px = p.x + (SITE.x + SITE.w / 2), py = p.z + (SITE.y + SITE.d / 2);
+        D.y += ((inYard(px, py) ? 0.17 : 0.09) - D.y) * 0.15;   // ขึ้นลาน สน. สูงกว่าถนนนิดหน่อย
+        D.car.position.set(p.x, D.y, p.z);
+        D.car.rotation.y = Math.atan2(-tg.z, tg.x);
+        var blink = Math.floor(el * 4) % 2;
+        D.car.userData.lights[0].material.emissive.setHex(blink ? 0xb91c1c : 0x200000);
+        D.car.userData.lights[1].material.emissive.setHex(blink ? 0x0b1f4d : 0x1d4ed8);
+
+        // มุมมองคนขับ: ตาอยู่ในห้องโดยสาร มองไปข้างหน้าตามเส้นทาง
+        var ahead = R.path.getPointAt(Math.min(1, D.u + 2.4 / R.total));
+        var eye = new THREE.Vector3(p.x + tg.x * 0.08, D.y + 0.47, p.z + tg.z * 0.08);
+        var lookT = new THREE.Vector3(ahead.x, D.y + 0.4, ahead.z);
+        if (!D.look) D.look = lookT.clone(); else D.look.lerp(lookT, 0.12);
+        D.cam.position.copy(eye);
+        D.cam.lookAt(D.look);
+
+        // มุมสูงติดตาม: กล้องหลักลอยตามหลังรถเฉียง ๆ
+        var behind = Math.atan2(-tg.x, -tg.z) + 0.55;
+        if (D.az == null) D.az = behind;
+        var dA = behind - D.az; dA = Math.atan2(Math.sin(dA), Math.cos(dA)); D.az += dA * 0.06;
+        want.az = D.az; want.pol = 0.98; want.dist = fitDist() * 0.36;
+        want.tx = p.x; want.ty = 0.5; want.tz = p.z;
+        idleAt = Date.now();
+
+        // คำบรรยายตามช่วงทาง
+        var ci = 0;
+        for (var i = 0; i < R.at.length; i++) if (D.u >= R.at[i] - 1e-6) ci = i;
+        if (ci !== D.cap) { D.cap = ci; driveCaption(DRIVE_ROUTE[ci].say); }
+        if (hud.bar) hud.bar.style.width = (D.u * 100).toFixed(1) + '%';
+        if (D.u >= 1 && !D.ending) {
+            D.ending = true;
+            setTimeout(function () { if (drive === D) stopDrive(false); }, 1600);
+        }
+    }
+
+    // ---------- แผงควบคุม/คำบรรยายระหว่างจำลอง (สร้างในกรอบแผนที่) ----------
+    var hud = {};
+    function driveHud(on) {
+        if (!host) return;
+        if (!on) {
+            ['box', 'pip', 'tag'].forEach(function (k) { if (hud[k] && hud[k].parentNode) hud[k].parentNode.removeChild(hud[k]); });
+            hud = {};
+            if (host.classList) host.classList.remove('dash3d-driving');
+            return;
+        }
+        host.classList.add('dash3d-driving');
+        var box = document.createElement('div');
+        box.className = 'dash3d-drive';
+        box.innerHTML = '<div class="dd-cap"><i class="fas fa-car-side"></i><span>-</span></div>'
+            + '<div class="dd-bar"><i></i></div>'
+            + '<div class="dd-btns"><button type="button" data-a="swap"><i class="fas fa-repeat"></i> สลับมุมมอง</button>'
+            + '<button type="button" data-a="stop"><i class="fas fa-stop"></i> หยุด</button></div>';
+        box.addEventListener('click', function (e) {
+            var b = e.target.closest ? e.target.closest('button') : null; if (!b || !drive) return;
+            if (b.getAttribute('data-a') === 'swap') { drive.swap = !drive.swap; drivePipLabel(); }
+            else stopDrive(false);
+        });
+        var pip = document.createElement('div'); pip.className = 'dash3d-pip'; pip.innerHTML = '<span></span>';
+        var tag = document.createElement('div'); tag.className = 'dash3d-viewtag';
+        host.appendChild(box); host.appendChild(pip); host.appendChild(tag);
+        hud = { box: box, pip: pip, tag: tag, cap: box.querySelector('.dd-cap span'), bar: box.querySelector('.dd-bar i') };
+        drivePipLabel();
+    }
+    function drivePipLabel() {
+        if (!hud.pip || !drive) return;
+        hud.pip.querySelector('span').textContent = drive.swap ? 'มุมมองคนขับ' : 'มุมสูงติดตาม';
+        hud.tag.innerHTML = '<i class="fas ' + (drive.swap ? 'fa-plane' : 'fa-car') + '"></i> ' + (drive.swap ? 'มุมสูงติดตาม' : 'มุมมองคนขับ');
+    }
+    function driveCaption(t) {
+        if (!hud.cap) return;
+        hud.cap.textContent = t;
+        hud.box.classList.remove('dd-flash'); void hud.box.offsetWidth; hud.box.classList.add('dd-flash');
+    }
+    // กรอบภาพซ้อน (มุมขวาบน) — คิดเป็นพิกเซลของกรอบแผนที่
+    function pipRect(w, h) {
+        var iw = Math.round(Math.max(150, Math.min(w * 0.34, 380))), ih = Math.round(iw * 0.62);
+        return { x: w - iw - 12, y: 12, w: iw, h: ih };
+    }
+    function renderDrive() {
+        var w = host.clientWidth || 800, h = host.clientHeight || 460;
+        var mainCam = drive.swap ? camera : drive.cam, insetCam = drive.swap ? drive.cam : camera;
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, w, h);
+        mainCam.aspect = w / h; mainCam.updateProjectionMatrix();
+        renderer.render(scene, mainCam);
+        var r = pipRect(w, h);
+        renderer.setScissorTest(true);
+        renderer.setScissor(r.x, h - r.y - r.h, r.w, r.h);
+        renderer.setViewport(r.x, h - r.y - r.h, r.w, r.h);
+        insetCam.aspect = r.w / r.h; insetCam.updateProjectionMatrix();
+        renderer.render(scene, insetCam);
+        renderer.setScissorTest(false);
+        renderer.setViewport(0, 0, w, h);
+        camera.aspect = w / h; camera.updateProjectionMatrix();
+        if (hud.pip) { hud.pip.style.left = r.x + 'px'; hud.pip.style.top = r.y + 'px'; hud.pip.style.width = r.w + 'px'; hud.pip.style.height = r.h + 'px'; }
+    }
+
+    // ==========================================================
     // วงรอบวาดภาพ
     // ==========================================================
     function tick() {
         raf = requestAnimationFrame(tick);
         if (!visible) return;
+        var now = performance.now();
 
+        if (drive) driveStep(now);
+        else if (spin) spinStep();
         // หมุนเองเมื่อไม่มีใครแตะ 6 วินาที
-        if (Date.now() - idleAt > 6000) want.az += 0.0016;
+        else if (autoRotate && Date.now() - idleAt > 6000) want.az += 0.0016;
 
         // เคลื่อนกล้องแบบนุ่มนวล
         cam.az += (want.az - cam.az) * 0.12;
@@ -686,7 +918,8 @@ var LamhinScene = (function () {
         cam.ty += (want.ty - cam.ty) * 0.1;
         cam.tz += (want.tz - cam.tz) * 0.1;
         applyCamera();
-        renderer.render(scene, camera);
+        if (drive) renderDrive();
+        else renderer.render(scene, camera);
         updateLabels();
     }
 
@@ -694,6 +927,8 @@ var LamhinScene = (function () {
     var v3 = null;
     function updateLabels() {
         if (!labels.length) return;
+        // ระหว่างจำลองรถ ภาพหลักอาจเป็นมุมคนขับ — ป้ายอาคารจะวางผิดที่ จึงซ่อนไว้
+        if (drive) { labels.forEach(function (L) { L.el.style.opacity = 0; }); return; }
         var r = renderer.domElement.getBoundingClientRect();
         labels.forEach(function (L) {
             var a = ANCHOR[L.anchor]; if (!a) return;
@@ -794,18 +1029,11 @@ var LamhinScene = (function () {
         clampCam(want); idleAt = Date.now();
     }
 
-    // ภาพนิ่งของฉากปัจจุบัน (ใช้ตอนพิมพ์/บันทึก PDF — แคนวาส WebGL พิมพ์ออกมาเป็นช่องว่าง)
-    // วาดใหม่แล้วอ่านทันทีในจังหวะเดียวกัน ไม่ต้องเปิด preserveDrawingBuffer ให้เปลืองเครื่อง
-    function snapshot() {
-        if (!renderer) return '';
-        try { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); }
-        catch (e) { return ''; }
-    }
-
     return {
         init: init, resize: resize, resetView: resetView, focusOn: focusOn, setView: setView, zoom: zoom,
-        snapshot: snapshot,
         setLabels: setLabels, setVisible: setVisible, dispose: dispose,
+        spin: spinOnce, setAutoRotate: function (v) { autoRotate = !!v; if (!v) spin = null; else idleAt = Date.now(); },
+        startDrive: startDrive, stopDrive: function () { stopDrive(false); }, isDriving: function () { return !!drive; },
         isReady: function () { return !!renderer; },
         PLAN: PLAN
     };

@@ -2,13 +2,13 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>กระดานงานสอบสวน สน.ลำหิน</title>
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="dash/dash.css?v=50">
-    <link rel="stylesheet" href="style.css?v=50">
+    <link rel="stylesheet" href="dash/dash.css?v=62">
+    <link rel="stylesheet" href="style.css?v=62">
 </head>
 <body>
     <!--
@@ -17,20 +17,33 @@
     -->
     <div id="dash-root" class="dash-root board">
         <div id="slot-hero" class="slot"><div class="loading"><span class="spin"></span> กำลังโหลดกระดาน…</div></div>
-        <div id="slot-stage" class="slot"></div>
 
         <!-- ===== เมนูหัวข้อ ===== -->
-        <nav class="rtabs dash-noprint" id="rtabs">
-            <button type="button" data-tab="duty" class="on"><i class="fa-solid fa-user-shield"></i><span>เวร / ภารกิจ</span></button>
-            <button type="button" data-tab="crew"><i class="fa-solid fa-sitemap"></i><span>กำลังพล & รูปแบบเวร</span></button>
+        <nav class="rtabs" id="rtabs">
+            <button type="button" data-tab="duty" class="on"><i class="fa-solid fa-user-shield"></i><span>เวรสอบสวน</span></button>
+            <button type="button" data-tab="station"><i class="fa-solid fa-building-shield"></i><span>เวร สน.</span></button>
+            <button type="button" data-tab="crew"><i class="fa-solid fa-sitemap"></i><span>กำลังพล</span></button>
             <button type="button" data-tab="cases"><i class="fa-solid fa-scale-balanced"></i><span>สถิติคดี</span></button>
-            <button type="button" data-tab="work"><i class="fa-solid fa-list-ol"></i><span>ภาระงาน & คดีค้าง</span></button>
+            <button type="button" data-tab="work"><i class="fa-solid fa-list-ol"></i><span>ภาระงาน</span></button>
         </nav>
 
-        <!-- ===== 1) เวร / ภารกิจ ===== -->
+        <!-- ===== 1) เวรสอบสวน / ภารกิจ ===== -->
         <section class="rpane" id="pane-duty">
-            <div class="print-h">เวรและภารกิจ</div>
-            <section class="search-bar dash-noprint">
+            <div class="subbar">
+                <div class="seg" id="dutySeg">
+                    <button type="button" data-v="day" class="on"><i class="fa-solid fa-calendar-day"></i> รายวัน</button>
+                    <button type="button" data-v="month"><i class="fa-solid fa-table"></i> ทั้งเดือน</button>
+                </div>
+                <div class="mnav" id="dutyMonthNav" hidden>
+                    <button type="button" class="icon-btn" onclick="dutyMonthStep(-1)" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
+                    <b id="dutyMonthLabel">-</b>
+                    <button type="button" class="icon-btn" onclick="dutyMonthStep(1)" title="เดือนถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="xslot" id="dutyExport" hidden></div>
+            </div>
+            <div id="dutyMonth" hidden></div>
+            <div id="dutyDay" class="rstack">
+            <section class="search-bar">
                 <div class="search-field">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input id="q" type="search" list="peopleList" autocomplete="off" placeholder="ค้นหาชื่อ หรือ ภารกิจ…">
@@ -43,7 +56,7 @@
                 <button id="todayBtn" class="btn-today" type="button"><i class="fa-solid fa-rotate-left"></i> วันนี้</button>
             </section>
 
-            <section class="card results dash-noprint" id="results" hidden>
+            <section class="card results" id="results" hidden>
                 <div class="card-h">
                     <i class="fa-solid fa-list-check"></i>
                     <span id="resultsTitle">ผลการค้นหา</span>
@@ -74,7 +87,7 @@
                 </section>
             </main>
 
-            <section class="card cal-card dash-noprint">
+            <section class="card cal-card">
                 <div class="cal-head">
                     <button id="prevMonth" class="icon-btn" type="button" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
                     <h3 id="monthLabel">-</h3>
@@ -91,24 +104,45 @@
                     <span id="legendPerson" hidden><i class="dot dot-person"></i>วันที่คนที่ค้นหาเข้าเวร/ภารกิจ</span>
                 </div>
             </section>
+            </div>
         </section>
 
-        <!-- ===== 2) กำลังพล & รูปแบบเวร ===== -->
-        <section class="rpane" id="pane-crew" hidden><div class="print-h">กำลังพลและรูปแบบการเข้าเวร</div></section>
+        <!-- ===== 2) เวรทุกสายงาน สน. (อ่านอย่างเดียว — เพิ่ม/แก้ไขที่เว็บแอป) ===== -->
+        <section class="rpane" id="pane-station" hidden>
+            <div class="subbar">
+                <div class="seg" id="stSeg">
+                    <button type="button" data-v="day" class="on"><i class="fa-solid fa-calendar-day"></i> รายวัน</button>
+                    <button type="button" data-v="month"><i class="fa-solid fa-table"></i> ทั้งเดือน</button>
+                </div>
+                <div class="mnav">
+                    <button type="button" class="icon-btn" onclick="stStep(-1)" title="ก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+                    <b id="stLabel">-</b>
+                    <button type="button" class="icon-btn" onclick="stStep(1)" title="ถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button type="button" class="chip-btn" onclick="stToday()">วันนี้</button>
+                </div>
+                <select id="stSec" class="st-sec" hidden></select>
+                <div class="xslot" id="stExport"></div>
+            </div>
+            <div id="stView"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+        </section>
 
-        <!-- ===== 3) สถิติคดี ===== -->
-        <section class="rpane" id="pane-cases" hidden><div class="print-h">สถิติคดี <span id="print-range"></span></div></section>
+        <!-- ===== 3) กำลังพล & รูปแบบเวร ===== -->
+        <section class="rpane" id="pane-crew" hidden></section>
 
-        <!-- ===== 4) ภาระงาน & คดีค้าง ===== -->
-        <section class="rpane" id="pane-work" hidden><div class="print-h">ภาระงานพนักงานสอบสวนและคดีค้าง</div></section>
+        <!-- ===== 4) สถิติคดี ===== -->
+        <section class="rpane" id="pane-cases" hidden></section>
 
-        <footer class="foot dash-noprint">ข้อมูลจากระบบงานสอบสวน สน.ลำหิน · อัปเดตอัตโนมัติทุก 5 นาที · <span id="lastSync">-</span></footer>
+        <!-- ===== 5) ภาระงาน & คดีค้าง ===== -->
+        <section class="rpane" id="pane-work" hidden></section>
+
+        <footer class="foot">ข้อมูลจากระบบงานสอบสวน สน.ลำหิน · อัปเดตอัตโนมัติทุก 5 นาที · <span id="lastSync">-</span></footer>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="dash/scene3d.js?v=50"></script>
-    <script src="dash/dashcalc.js?v=50"></script>
-    <script src="dash/dash.js?v=50"></script>
-    <script src="app.js?v=50"></script>
+    <script src="dash/scene3d.js?v=62"></script>
+    <script src="dash/dashcalc.js?v=62"></script>
+    <script src="dash/dash.js?v=62"></script>
+    <script src="dash/stationview.js?v=62"></script>
+    <script src="app.js?v=62"></script>
 </body>
 </html>

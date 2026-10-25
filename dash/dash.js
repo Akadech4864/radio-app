@@ -172,7 +172,6 @@ function dashMarkup() {
         + '    <select class="dash-fy" onchange="dashSetRange(this.value)" title="ช่วงข้อมูลคดี">' + opts + '</select>'
         + '    <div class="dash-clock" id="dash-clock">--:--</div>'
         + '    <button class="dash-ic dash-ic-present" onclick="dashPresent()" title="นำเสนอแบบสไลด์ (เหมือน PowerPoint)"><i class="fas fa-person-chalkboard"></i><span>นำเสนอ</span></button>'
-        + '    <button class="dash-ic" onclick="dashPrint()" title="พิมพ์ / บันทึกเป็น PDF"><i class="fas fa-print"></i></button>'
         + '    <button class="dash-ic" onclick="dashFullscreen()" title="แสดงเต็มจอ"><i class="fas fa-expand"></i></button>'
         + '  </div>'
         + '</div>'
@@ -181,7 +180,15 @@ function dashMarkup() {
         + '<div class="dash-stagewrap" id="dash-stagewrap">'
         + '  <div class="dash-stage" id="dash-stage">'
         + '    <div class="dash3d-loading" id="dash3d-loading"><i class="fas fa-circle-notch fa-spin"></i> กำลังสร้างแบบจำลอง 3 มิติ…</div>'
+        // หน้าปกโหมดนำเสนอ (แสดงเฉพาะสไลด์แรก)
+        + '    <div class="dash-cover" id="dash-cover" hidden>'
+        + '      <div class="dash-cover-k">รายงานภาพรวม</div>'
+        + '      <h2>งานสอบสวน<br>สถานีตำรวจนครบาลลำหิน</h2>'
+        + '      <div class="dash-cover-d" id="dash-cover-date">-</div>'
+        + '      <button type="button" onclick="dashDrive()"><i class="fas fa-car-side"></i> จำลองรถวิ่งเข้า สน.</button>'
+        + '    </div>'
         + '    <div class="dash3d-ctrl">'
+        + '      <button onclick="dashDrive()" title="จำลองรถวิ่งเข้า สน. (มุมมองคนขับ)" class="dash3d-car"><i class="fas fa-car-side"></i></button>'
         + '      <button onclick="dashZoom(-1)" title="ซูมเข้า"><i class="fas fa-plus"></i></button>'
         + '      <button onclick="dashZoom(1)" title="ซูมออก"><i class="fas fa-minus"></i></button>'
         + '      <button onclick="dashResetView()" title="มุมมองเริ่มต้น"><i class="fas fa-house"></i></button>'
@@ -796,12 +803,20 @@ function dashUpdateLabels() {
 }
 function dashZoom(dir) { if (LamhinScene.isReady()) LamhinScene.zoom(dir); }
 function dashResetView() { if (LamhinScene.isReady()) LamhinScene.resetView(); }
+// จำลองรถสายตรวจวิ่งเข้า สน. (กดซ้ำระหว่างวิ่ง = หยุด)
+function dashDrive() {
+    if (typeof LamhinScene === 'undefined' || !LamhinScene.isReady()) return;
+    if (LamhinScene.isDriving()) { LamhinScene.stopDrive(); return; }
+    var cover = document.getElementById('dash-cover');
+    if (cover) cover.classList.add('dash-cover-min');   // ย่อหน้าปกลง ไม่บังภาพขับรถ
+    LamhinScene.startDrive(function () { if (cover) cover.classList.remove('dash-cover-min'); });
+}
 
 // ==========================================================
 // โหมดนำเสนอแบบสไลด์
 // ==========================================================
 var DASH_SLIDES = [
-    { title: 'ภาพรวมสถานีตำรวจนครบาลลำหิน', els: ['dash-stagewrap'], is3d: true },
+    { title: 'สถานีตำรวจนครบาลลำหิน', els: ['dash-stagewrap'], is3d: true, cover: true },
     { title: 'สายการบังคับบัญชา — งานสอบสวน', els: ['dash-org'], view: 'org' },
     { title: 'รูปแบบการเข้าเวรปัจจุบัน', els: ['dash-org'], view: 'duty' },
     { title: 'สถานภาพคดี', els: ['dash-cases'] },
@@ -864,10 +879,22 @@ function dashPresentTo(i) {
     var dots = document.getElementById('dash-pres-dots');
     if (dots) [].forEach.call(dots.children, function (b, k) { b.classList[k === i ? 'add' : 'remove']('on'); });
     root.scrollTop = 0;
+    // หน้าปก: ชื่อรายงานซ้อนบนแผนที่ + หมุนรอบ สน. แบบภาพยนตร์ 1 รอบ
+    var cover = document.getElementById('dash-cover');
+    if (cover) {
+        cover.hidden = !sl.cover;
+        cover.classList.remove('dash-cover-min');
+        var cd = document.getElementById('dash-cover-date');
+        if (cd) cd.textContent = 'ข้อมูล ณ วันที่ ' + dashThaiDate(new Date());
+    }
     // แผนที่ 3 มิติวาดเฉพาะตอนอยู่สไลด์ที่มีแผนที่ ประหยัดเครื่อง
     if (typeof LamhinScene !== 'undefined' && LamhinScene.isReady()) {
+        if (!sl.is3d && LamhinScene.isDriving()) LamhinScene.stopDrive();
         LamhinScene.setVisible(!!sl.is3d);
-        if (sl.is3d) setTimeout(function () { LamhinScene.resize(); }, 60);
+        if (sl.is3d) setTimeout(function () {
+            LamhinScene.resize();
+            if (sl.cover) { LamhinScene.setAutoRotate(false); LamhinScene.spin(18000); }
+        }, 60);
     }
 }
 
@@ -880,7 +907,10 @@ function dashPresentExit() {
     }
     document.documentElement.classList.remove('dash-presenting');
     try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch (e) { }
+    var cover = document.getElementById('dash-cover'); if (cover) cover.hidden = true;
     if (typeof LamhinScene !== 'undefined' && LamhinScene.isReady()) {
+        if (LamhinScene.isDriving()) LamhinScene.stopDrive();
+        LamhinScene.setAutoRotate(true);
         LamhinScene.setVisible(true);
         setTimeout(function () { LamhinScene.resize(); }, 60);
     }
@@ -892,51 +922,4 @@ function dashFullscreen() {
     if (document.fullscreenElement) { document.exitFullscreen(); return; }
     if (el.requestFullscreen) el.requestFullscreen();
     setTimeout(function () { if (LamhinScene.isReady()) LamhinScene.resize(); }, 350);
-}
-
-// ---------- พิมพ์ / บันทึกเป็น PDF ----------
-// เปิดหน้าใหม่ที่จัดเป็นหน้ากระดาษ A4 (ทุกส่วนเรียงลงมา ตัดปุ่มและส่วนที่ขยับได้ออก) แล้วเปิดหน้าต่างพิมพ์
-// ในหน้าต่างพิมพ์เลือกเครื่องพิมพ์ หรือเลือก "บันทึกเป็น PDF" ได้เลย
-function dashPrint() {
-    var root = document.getElementById('dash-root'); if (!root) return;
-    var shot = (typeof LamhinScene !== 'undefined' && LamhinScene.isReady() && LamhinScene.snapshot) ? LamhinScene.snapshot() : '';
-    var clone = root.cloneNode(true);
-    clone.classList.remove('present');
-    clone.removeAttribute('id');
-    [].forEach.call(clone.querySelectorAll('.dash-pres-top,.dash-pres-nav,.dash-pres-bar,.dash3d-ctrl,.dash3d-hint,'
-        + '.dash3d-loading,.dash3d-pin,.dash-ic,.crew-sw,canvas'), function (el) { el.parentNode.removeChild(el); });
-    [].forEach.call(clone.querySelectorAll('.dash-slide-on'), function (el) { el.classList.remove('dash-slide-on'); });
-    var stage = clone.querySelector('.dash-stage');
-    if (stage) stage.innerHTML = shot ? '<img class="dash-print-shot" src="' + shot + '" alt="">' : '';
-    // ตัดส่วนที่ไม่ต้องพิมพ์ (.dash-noprint) แล้วกางทุกส่วนที่ซ่อนอยู่ออกมา
-    // (ผังบังคับบัญชา + รูปแบบเวร ไม่ต้องสลับ / แท็บอื่นในหน้า GitHub ได้พิมพ์ครบ)
-    [].forEach.call(clone.querySelectorAll('.dash-noprint'), function (el) { el.parentNode.removeChild(el); });
-    [].forEach.call(clone.querySelectorAll('[hidden]'), function (el) { el.hidden = false; el.removeAttribute('hidden'); });
-    var sel = clone.querySelector('.dash-fy'), cur = root.querySelector('.dash-fy');
-    if (sel && cur) {
-        var sp = document.createElement('span');
-        sp.className = 'dash-print-range';
-        sp.textContent = cur.options[cur.selectedIndex] ? cur.options[cur.selectedIndex].text : '';
-        sel.parentNode.replaceChild(sp, sel);
-    }
-    var css = [].map.call(document.querySelectorAll('style'), function (s) { return s.textContent; }).join('\n');
-    var links = [].map.call(document.querySelectorAll('link[rel="stylesheet"]'), function (l) {
-        return '<link rel="stylesheet" href="' + l.href + '">';
-    }).join('');
-    var w = window.open('', '_blank');
-    if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
-    w.document.open();
-    w.document.write('<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">'
-        + '<meta name="viewport" content="width=device-width, initial-scale=1">'
-        + '<base href="' + String(location.href).split('#')[0].replace(/"/g, '%22') + '">'   // รูป/ไฟล์ที่อ้างแบบสัมพัทธ์ (เช่น logo.png)
-        + '<title>แดชบอร์ดงานสอบสวน สน.ลำหิน ' + dashThaiDate(new Date()) + '</title>'
-        + links + '<style>' + css + '</style></head>'
-        + '<body class="dash-print-body">'
-        + '<div class="dash-print-tools"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button>'
-        + '<span>พิมพ์เมื่อ ' + dashThaiDate(new Date()) + ' ' + new Date().toTimeString().slice(0, 5) + ' น.</span></div>'
-        + clone.outerHTML
-        // รอรูปโหลดครบ (window.onload) แล้วค่อยเปิดหน้าต่างพิมพ์
-        + '<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>'
-        + '</body></html>');
-    w.document.close();
 }
