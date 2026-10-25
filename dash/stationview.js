@@ -116,7 +116,8 @@ function svDayHtml(data, date, opts) {
             }
             list.forEach(function (r, i) {
                 var tel = String(r[6] || '').replace(/[^0-9+]/g, '');
-                html += '<tr>'
+                // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
+                html += '<tr data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
                     + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(role) + '</td>' : '')
                     + '<td class="sv-name">' + svEsc(r[4]) + (r[7] ? ' <span class="sv-note">' + svEsc(r[7]) + '</span>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div></td>'

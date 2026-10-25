@@ -449,6 +449,7 @@ function renderStation(jump) {
         ? svDayHtml(data.station, stDate, { emptyHint: 'งานธุรการกดปุ่ม "แก้ไข/เพิ่มเวร" ด้านบน' })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec);
     $('stExport').innerHTML = svExportButtons("exportStation('pdf')", "exportStation('img')");
+    if (stView === 'day') stCheckApply(box, stDate);   // เช็คชื่อ (ในเครื่องนี้ ไม่ออกในภาพ/PDF)
     if (stView === 'month') {
         // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · เปิดแท็บ/เปลี่ยนเดือน = เลื่อนมาเวรวันนี้รอไว้
         if (jump || !prev) svScrollToToday(box);

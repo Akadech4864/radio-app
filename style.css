@@ -405,3 +405,35 @@ body.st-editing #pane-station .dash-stagewrap { display: none !important; }
 
 /* ตารางเวรสอบสวนรายเดือน: คอลัมน์น้อย ให้พอดีจอมือถือ (หัวตารางตรึงกับหน้า — svFloatHeads) */
 #dutyMonth .sv-mtable td { white-space: normal; }
+
+/* ---------- เช็คชื่อเวรประจำวัน (stationcheck.js) ---------- */
+.ck-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 10px; padding: 9px 12px; border-radius: 14px; background: var(--card, #fff); box-shadow: 0 1px 2px rgba(15, 23, 42, .06); font-size: .82rem; }
+.ck-bar.on { position: sticky; top: 0; z-index: 7; background: #eff6ff; border: 1px solid #bfdbfe; }
+.ck-bar b { color: #1d4ed8; }
+.ck-sp { flex: 1; }
+.ck-sum { padding: 2px 9px; border-radius: 999px; background: #f1f5f9; color: #334155; font-weight: 700; }
+.ck-s-in { background: #dcfce7; color: #047857; } .ck-s-busy { background: #fef3c7; color: #92400e; } .ck-s-out { background: #fee2e2; color: #b91c1c; }
+.ck-note { color: #94a3b8; font-size: .74rem; }
+.ck-act { border: 0; border-radius: 10px; padding: 7px 12px; font: inherit; font-weight: 800; cursor: pointer; background: #e2e8f0; color: #334155; }
+.ck-act.pri { background: #1d4ed8; color: #fff; }
+.ck-act:disabled { opacity: .45; cursor: default; }
+.ck-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.ck-btns { display: flex; flex-wrap: wrap; gap: 5px; }
+.ck-btn { border: 1px solid #cbd5e1; border-radius: 999px; padding: 4px 10px; background: #fff; color: #475569; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; line-height: 1.2; }
+.ck-b-in.on { background: #059669; border-color: #059669; color: #fff; }
+.ck-b-busy.on { background: #d97706; border-color: #d97706; color: #fff; }
+.ck-b-out.on { background: #dc2626; border-color: #dc2626; color: #fff; }
+.ck-b-note.on { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.ck-info { flex-basis: 100%; font-size: .74rem; color: #475569; font-weight: 600; }
+.ck-info b { color: #1e293b; }
+tr.ck-in td.sv-name, tr.ck-in td.sv-c-pos, tr.ck-in td.sv-c-tel { background: #ecfdf5; }
+tr.ck-busy td.sv-name, tr.ck-busy td.sv-c-pos, tr.ck-busy td.sv-c-tel { background: #fffbeb; }
+tr.ck-out td.sv-name, tr.ck-out td.sv-c-pos, tr.ck-out td.sv-c-tel { background: #fef2f2; }
+@media (max-width: 560px) {
+    /* จอแคบ: ปุ่มเช็คชื่อเป็นวงกลมไอคอนแถวเดียว (แถบสรุปด้านบนเป็นคำอธิบายสี) */
+    .ck-btns { flex-wrap: nowrap; gap: 5px; }
+    .ck-btn { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: .95rem; flex: none; }
+    .ck-btn .ck-t { display: none; }
+    .ck-b-in { color: #059669; } .ck-b-busy { color: #d97706; } .ck-b-out { color: #dc2626; } .ck-b-note { color: #1d4ed8; }
+    .ck-bar { font-size: .78rem; }
+}
