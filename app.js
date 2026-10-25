@@ -409,16 +409,18 @@ function setDutyView(v) {
     $('dutyMonth').hidden = v !== 'month';
     $('dutyMonthNav').hidden = v !== 'month';
     $('dutyExport').hidden = v !== 'month';
-    if (v === 'month') renderDutyMonth();
+    if (v === 'month') renderDutyMonth(true);
 }
-window.dutyMonthStep = function (n) { dutyMonth = new Date(dutyMonth.getFullYear(), dutyMonth.getMonth() + n, 1); renderDutyMonth(); };
-function renderDutyMonth() {
+window.dutyMonthStep = function (n) { dutyMonth = new Date(dutyMonth.getFullYear(), dutyMonth.getMonth() + n, 1); renderDutyMonth(true); };
+// jump = เลื่อนหน้ามาแถววันนี้ (เปิดหน้า/เปลี่ยนเดือน) · โหลดข้อมูลใหม่อัตโนมัติไม่ต้องเลื่อน คงตำแหน่งเดิม
+function renderDutyMonth(jump) {
     if (dutyView !== 'month') return;
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
     $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
     $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m);
-    svScrollToToday($('dutyMonth'));   // เลื่อนมาเวรวันนี้รอไว้
     $('dutyExport').innerHTML = svExportButtons("exportDutyMonth('pdf')", "exportDutyMonth('img')");
+    // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ
+    if (jump) svScrollToToday($('dutyMonth')); else svFloatHeads($('dutyMonth'));
 }
 window.exportDutyMonth = function (kind) {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
@@ -431,8 +433,11 @@ window.exportDutyMonth = function (kind) {
 // เวรทุกสายงาน สน. (อ่านอย่างเดียว — เพิ่ม/แก้ไข/นำเข้าจากรูปที่เว็บแอปเมนู "เวรทุกสายงาน")
 // ==========================================================
 let stView = 'day', stDate = null, stSec = '';
-function renderStation() {
+// jump = เลื่อนตารางรายเดือนมาแถววันนี้ (เปิดแท็บ/เปลี่ยนเดือน) · โหลดใหม่อัตโนมัติคงตำแหน่งเดิม
+function renderStation(jump) {
     const box = $('stView'); if (!box) return;
+    const prev = box.querySelector('.sv-vscroll');
+    const keepLeft = prev ? prev.scrollLeft : 0;
     if (!stDate) stDate = currentDutyDate();
     if (!data.station) { box.innerHTML = '<div class="empty">ยังไม่มีข้อมูลเวรทุกสายงาน</div>'; return; }
     document.querySelectorAll('#stSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === stView));
@@ -444,20 +449,30 @@ function renderStation() {
         ? svDayHtml(data.station, stDate, { emptyHint: 'งานธุรการกดปุ่ม "แก้ไข/เพิ่มเวร" ด้านบน' })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec);
     $('stExport').innerHTML = svExportButtons("exportStation('pdf')", "exportStation('img')");
-    if (stView === 'month') svScrollToToday(box);   // เลื่อนมาเวรวันนี้รอไว้
+    if (stView === 'month') {
+        // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · เปิดแท็บ/เปลี่ยนเดือน = เลื่อนมาเวรวันนี้รอไว้
+        if (jump || !prev) svScrollToToday(box);
+        else {
+            svFloatHeads(box);
+            const nb = box.querySelector('.sv-vscroll');
+            if (nb) nb.scrollLeft = keepLeft;
+        }
+    }
 }
 window.stStep = function (n) {
     stDate = stView === 'day' ? addDays(stDate, n) : new Date(stDate.getFullYear(), stDate.getMonth() + n, 1);
-    renderStation();
+    renderStation(true);
 };
-window.stToday = function () { stDate = currentDutyDate(); renderStation(); };
+window.stToday = function () { stDate = currentDutyDate(); renderStation(true); };
 window.exportStation = function (kind) {
     const day = stView === 'day';
     const title = day ? 'ตารางเวร สน.ลำหิน ' + thShort(stDate)
         : 'ตารางเวร สน.ลำหิน ' + TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543);
     const html = day ? svDayHtml(data.station, stDate, { foot: true, plain: true })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec, { foot: true });
-    const landscape = !day && !stSec;   // ทุกฝ่ายทั้งเดือนคอลัมน์เยอะ ใช้แนวนอน
+    // ทุกฝ่ายทั้งเดือน = A4 แนวนอน ไม่พอขึ้นหน้าถัดไปพร้อมหัวตาราง
+    if (!day && !stSec) { svExportMonth(kind, title, data.station, stDate.getFullYear(), stDate.getMonth(), ''); return; }
+    const landscape = false;
     const opt = { a4: day };   // ใบเวรประจำวัน = ยืดเต็มหน้า A4 ตัวอักษรใหญ่
     if (kind === 'img') svExportImage(title, html, landscape, opt); else svExportPdf(title, html, landscape, opt);
 };
@@ -470,7 +485,7 @@ function showTab(name) {
     curTab = name;
     document.querySelectorAll('.rpane').forEach((p) => { p.hidden = p.id !== 'pane-' + name; });
     document.querySelectorAll('#rtabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
-    if (name === 'station') renderStation();
+    if (name === 'station') renderStation(true);
     scene3dFollowTab();
     try { history.replaceState(null, '', '#' + name); } catch (e) { }
 }
@@ -613,9 +628,9 @@ function init() {
     document.querySelectorAll('#stSeg button').forEach((b) => b.addEventListener('click', () => {
         stView = b.dataset.v; if (stView === 'month' && stDate) stDate = new Date(stDate.getFullYear(), stDate.getMonth(), 1);
         if (stView === 'day') stDate = currentDutyDate();
-        renderStation();
+        renderStation(true);
     }));
-    $('stSec').addEventListener('change', (e) => { stSec = e.target.value; renderStation(); });
+    $('stSec').addEventListener('change', (e) => { stSec = e.target.value; renderStation(true); });
 
     let t = 0;
     $('q').addEventListener('input', (e) => {

@@ -402,3 +402,6 @@ body.st-editing #pane-station .dash-stagewrap { display: none !important; }
 .pin-btns button { border: 0; border-radius: 10px; padding: 9px 14px; font: inherit; font-weight: 800; cursor: pointer; background: var(--soft); color: var(--ink2); }
 .pin-btns .pri { background: var(--brand); color: #fff; }
 .pin-btns .pri:disabled { opacity: 0.6; }
+
+/* ตารางเวรสอบสวนรายเดือน: คอลัมน์น้อย ให้พอดีจอมือถือ (หัวตารางตรึงกับหน้า — svFloatHeads) */
+#dutyMonth .sv-mtable td { white-space: normal; }

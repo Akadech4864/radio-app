@@ -32,6 +32,7 @@ function svaFirst(name) {
 function renderStationDuty() {
     if (!document.getElementById('sv-root')) return;
     if (!SVA.date) SVA.date = svaToday();
+    SVA.jumped = '';   // เปิดเมนูใหม่ = เลื่อนมาเวรวันนี้
     svaLoad(false);
 }
 
@@ -42,7 +43,8 @@ function renderStationDuty() {
         var btn = document.getElementById('tab-station');
         if (!btn || btn.__svaBound) return;
         btn.__svaBound = true;
-        btn.addEventListener('shown.bs.tab', function () { renderStationDuty(); });
+        btn.addEventListener('shown.bs.tab', function () { document.body.classList.add('sva-on'); renderStationDuty(); });
+        btn.addEventListener('hidden.bs.tab', function () { document.body.classList.remove('sva-on'); });
     }
     if (typeof document === 'undefined') return;
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
@@ -70,6 +72,7 @@ function svaPaint() {
     var d = SVA.date;
     var dateVal = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
     var monthVal = dateVal.slice(0, 7);
+    var pv = document.querySelector('#sva-view .sv-vscroll'), keepLeft = pv ? pv.scrollLeft : 0;
     root.innerHTML = '<div class="sva">'
         + '<div class="sva-head"><i class="fas fa-building-shield"></i><span>ตารางเวรทุกสายงาน สน.ลำหิน</span></div>'
         + '<div class="sva-bar">'
@@ -105,7 +108,13 @@ function svaPaint() {
             return '<option value="' + svEsc(s.name) + '">' + svEsc(s.pos) + '</option>';
         }).join('') + '</datalist>'
         + '</div>';
-    if (SVA.view === 'month') svScrollToToday(document.getElementById('sva-view'));   // เลื่อนมาเวรวันนี้รอไว้
+    // ตารางรายเดือนเลื่อนทั้งหน้า หัวตารางตรึงกับขอบบน · เปิดเมนู/เปลี่ยนเดือน = เลื่อนมาเวรวันนี้รอไว้
+    // วาดซ้ำเพราะบันทึก/เปิดแผงแก้ไข = คงตำแหน่งเดิม
+    if (SVA.view === 'month') {
+        var jk = monthVal + '|' + SVA.sec, view = document.getElementById('sva-view');
+        if (SVA.jumped !== jk) { SVA.jumped = jk; svScrollToToday(view); }
+        else { svFloatHeads(view); var nb = view.querySelector('.sv-vscroll'); if (nb) nb.scrollLeft = keepLeft; }
+    } else SVA.jumped = '';
     if (SVA.mode === 'edit') svaEditPaint();
     else if (SVA.mode === 'import') svaImportPaint();
     else if (SVA.mode === 'staff') svaStaffPaint();
@@ -131,7 +140,9 @@ function svaExport(kind) {
         : 'ตารางเวร สน.ลำหิน เดือน' + SV_TH_MON[d.getMonth()] + ' ' + (d.getFullYear() + 543);
     var html = day ? svDayHtml(SVA.data, d, { foot: true, plain: true })
         : svMonthHtml(SVA.data, d.getFullYear(), d.getMonth(), SVA.sec, { foot: true });
-    var landscape = !day && !SVA.sec;   // ทุกฝ่ายทั้งเดือนคอลัมน์เยอะ ใช้แนวนอน
+    // ทุกฝ่ายทั้งเดือน = A4 แนวนอน ไม่พอขึ้นหน้าถัดไปพร้อมหัวตาราง
+    if (!day && !SVA.sec) { svExportMonth(kind, title, SVA.data, d.getFullYear(), d.getMonth(), ''); return; }
+    var landscape = false;
     var opt = { a4: day };   // ใบเวรประจำวัน = ยืดเต็มหน้า A4 ตัวอักษรใหญ่
     if (kind === 'img') svExportImage(title, html, landscape, opt); else svExportPdf(title, html, landscape, opt);
 }
@@ -538,6 +549,8 @@ function svaStaffSave() {
 
 // ---------- สไตล์ของเมนูนี้ (ฉีดครั้งเดียว) ----------
 var SVA_CSS = ''
+    // เว็บแอป: กรอบแท็บตัดขอบ (overflow:hidden) ทำให้หัวตารางรายเดือนตรึงกับหน้าไม่ได้ — เปิดเฉพาะตอนอยู่เมนูนี้
+    + 'body.sva-on #pills-tabContent,#pills-tabContent:has(>#content-station.active){overflow:visible!important}'
     + '.sva{display:flex;flex-direction:column;gap:12px;font-family:Sarabun,system-ui,sans-serif}'
     + '.sva-wait{padding:40px 12px;text-align:center;color:#94a3b8}.sva-err{color:#f87171}'
     + '.sva-head{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:800;color:#fff;padding:12px 16px;border-radius:16px;'
