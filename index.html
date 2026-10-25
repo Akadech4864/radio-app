@@ -4,103 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางเวร/ภารกิจ งานสอบสวน สน.ลำหิน</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=30">
-    <!-- Font Awesome -->
+    <link rel="icon" href="logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=40">
 </head>
 <body>
-    <div class="glass-background"></div>
-    
-    <div class="container">
-        <!-- Header -->
-        <header class="glass-panel main-header">
-            <div class="header-content header-single-row">
-                <div class="logo logo-compact">
-                    <img src="logo.png" alt="Logo สน.ลำหิน" class="police-logo">
-                    <h1>ตารางเวร/ภารกิจ งานสอบสวน สน.ลำหิน</h1>
-                </div>
-                
-                <div class="search-container compact-search">
-                    <div class="search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <select id="searchInput" class="search-select">
-                            <option value="">ค้นหาจากชื่อ...</option>
-                        </select>
-                    </div>
-                    <button id="resetHomeBtn" class="glass-panel reset-btn">
-                        ค่าเริ่มต้น
-                    </button>
-                </div>
+    <div class="page">
+
+        <!-- ===== แถบหัวเรื่อง ===== -->
+        <header class="hero">
+            <img src="logo.png" alt="ตราสถานีตำรวจนครบาลลำหิน" class="hero-logo">
+            <div class="hero-txt">
+                <h1>ตารางเวร / ภารกิจ งานสอบสวน</h1>
+                <span>สถานีตำรวจนครบาลลำหิน</span>
+            </div>
+            <div class="hero-right">
+                <div class="hero-clock" id="clock">--:--</div>
+                <div class="hero-date" id="clockDate">-</div>
             </div>
         </header>
 
-        <!-- Top Section: Calendar -->
-        <div class="calendar-top-section">
-            <div id="searchLegend" style="display: none; background: rgba(37,99,235,0.1); border: 1px solid var(--primary); padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;">
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
-                    <span>
-                        <span style="display: inline-block; width: 6px; height: 6px; background: red; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> วันนี้
-                    </span>
-                    <span>
-                        <span style="display: inline-block; width: 14px; height: 14px; background: rgba(37, 99, 235, 0.4); border: 1px solid var(--primary-light); border-radius: 4px; vertical-align: middle; margin-right: 5px;"></span> วันที่เข้าเวร
-                    </span>
-                    <span>
-                        <span style="display: inline-block; width: 6px; height: 6px; background: #f97316; border-radius: 50%; vertical-align: middle; margin-right: 5px;"></span> มีภารกิจ
-                    </span>
-                </div>
+        <!-- ===== ค้นหา ===== -->
+        <section class="search-bar">
+            <div class="search-field">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input id="q" type="search" list="peopleList" autocomplete="off"
+                       placeholder="ค้นหาชื่อ หรือ ภารกิจ…">
+                <datalist id="peopleList"></datalist>
             </div>
+            <div class="search-field search-date">
+                <i class="fa-regular fa-calendar"></i>
+                <input id="dateInput" type="date" title="เลือกวันที่">
+            </div>
+            <button id="todayBtn" class="btn-today" type="button"><i class="fa-solid fa-rotate-left"></i> วันนี้</button>
+        </section>
 
-            <div class="glass-panel calendar-panel">
-                <div class="calendar-header">
-                    <button id="prevMonth" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
-                    <h3 id="currentMonthLabel">มกราคม 2026</h3>
-                    <button id="nextMonth" class="icon-btn"><i class="fa-solid fa-chevron-right"></i></button>
-                </div>
-                <div class="calendar-grid">
-                    <div class="weekday">อา</div><div class="weekday">จ</div><div class="weekday">อ</div><div class="weekday">พ</div><div class="weekday">พฤ</div><div class="weekday">ศ</div><div class="weekday">ส</div>
-                </div>
-                <div id="calendarDays" class="calendar-days"></div>
+        <!-- ===== ผลการค้นหา (แสดงเมื่อค้นหา) ===== -->
+        <section class="card results" id="results" hidden>
+            <div class="card-h">
+                <i class="fa-solid fa-list-check"></i>
+                <span id="resultsTitle">ผลการค้นหา</span>
+                <button class="chip-btn" id="pastToggle" type="button">แสดงย้อนหลัง</button>
+                <button class="icon-x" id="closeResults" type="button" title="ปิด"><i class="fa-solid fa-xmark"></i></button>
             </div>
+            <div id="resultsList" class="res-list"></div>
+        </section>
 
-            <!-- Search Results panel (hidden by default) -->
-            <div class="glass-panel search-results-panel" id="searchResultsPanel" style="display: none; margin-top: 20px;">
-                <h3><i class="fa-solid fa-list-ul"></i> ผลการค้นหา</h3>
-                <div id="searchResultsList" class="search-list">
-                    <!-- Results injected here -->
-                </div>
-            </div>
-        </div>
+        <!-- ===== วันที่กำลังดู ===== -->
+        <div class="day-banner" id="dayBanner"></div>
 
-        <!-- Bottom Section: Daily Info -->
-        <div class="content-grid-bottom">
-            <div class="main-column">
-                <div class="card glass-panel highlight-border duty-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-user-shield"></i>
-                        <h3 id="displayDateLabel">เวร ประจำวัน...</h3>
-                    </div>
-                    <div class="card-body" id="dutyContainer">
-                        <div class="loading-spinner"><div class="spinner"></div></div>
-                    </div>
+        <main class="day-grid">
+            <!-- เวร -->
+            <section class="card duty-card">
+                <div class="card-h">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span id="dutyTitle">เวรสอบสวน</span>
+                    <span class="card-sub" id="dutySub"></span>
                 </div>
-            </div>
+                <div id="duty" class="duty-body"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+            </section>
 
-            <!-- Right Column: Missions -->
-            <div class="side-column">
-                <div class="card glass-panel mission-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-clipboard-list"></i>
-                        <h3 id="missionTitle">ภารกิจวันนี้</h3>
-                    </div>
-                    <div class="card-body" id="dailyMissions">
-                        <div class="loading-spinner"><div class="spinner"></div></div>
-                    </div>
+            <!-- ภารกิจ -->
+            <section class="card mission-card">
+                <div class="card-h">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span id="missionTitle">ภารกิจ</span>
+                    <span class="card-sub" id="missionSub"></span>
                 </div>
+                <div id="missions" class="mis-body"><div class="loading"><span class="spin"></span> กำลังโหลด…</div></div>
+            </section>
+        </main>
+
+        <!-- ===== ปฏิทิน ===== -->
+        <section class="card cal-card">
+            <div class="cal-head">
+                <button id="prevMonth" class="icon-btn" type="button" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
+                <h3 id="monthLabel">-</h3>
+                <button id="nextMonth" class="icon-btn" type="button" title="เดือนถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
-        </div>
+            <div class="cal-week">
+                <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
+            </div>
+            <div id="calDays" class="cal-days"></div>
+            <div class="cal-legend" id="calLegend">
+                <span><i class="dot dot-today"></i>วันนี้</span>
+                <span><i class="dot dot-duty"></i>มีเวร</span>
+                <span><i class="dot dot-mis"></i>มีภารกิจ</span>
+                <span id="legendPerson" hidden><i class="dot dot-person"></i>วันที่คนที่ค้นหาเข้าเวร/ภารกิจ</span>
+            </div>
+        </section>
+
+        <footer class="foot">ข้อมูลจากระบบงานสอบสวน สน.ลำหิน · อัปเดตอัตโนมัติทุก 5 นาที · <span id="lastSync">-</span></footer>
     </div>
-    
-    <script src="app.js?v=30"></script>
+
+    <script src="app.js?v=40"></script>
 </body>
 </html>
