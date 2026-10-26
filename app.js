@@ -15,7 +15,7 @@ const REFRESH_MS = 5 * 60 * 1000;
 
 // รูปแบบเวร พงส. ตามช่วงเวลา
 const SPLIT_START = ymd(2026, 9, 10);   // 10 ก.ย.69: แบ่งผลัด เช้า 08:01-17:00 / เย็น 17:01-08:00
-const PAIR_START = ymd(2026, 10, 22);   // 22 ต.ค.69: เข้าคู่ คู่เวรกลางวัน 08:01-18:00 + เวร 24 ชม.
+const PAIR_START = ymd(2026, 10, 22);   // 22 ต.ค.69: เข้าคู่ คู่เวรกลางวัน 08:01-17:00 + เวร 24 ชม.
 
 const DEFAULT_AVATAR = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
 const TH_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -110,8 +110,8 @@ function dutyPeople(row, live) {
     if (same || (a.length && !b.length) || (!a.length && b.length)) {
         (a.length ? a : b).forEach((n) => pgs.push({ name: n, role: 'พงส.เวร', time: '24 ชม.', color: GOLD, on: live }));
     } else if (k >= PAIR_START) {
-        const dayOn = live && !afterMidnight && now >= 8 * 60 + 1 && now <= 18 * 60;
-        a.forEach((n) => pgs.push({ name: n, role: 'คู่เวรกลางวัน', time: '08:01–18:00', color: GOLD, on: dayOn, off: live && !dayOn }));
+        const dayOn = live && !afterMidnight && now >= 8 * 60 + 1 && now <= 17 * 60;
+        a.forEach((n) => pgs.push({ name: n, role: 'คู่เวรกลางวัน', time: '08:01–17:00', color: GOLD, on: dayOn, off: live && !dayOn }));
         b.forEach((n) => pgs.push({ name: n, role: 'พงส.เวร', time: '24 ชม.', color: BLUE, on: live }));
     } else if (k >= SPLIT_START) {
         const dayOn = live && !afterMidnight && now >= 8 * 60 + 1 && now <= 17 * 60;

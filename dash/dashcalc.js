@@ -321,7 +321,7 @@ function dashComputeCrew(personnel, duty, mission, leave, today, helpers) {
     };
 
     // ตั้งแต่ 26 ต.ค.69 เวร พงส. 2 คนเป็นแบบ "เข้าคู่":
-    //   คอลัมน์ 1 = คู่เวรกลางวัน 08:01-18:00 | คอลัมน์ 6 = เวรหลัก 24 ชม. เริ่ม 08:01
+    //   คอลัมน์ 1 = คู่เวรกลางวัน 08:01-17:00 | คอลัมน์ 6 = เวรหลัก 24 ชม. เริ่ม 08:01
     var DASH_PAIR_START = new Date(2026, 9, 22);
     var res = {
         day: [], eve: [], full: [], asst: [], evi: [], extra: [],
@@ -348,7 +348,7 @@ function dashComputeCrew(personnel, duty, mission, leave, today, helpers) {
             var dd = dashParseDate(r[0]);
             if (dd && dd >= DASH_PAIR_START) {
                 res.pairMode = true;
-                res.dayTime = '08:01-18:00';
+                res.dayTime = '08:01-17:00';
                 res.eveTime = 'ทั้งวัน 24 ชม.';
                 res.dayRole = 'คู่เวรกลางวัน';
                 res.eveRole = 'เวร 24 ชม.';
@@ -427,7 +427,7 @@ function dashComputeCrew(personnel, duty, mission, leave, today, helpers) {
 // (ไม่ฮาร์ดโค้ดชื่อคน ถ้าเปลี่ยนตารางในชีท ผลที่แสดงจะเปลี่ยนตาม)
 //
 // รูปแบบตั้งแต่ 26 ต.ค.69:
-//   จันทร์-ศุกร์  พงส. 1 นาย เข้า 08:01-18:00 คู่กับ พงส.อีก 1 นายที่เข้า 24 ชม.
+//   จันทร์-ศุกร์  พงส. 1 นาย เข้า 08:01-17:00 คู่กับ พงส.อีก 1 นายที่เข้า 24 ชม.
 //   เสาร์-อาทิตย์ พงส. 1 นาย เข้าคนเดียวทั้งวัน 24 ชม.
 // ==========================================================
 var DASH_DOW_TH = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];

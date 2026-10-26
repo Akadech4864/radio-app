@@ -237,7 +237,7 @@ function svInvestMonthHtml(duty, year, month, opts) {
     }
     var head = '<tr><th class="sv-m-date">วันที่</th>'
         + '<th class="sv-i-main">พงส.เวร<small>24 ชม. (08:01 น.)</small></th>'
-        + (has.day ? '<th class="sv-i-day">คู่เวรกลางวัน<small>08:01–18:00 น. (จ.–ศ.)</small></th>' : '')
+        + (has.day ? '<th class="sv-i-day">คู่เวรกลางวัน<small>08:01–17:00 น. (จ.–ศ.)</small></th>' : '')
         + '<th class="sv-i-asst">ผช.พงส.<small>24 ชม.</small></th>'
         + (has.evi ? '<th>ส่งของกลาง</th>' : '') + (has.extra ? '<th>เวรเสริม</th>' : '') + '</tr>';
     var body = rows.map(function (x) {

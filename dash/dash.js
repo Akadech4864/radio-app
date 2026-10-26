@@ -436,7 +436,7 @@ function dashPaintPattern(c, p) {
     if (p.dayPerson) {
         html += row('#f59e0b', 'fa-sun', 'คู่เวรกลางวัน',
             dashDutyFace(p.dayPerson, '#f59e0b', ''),
-            big('1', 'นาย') + chip('08:01–18:00') + chip(dowRange));
+            big('1', 'นาย') + chip('08:01–17:00') + chip(dowRange));
     }
     html += row('#3b82f6', 'fa-moon', 'พงส. 24 ชม.',
         p.rotation.map(function (r) { return dashDutyFace(r.name, '#3b82f6', nx(r)); }).join(''),
