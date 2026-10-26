@@ -660,6 +660,9 @@ var SV_CSS = ''
     + '.sv-shot .sv-sheet,.sv-print .sv-sheet{box-shadow:none;border:1px solid #cbd5e1;border-radius:12px}'
     + '.sv-shot .sv-m-date,.sv-print .sv-m-date{position:static}'
     + '.sv-shot .sv-c-pos,.sv-print .sv-c-pos{white-space:nowrap}'   // ภาพ/PDF ใบเวรรายวัน: ตำแหน่งอยู่บรรทัดเดียว
+    // ภาพ/PDF ใบเวรรายวัน: คอลัมน์หน้าที่แคบพอดีข้อความ (ยาวสุด 2 บรรทัด) ให้ชื่อ/ตำแหน่งได้พื้นที่มากขึ้น
+    + '.sv-shot .sv-c-role,.sv-print .sv-c-role{width:15%}.sv-shot .sv-role,.sv-print .sv-role{padding-left:8px;padding-right:6px}'
+    + '.sv-shot .sv-c-tel,.sv-print .sv-c-tel{width:1%}'
     + '.sv-shot .sv-mis,.sv-print .sv-mis{animation:none!important;background:none!important;box-shadow:none!important}.sv-shot .sv-mis-tag,.sv-print .sv-mis-tag{display:none}'
     // ---- ใบเวรประจำวันแบบเต็มหน้า A4 ----
     + '.sv-a4{display:flex;flex-direction:column}'
