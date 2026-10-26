@@ -41,22 +41,23 @@ var LamhinScene = (function () {
         yard: { x: 4.7, y: 3.4, w: 11.5, d: 23.2 },       // เขตโรงพัก (ลาดยางทั้งแปลง)
 
         // ---- โซนเหนือ: อาคารที่ทำการ ----
-        station: { x: 7.7, y: 5.3, w: 2.8, d: 7.4 },      // หน้าอาคารยาวราว 44 ม. ลึกราว 17 ม. (ด้านข้างจอดรถได้ราว 2 คันตามภาพ)
+        station: { x: 7.7, y: 5.3, w: 2.8, d: 6.6 },      // หน้าอาคารยาวราว 44 ม. ลึกราว 17 ม. (ด้านข้างจอดรถได้ราว 2 คันตามภาพ)
         driveN: { x: 4.9, y: 3.6, w: 11.1, d: 1.7 },      // ถนนข้าง สน. (ด้านเหนือ) 2 เลน + จอดชิดตึก
-        parkN: { x: 5.24, y: 5.6, w: 1.05, d: 6.6 },      // ช่องจอดหน้า สน. ชิดฟุตบาธ
+        parkN: { x: 5.24, y: 5.6, w: 1.05, d: 5.6 },      // ช่องจอดหน้า สน. ชิดฟุตบาธ (6 ช่อง)
         laneN: { x: 6.29, y: 3.6, w: 1.41, d: 9.1 },      // ผ่านหน้าอาคาร: เลนเดียว กว้างราว 1 เลนครึ่ง
         driveE: { x: 13.2, y: 3.6, w: 2.8, d: 9.1 },      // ด้านหลัง สน. 2 เลน (จอดชิดฟุตบาธ เหลือวิ่ง 1 เลน)
         apron: { x: 7.3, y: 8.0, w: 0.4, d: 2.3 },        // ลานปูนหน้าทางเข้าอาคาร
 
         // ---- ถนนกลาง: ประตูหลัก 2 เลนสวนกันได้ ----
-        driveMid: { x: 4.7, y: 12.7, w: 11.5, d: 1.45 },
+        driveMid: { x: 4.7, y: 12.4, w: 11.5, d: 1.45 },
 
         // ---- โซนใต้: อาคารที่พัก 2 หลัง ขนาดเท่ากัน ----
-        parkS: { x: 4.74, y: 14.15, w: 1.56, d: 9.5 },    // ลานจอดหน้าแฟลต (เปิดโล่งถึงซอย)
-        flat1: { x: 6.4, y: 14.15, w: 3.6, d: 9.5 },      // หลังตะวันตก — หลังคาเทา
-        driveBtw: { x: 10.0, y: 14.15, w: 1.9, d: 10.9 }, // ช่องทางรถระหว่างอาคาร (กว้าง จอดได้ 2 ฝั่ง)
-        flat2: { x: 11.9, y: 14.15, w: 3.6, d: 9.5 },     // หลังตะวันออก — หลังคาแดง (ขนาดเท่าหลังแรก)
-        driveS: { x: 4.7, y: 23.65, w: 10.8, d: 1.4 },    // ถนนท้ายแปลง — เลี้ยวขวาออกซอย
+        // อาคารที่พักยาวราว 1.4 เท่าของอาคารที่ทำการ กว้างกว่าเล็กน้อย (ตามภาพดาวเทียม)
+        parkS: { x: 4.74, y: 13.85, w: 1.56, d: 10.3 },   // ลานจอดหน้าแฟลต (เปิดโล่งถึงซอย)
+        flat1: { x: 6.4, y: 13.85, w: 3.7, d: 10.3 },     // หลังตะวันตก — หลังคาเทา
+        driveBtw: { x: 10.1, y: 13.85, w: 1.8, d: 11.7 }, // ช่องทางรถระหว่างอาคาร (จอดได้ 2 ฝั่ง)
+        flat2: { x: 11.9, y: 13.85, w: 3.7, d: 10.3 },    // หลังตะวันออก — หลังคาแดง (ขนาดเท่าหลังแรก)
+        driveS: { x: 4.7, y: 24.15, w: 10.8, d: 1.4 },    // ถนนท้ายแปลง — เลี้ยวขวาออกซอย
 
         guard: { x: 5.0, y: 11.9, w: 0.85, d: 0.85 }      // ป้อมยามประตูหลัก
     };
@@ -64,7 +65,7 @@ var LamhinScene = (function () {
     // ช่องเปิดของรั้ว — มีเฉพาะด้านตะวันตก (ติดซอย) ช่วงกลางลงมาเท่านั้น
     // หน้าอาคารที่ทำการเป็นกำแพงทึบตลอดแนว (ไม่มีประตูด้านเหนือ) · ด้านเหนือ/ตะวันออก/ใต้ เป็นกำแพงทึบ
     var GATES = [
-        { y: 12.7, d: 12.35 }    // ประตูหลัก (ช่องกลาง) + หน้าอาคารที่พัก (เปิดโล่ง) + ทางออกท้ายแปลง
+        { y: 12.4, d: 12.65 }    // ประตูหลัก (ช่องกลาง) + หน้าอาคารที่พัก (เปิดโล่ง) + ทางออกท้ายแปลง
     ];
 
     // ฟุตบาธปูนเลียบรั้ว — มีทุกด้านที่มีกำแพง
@@ -72,7 +73,7 @@ var LamhinScene = (function () {
         { x: 4.84, y: 3.54, w: 11.22, d: 0.4 },     // เหนือ
         { x: 4.84, y: 26.06, w: 11.22, d: 0.4 },    // ใต้ (หลังดงไม้ท้ายแปลง)
         { x: 15.66, y: 3.94, w: 0.4, d: 22.12 },    // ตะวันออก
-        { x: 4.84, y: 3.94, w: 0.4, d: 8.76 },      // ตะวันตก (ช่วงอาคารที่ทำการ)
+        { x: 4.84, y: 3.94, w: 0.4, d: 8.46 },      // ตะวันตก (ช่วงอาคารที่ทำการ)
         { x: 4.84, y: 25.05, w: 0.4, d: 1.01 }      // ตะวันตก (ช่วงท้ายแปลง ต่อจากทางออก)
     ];
 
@@ -462,6 +463,19 @@ var LamhinScene = (function () {
             new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
     }
     // ขอบฟุตบาธทาสีสลับ (ขาวแดง / ขาวดำ) — กล่องยาวแนวแกน x หรือ y
+    function meshTexture() {
+        if (texCache.mesh) return texCache.mesh;
+        var c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        var g = c.getContext('2d');
+        g.clearRect(0, 0, 64, 64);
+        g.strokeStyle = 'rgba(200,206,214,0.85)'; g.lineWidth = 1;
+        for (var i = 0; i <= 64; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 64); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(64, i); g.stroke(); }
+        g.fillStyle = 'rgba(160,168,178,0.95)'; g.fillRect(0, 0, 3, 64); g.fillRect(0, 0, 64, 3);   // โครงเหล็ก
+        var t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 1);
+        texCache.mesh = t; return t;
+    }
     function curbTexture(kind) {
         var key = 'curb' + kind;
         if (texCache[key]) return texCache[key];
@@ -550,15 +564,21 @@ var LamhinScene = (function () {
         slab(PLAN.apron, COL.concrete, 0.16, 0.06, true);
 
         // ฟุตบาธเลียบรั้ว (ยกขอบให้เห็นเป็นทางเท้าจริง)
+        var YC = PLAN.yard.x + PLAN.yard.w / 2, YCy = PLAN.yard.y + PLAN.yard.d / 2;
         WALKS.forEach(function (r) {
             slab(r, COL.concrete, 0.16, 0.13, true);
             slab(r, 0xbac2cc, 0.29, 0.02, true);
+            // ขอบฟุตบาธเลียบรั้วด้านในทาสีขาวดำเป็นช่วง ๆ (ตามภาพ)
+            var c;
+            if (r.w > r.d) { var ey = (r.y + r.d / 2 < YCy) ? r.y + r.d : r.y; c = curb(r.x, ey, r.x + r.w, ey, 'bw', 0.15); }
+            else { var ex = (r.x + r.w / 2 < YC) ? r.x + r.w : r.x; c = curb(ex, r.y, ex, r.y + r.d, 'bw', 0.15); }
+            scene.add(c);
         });
 
         var i;
         // เส้นช่องจอดหน้าอาคารที่ทำการ
-        for (i = 1; i < 7; i++) {
-            slab({ x: PLAN.parkN.x, y: PLAN.parkN.y + PLAN.parkN.d * i / 7 - 0.025, w: PLAN.parkN.w, d: 0.05 },
+        for (i = 1; i < 6; i++) {
+            slab({ x: PLAN.parkN.x, y: PLAN.parkN.y + PLAN.parkN.d * i / 6 - 0.025, w: PLAN.parkN.w, d: 0.05 },
                 COL.line, 0.2, 0.02, true);
         }
         // เส้นแบ่งเลนถนน 2 เลนใน สน. (ถนนกลาง / ข้าง สน. / ด้านหลัง สน. / ท้ายแปลง)
@@ -571,10 +591,10 @@ var LamhinScene = (function () {
                     0xf8fafc, 0.19, 0.015, true);
             }
         }
-        dashLine(5.6, 13.43, 15.3, 13.43);      // ถนนกลาง
+        dashLine(5.6, 13.12, 15.3, 13.12);      // ถนนกลาง
         dashLine(7.9, 4.39, 13.0, 4.39);        // ข้าง สน.
-        dashLine(14.2, 5.4, 14.2, 12.5);        // ด้านหลัง สน.
-        dashLine(5.6, 24.35, 15.2, 24.35);      // ท้ายแปลง
+        dashLine(14.2, 5.4, 14.2, 12.2);        // ด้านหลัง สน.
+        dashLine(5.6, 24.85, 15.2, 24.85);      // ท้ายแปลง
         // เส้นช่องจอดหน้าอาคารที่พัก
         for (i = 1; i < 9; i++) {
             slab({ x: PLAN.parkS.x + 0.1, y: PLAN.parkS.y + PLAN.parkS.d * i / 9 - 0.025, w: PLAN.parkS.w - 0.1, d: 0.05 },
@@ -731,18 +751,48 @@ var LamhinScene = (function () {
         });
         scene.add(g1);
         lows.concat([f2, f3]).forEach(function (m) { m.userData.key = 'station'; pickables.push(m); });
-        // ฟุตบาธรอบอาคาร: ด้านหน้า (ขอบขาวแดง) ด้านข้าง/หลัง (ขอบขาวดำ) — ไม่มีฟุตบาธหน้าที่จอดใต้อาคาร
+        // ---- ส่วนต่อเติมชั้นเดียวด้านหลัง (ใต้ชายคา): กรงตาข่ายเก็บรถ จยย. ของกลาง หลังคาเหล็กลาดเอียง ----
         var SW = 0.32, X0 = st.x, X1 = st.x + st.w, YN = st.y, YS = st.y + st.d, CPE = CARPORT.y + CARPORT.d;
+        var EXT = { x: X1, y: YN - SW, w: 1.5, d: st.d + SW * 2 };             // ด้านหลังตลอดแนว (กินแนวฟุตบาธหัวท้าย)
+        var CG = [EXT, { x: X0 + st.w * 0.45, y: YN - SW + 0.04, w: X1 - X0 - st.w * 0.45, d: SW - 0.04 },   // ฝั่งซ้าย (เหนือ) ช่วงหลัง
+            { x: X0 + st.w * 0.45, y: YS, w: X1 - X0 - st.w * 0.45, d: SW - 0.04 }];                        // ฝั่งขวา (ใต้) ช่วงหลัง
+        var meshMat = new THREE.MeshLambertMaterial({ map: meshTexture(), transparent: true, side: THREE.DoubleSide, depthWrite: false });
+        var tinRoof = new THREE.MeshLambertMaterial({ color: 0x8f4a3c });
+        CG.forEach(function (r, i) {
+            scene.add(plainBox(r, 0.16, 0.03, 0xcfd5dc));                                   // พื้นปูน
+            var H = 0.44, wall = new THREE.Mesh(new THREE.BoxGeometry(r.w, H, r.d), meshMat);
+            wall.position.set(wx(r.x + r.w / 2), 0.19 + H / 2, wz(r.y + r.d / 2)); scene.add(wall);
+            // หลังคาเหล็กลาดจากผนังตึกลงด้านนอก
+            var roof = new THREE.Mesh(new THREE.BoxGeometry(r.w + 0.06, 0.025, r.d + 0.06), tinRoof);
+            roof.position.set(wx(r.x + r.w / 2), 0.19 + H + 0.05, wz(r.y + r.d / 2));
+            if (i === 0) roof.rotation.z = -0.06; else roof.rotation.x = i === 1 ? -0.12 : 0.12;
+            roof.castShadow = true; scene.add(roof);
+        });
+        // รถ จยย. ของกลางเรียงในกรงด้านหลัง
+        for (var mb = 0; mb < 14; mb++) {
+            var bike = new THREE.Group(), bc = [0x1f2937, 0xb91c1c, 0x374151, 0x1e3a8a][mb % 4];
+            var bb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.06), new THREE.MeshLambertMaterial({ color: bc })); bb.position.y = 0.11; bike.add(bb);
+            [0.11, -0.11].forEach(function (wxp) {
+                var wh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 10), new THREE.MeshLambertMaterial({ color: 0x111418 }));
+                wh.rotation.x = Math.PI / 2; wh.position.set(wxp, 0.05, 0); bike.add(wh);
+            });
+            bike.position.set(wx(EXT.x + 0.45 + (mb % 2) * 0.55), 0.19, wz(EXT.y + 0.5 + Math.floor(mb / 2) * 0.95));
+            bike.rotation.y = Math.PI / 2; scene.add(bike);
+        }
+        // ---- ฟุตบาธรอบอาคาร: หน้า + ซ้าย (เหนือ) ขอบขาวแดง · ขวา (ใต้) ขอบขาวดำ · ไม่มีฟุตบาธหน้าที่จอดใต้อาคาร ----
+        var BX = EXT.x + EXT.w;                                                     // ขอบหลังของส่วนต่อเติม
         [{ x: X0 - SW, y: CPE, w: SW, d: YS + SW - CPE },          // หน้า
-        { x: X0 - SW, y: YS, w: X1 - X0 + SW * 2, d: SW },          // ข้างขวา (ใต้)
-        { x: X1, y: YN - SW, w: SW, d: YS - YN + SW },              // หลัง
-        { x: CARPORT.x + CARPORT.w, y: YN - SW, w: X1 - CARPORT.x - CARPORT.w, d: SW }   // ข้างซ้าย (เหนือ) ช่วงหลังที่จอด
+        { x: X0 - SW, y: YS, w: X1 - X0 + SW, d: SW },               // ข้างขวา (ใต้)
+        { x: X0 - SW, y: YN - SW, w: X1 - X0 + SW, d: SW },          // ข้างซ้าย (เหนือ) ตลอดแนว
+        { x: BX, y: YN - SW, w: SW, d: st.d + SW * 2 }               // หลังส่วนต่อเติม
         ].forEach(function (r) { scene.add(plainBox(r, 0.16, 0.05, 0xd9dee5)); });
         scene.add(curb(X0 - SW, CPE, X0 - SW, YS + SW, 'red'));
         scene.add(curb(X0 - SW, CPE, X0, CPE, 'red'));
-        scene.add(curb(X0 - SW, YS + SW, X1 + SW, YS + SW, 'bw'));
-        scene.add(curb(X1 + SW, YN - SW, X1 + SW, YS + SW, 'bw'));
-        scene.add(curb(CARPORT.x + CARPORT.w, YN - SW, X1 + SW, YN - SW, 'bw'));
+        scene.add(curb(X0 - SW, YN - SW, X0 - SW, YN, 'red'));
+        scene.add(curb(X0 - SW, YN - SW, BX + SW, YN - SW, 'red'));
+        scene.add(curb(X0 - SW, YS + SW, BX + SW, YS + SW, 'bw'));
+        scene.add(curb(BX + SW, YN - SW, BX + SW, YS + SW, 'bw'));
+
 
         // ==========================================================
         // อาคารที่พัก 2 หลัง (5 ชั้น ตามภาพถ่าย) — ขนาดเท่ากัน ต่างแค่สีหลังคา
@@ -813,9 +863,7 @@ var LamhinScene = (function () {
         });
 
         // ---- ป้อมยามประตูหลัก ----
-        var gd = plainBox(PLAN.guard, 0.16, 0.5, 0xe4e9ef);
-        gd.userData.key = 'gate'; scene.add(gd); pickables.push(gd);
-        scene.add(plainBox(grow(PLAN.guard, 0.1), 0.66, 0.08, COL.roofRed));
+        // (ป้อมยามเดิมเอาออก — ภาพถ่ายจริงตรงประตูหลักเป็นเกาะศาลพระภูมิ)
 
         // ---- ลานจอด (คลิกได้) ----
         var pk = new THREE.Mesh(new THREE.BoxGeometry(PLAN.parkN.w + PLAN.laneN.w, 0.06, PLAN.parkN.d),
@@ -826,7 +874,7 @@ var LamhinScene = (function () {
 
         // ---- องค์ประกอบย่อย ----
         scene.add(flagpole(5.04, PLAN.station.y + PLAN.station.d / 2));   // กึ่งกลางอาคารที่ทำการ ติดรั้วบนฟุตบาธ
-        scene.add(shrine(5.45, 12.32));      // ศาลพระภูมิบนเกาะยกพื้น ข้างประตูหลัก
+        scene.add(shrine(5.45, 11.78));      // ศาลพระภูมิบนเกาะยกพื้น หัวมุมประตูหลัก
         // เสาไฟ: ฝั่งตะวันออกตั้งบนฟุตบาธริมกำแพง (ไม่ขวางรถที่จอด)
         [[5.5, 6.8, 0], [5.5, 10.8, 0], [15.86, 6.0, 1], [15.86, 11.0, 1],
         [15.86, 16.35, 1], [15.86, 21.95, 1], [5.5, 25.75, 0]].forEach(function (p) {
@@ -836,9 +884,9 @@ var LamhinScene = (function () {
         // ---- รถ ----
         // หน้าอาคารที่ทำการ: จอดชิดฟุตบาธ หัวรถชี้ตะวันออก เหลือเลนสัญจรด้านหลังรถ 1 เลน
         var P = PLAN.parkN;
-        [0x1f3f8f, 0x9aa3ad, 0x2b2f36, 0xb8453a, 0xe8eaed, 0x28527a, 0x5b6472]
+        [0x1f3f8f, 0x9aa3ad, 0x2b2f36, 0xb8453a, 0xe8eaed, 0x28527a]
             .forEach(function (c, k) {
-                scene.add(car(P.x + 0.52, P.y + P.d * (k + 0.5) / 7, c, 0));
+                scene.add(car(P.x + 0.52, P.y + P.d * (k + 0.5) / 6, c, 0));
             });
         // หน้าอาคารที่พัก: หันหน้ารถเข้าหาตึก
         var S = PLAN.parkS;
@@ -860,7 +908,7 @@ var LamhinScene = (function () {
             scene.add(car(15.4, c[0], c[1], -Math.PI / 2));
         });
         // ถนนกลาง: 2 คันจอดต่อท้ายกัน ชิดอาคารที่ทำการ หันไปทางออก
-        [[8.35, 0x1b1f26], [9.5, 0x1b1f26]].forEach(function (c) {     // ตามภาพ: SUV ดำ + เก๋งดำ จอดเรียงชิดฟุตบาธข้างอาคาร
+        [[7.95, 0x1b1f26], [8.95, 0x1b1f26]].forEach(function (c) {     // ตามภาพ: SUV ดำ + เก๋งดำ จอดเรียงชิดฟุตบาธข้างอาคาร
             scene.add(car(c[0], PLAN.station.y + PLAN.station.d + 0.32 + 0.21, c[1], 0));
         });
         // ระหว่างอาคารที่พัก: จอดชิดอาคารทั้ง 2 ฝั่ง ฝั่งละ 3 คัน หันไปทาง สน.
@@ -1061,14 +1109,14 @@ var LamhinScene = (function () {
         { p: [12.0, -5.2], say: 'ถนนคลองสิบ–คลองสิบสี่' },
         { p: [4.25, -5.2], say: 'เลี้ยวซ้ายข้ามสะพานคลองสนาม เข้าซอยคลองสิบ–สิบสี่ 7' },
         { p: [4.25, 0.6], say: 'ผ่านทุ่งนาสองข้างทาง มุ่งหน้า สน.ลำหิน' },
-        { p: [4.25, 13.2], say: 'เลี้ยวซ้ายเข้า สน. — ถนน 2 เลนสวนกันได้' },
-        { p: [7.0, 13.2], say: 'เลี้ยวซ้าย ผ่านหน้าอาคารที่ทำการ (เลนเดียว)' },
+        { p: [4.25, 12.82], say: 'เลี้ยวซ้ายเข้า สน. — ถนน 2 เลนสวนกันได้' },
+        { p: [7.0, 12.82], say: 'เลี้ยวซ้าย ผ่านหน้าอาคารที่ทำการ (เลนเดียว)' },
         { p: [7.0, 4.2], say: 'เลี้ยวขวา ถนนข้าง สน. 2 เลน' },
         { p: [14.6, 4.2], say: 'เลี้ยวขวา วนไปด้านหลัง สน.' },
-        { p: [14.6, 13.7], say: 'เลี้ยวขวา ถนน 2 เลนกลาง สน.' },
-        { p: [10.95, 13.7], say: 'เลี้ยวซ้าย เข้าระหว่างอาคารที่พัก' },
-        { p: [10.95, 24.6], say: 'เลี้ยวขวาออก ถนนท้ายแปลง' },
-        { p: [3.45, 24.6], say: 'เลี้ยวขวา วิ่งตามซอยผ่านหน้า สน.ลำหิน' },
+        { p: [14.6, 13.45], say: 'เลี้ยวขวา ถนน 2 เลนกลาง สน.' },
+        { p: [11.05, 13.45], say: 'เลี้ยวซ้าย เข้าระหว่างอาคารที่พัก' },
+        { p: [11.05, 24.95], say: 'เลี้ยวขวาออก ถนนท้ายแปลง' },
+        { p: [3.45, 24.95], say: 'เลี้ยวขวา วิ่งตามซอยผ่านหน้า สน.ลำหิน' },
         { p: [3.45, -5.7], say: 'ข้ามสะพาน เลี้ยวขวาออกถนนคลองสิบ–คลองสิบสี่' },
         { p: [11.0, -5.7], say: 'สิ้นสุดการจำลอง' }
     ];
