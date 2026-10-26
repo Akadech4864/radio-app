@@ -73,7 +73,7 @@ function svaPaint() {
     var dateVal = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
     var monthVal = dateVal.slice(0, 7);
     var pv = document.querySelector('#sva-view .sv-vscroll'), keepLeft = pv ? pv.scrollLeft : 0;
-    var nMis = (SVA.data.rows || []).filter(function (r) { return r[10] && String(r[0]).slice(3) === monthVal.slice(5, 7) + '/' + monthVal.slice(0, 4); }).length;
+    var nMis = (SVA.data.rows || []).filter(function (r) { return (r[10] || r[11]) && String(r[0]).slice(3) === monthVal.slice(5, 7) + '/' + monthVal.slice(0, 4); }).length;
     root.innerHTML = '<div class="sva">'
         + '<div class="sva-head"><i class="fas fa-building-shield"></i><span>ตารางเวรทุกสายงาน สน.ลำหิน</span></div>'
         + '<div class="sva-bar">'
@@ -629,6 +629,7 @@ function svaPlanPaint() {
         + '<div class="sva-hint"><i class="fas fa-circle-info"></i> เวรรายวันที่กรอกไว้เป็นหลัก · วันที่ไม่ได้กรอกใช้ตามตารางของงานอัตโนมัติ · '
         + 'ชื่อไม่ตรงกันจะกระพริบสีส้มในตารางเวร</div>'
         + (mis.length ? svaPlanMisHtml(mis) : '<div class="sva-pl-ok"><i class="fas fa-circle-check"></i> ตารางรายวันเดือนนี้ตรงกับตารางเวรของทุกงาน</div>')
+        + svaPlanPhoneHtml(d.phoneMismatches || [])
         + '<div class="sva-pl-tabs">' + tabs + '</div>'
         // ---- ไฟล์ต้นฉบับ ----
         + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-paperclip"></i> ไฟล์ตารางเวร' + svEsc(u.name) + ' เดือน' + svaYmText(pl.ym) + '</div>'
@@ -654,6 +655,21 @@ function svaPlanMisHtml(mis) {
                 + '<button type="button" onclick="svaPlanFix(' + i + ',\'daily\')" title="ใช้ชื่อตามตารางรายวัน (แก้ตารางเวรของงานให้ตรง เช่น มีการแลกเวร)"><i class="fas fa-calendar-day"></i> ตามตารางรายวัน</button>'
                 + '<button type="button" onclick="svaPlanGoDay(' + i + ')" title="เปิดเวรรายวันวันนั้น">เปิดวันนั้น</button></div></div>';
         }).join('') + '</div>';
+}
+// เบอร์โทรตามใบเวรไม่ตรงฐานข้อมูลกำลังพล: เลือกแก้ฐานข้อมูลตามใบเวร หรือใช้เบอร์ในฐานข้อมูลต่อ
+function svaPlanPhoneHtml(list) {
+    if (!list.length) return '';
+    return '<div class="sva-pl-mis"><div class="sva-pl-mis-h"><i class="fas fa-phone-slash"></i> เบอร์โทรในใบเวรไม่ตรงกับฐานข้อมูลกำลังพล ' + list.length + ' คน</div>'
+        + list.map(function (m, i) {
+            return '<div class="sva-pl-mi"><div class="sva-pl-mt"><b>' + svEsc(m.name) + '</b> <small>(' + m.dates.map(function (ds) { return svaDayText(ds); }).join(', ') + ')</small></div>'
+                + '<div class="sva-pl-mv"><span>ใบเวร: <b>' + svEsc(m.sheet) + '</b></span><span>ฐานข้อมูล: <b>' + svEsc(m.db) + '</b></span></div>'
+                + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanPhone(' + i + ',\x27db\x27)" title="แก้เบอร์ในฐานข้อมูลกำลังพลเป็นเบอร์ตามใบเวร (ใช้ทุกวันต่อจากนี้)"><i class="fas fa-address-book"></i> แก้ฐานข้อมูลตามใบเวร</button>'
+                + '<button type="button" onclick="svaPlanPhone(' + i + ',\x27sheet\x27)" title="ใช้เบอร์ในฐานข้อมูลต่อ (ไม่แก้)"><i class="fas fa-xmark"></i> ใช้เบอร์ในฐานข้อมูล</button></div></div>';
+        }).join('') + '</div>';
+}
+function svaPlanPhone(i, mode) {
+    var m = (SVA.pl.d.phoneMismatches || [])[i]; if (!m) return;
+    svaPlanCall('resolveStationPhone', [m.name, m.sheet, mode], function () { svaPlanReload(); });
 }
 function svaPlanFix(i, mode) {
     var m = SVA.pl.d.mismatches[i]; if (!m) return;

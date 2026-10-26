@@ -129,7 +129,8 @@ function svDayHtml(data, date, opts) {
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div></td>'
                     + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
-                    + '<td class="sv-c-tel">' + (tel && !opts.plain ? '<a href="tel:' + tel + '">' + svEsc(r[6]) + '</a>' : svEsc(r[6] || '')) + '</td>'
+                    + '<td class="sv-c-tel' + (r[11] ? ' sv-mis' : '') + '">' + (tel && !opts.plain ? '<a href="tel:' + tel + '">' + svEsc(r[6]) + '</a>' : svEsc(r[6] || ''))
+                    + (r[11] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ฐานข้อมูล: ' + svEsc(r[11]) + '</div>' : '') + '</td>'
                     + '</tr>';
             });
         });
