@@ -41,7 +41,7 @@ var LamhinScene = (function () {
         yard: { x: 4.7, y: 3.4, w: 11.5, d: 23.2 },       // เขตโรงพัก (ลาดยางทั้งแปลง)
 
         // ---- โซนเหนือ: อาคารที่ทำการ ----
-        station: { x: 7.7, y: 5.3, w: 5.5, d: 7.4 },      // ยาว 7.4 > ลึก 5.5 ตามตึกจริง
+        station: { x: 7.7, y: 5.3, w: 2.8, d: 7.4 },      // หน้าอาคารยาวราว 44 ม. ลึกราว 17 ม. (ด้านข้างจอดรถได้ราว 2 คันตามภาพ)
         driveN: { x: 4.9, y: 3.6, w: 11.1, d: 1.7 },      // ถนนข้าง สน. (ด้านเหนือ) 2 เลน + จอดชิดตึก
         parkN: { x: 5.24, y: 5.6, w: 1.05, d: 6.6 },      // ช่องจอดหน้า สน. ชิดฟุตบาธ
         laneN: { x: 6.29, y: 3.6, w: 1.41, d: 9.1 },      // ผ่านหน้าอาคาร: เลนเดียว กว้างราว 1 เลนครึ่ง
@@ -245,7 +245,7 @@ var LamhinScene = (function () {
     // โครงด้านข้างรีดเป็นตัวถังโค้งมน + ห้องโดยสารกระจกเข้ม หลังคาสีตัวรถ + ล้อแม็ก + ไฟหน้า/ท้าย/กระจกข้าง
     // ขนาด (1 หน่วย ≈ 6 ม.): ยาว ~5 ม. กว้าง ~2.2 ม. สูง ~1.8 ม. — ใหญ่กว่าของจริงเล็กน้อยให้มองเห็นชัด
     // หัวรถอยู่ด้าน +x · จุดอ้างอิงอยู่ที่พื้น (ล้อแตะ y = 0)
-    var CAR_W = 0.36, carGeo = null, carMatCache = {}, carSeq = 0;
+    var CAR_W = 0.32, carGeo = null, carMatCache = {}, carSeq = 0;   // กว้างราว 1.9 ม.
     function carShape(pts) {
         var s = new THREE.Shape();
         s.moveTo(pts[0][0], pts[0][1]);
@@ -385,21 +385,31 @@ var LamhinScene = (function () {
         return g;
     }
 
+    // ศาลพระภูมิ: เกาะยกพื้นปูอิฐแดง ขอบขาวแดง · เสาขาว + ตัวศาลทองทรงไทย หลังคาซ้อนชั้น ยอดแหลม · ป้ายทางเข้าแดง
     function shrine(x, z) {
-        var g = new THREE.Group();
-        var post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.42, 0.07),
-            new THREE.MeshLambertMaterial({ color: 0xc9a227 }));
-        post.position.y = 0.21; g.add(post);
-        var body = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.22),
-            new THREE.MeshLambertMaterial({ color: 0xe0b43c }));
-        body.position.y = 0.51; body.castShadow = true; g.add(body);
-        var roof = new THREE.Mesh(new THREE.ConeGeometry(0.19, 0.2, 4),
-            new THREE.MeshLambertMaterial({ color: 0xffd45e }));
-        roof.position.y = 0.7; roof.rotation.y = Math.PI / 4; g.add(roof);
-        // ฐานปูนเล็ก ๆ
-        var pad = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5),
-            new THREE.MeshLambertMaterial({ color: 0xb9c1cb }));
-        pad.position.y = 0.03; g.add(pad);
+        var g = new THREE.Group(), gold = new THREE.MeshLambertMaterial({ color: 0xe0b23a }), gold2 = new THREE.MeshLambertMaterial({ color: 0xf2cc55 });
+        var IW = 0.82, ID = 0.66;
+        var pad = new THREE.Mesh(new THREE.BoxGeometry(IW, 0.07, ID), new THREE.MeshLambertMaterial({ color: 0xb5523c }));
+        pad.position.y = 0.035; pad.receiveShadow = true; g.add(pad);
+        var t = curbTexture('red').clone(); t.needsUpdate = true; t.repeat.set(6, 1);
+        var cm = new THREE.MeshLambertMaterial({ map: t });
+        [[IW, 0, ID / 2, 0], [IW, 0, -ID / 2, 0], [ID, IW / 2, 0, 1], [ID, -IW / 2, 0, 1]].forEach(function (e) {
+            var m = new THREE.Mesh(new THREE.BoxGeometry(e[0], 0.09, 0.05), cm); m.position.set(e[1], 0.045, e[2]);
+            if (e[3]) m.rotation.y = Math.PI / 2; g.add(m);
+        });
+        var post = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.4, 0.09), new THREE.MeshLambertMaterial({ color: 0xf4f1ea }));
+        post.position.y = 0.07 + 0.2; g.add(post);
+        var deck = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.03, 0.26), gold); deck.position.y = 0.485; g.add(deck);
+        var body = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.15, 0.17), gold2); body.position.y = 0.575; body.castShadow = true; g.add(body);
+        [[0.2, 0.08, 0.67], [0.15, 0.08, 0.73], [0.1, 0.08, 0.79]].forEach(function (r) {     // หลังคาซ้อนชั้น
+            var roof = new THREE.Mesh(new THREE.ConeGeometry(r[0], r[1], 4), gold); roof.rotation.y = Math.PI / 4; roof.position.y = r[2]; g.add(roof);
+        });
+        var spire = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.16, 6), gold2); spire.position.y = 0.9; g.add(spire);
+        // ป้าย "ทางเข้า Entrance"
+        var sp = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.42, 0.02), new THREE.MeshLambertMaterial({ color: 0x9aa4b1 }));
+        sp.position.set(-IW / 2 + 0.08, 0.28, ID / 2 - 0.08); g.add(sp);
+        var sb = signPlane('ทางเข้า Entrance', '#c62828', '#ffffff', 0.32, 0.08);
+        sb.position.set(-IW / 2 + 0.08, 0.5, ID / 2 - 0.08); sb.rotation.y = -Math.PI / 2; g.add(sb);
         g.position.set(wx(x), 0.16, wz(z));
         return g;
     }
@@ -439,6 +449,39 @@ var LamhinScene = (function () {
             new THREE.MeshBasicMaterial({ map: t, transparent: !bg }));
     }
 
+    function signPlane2(main, sub, wUnit, hUnit) {
+        var c = document.createElement('canvas');
+        c.width = 1024; c.height = 128;
+        var g = c.getContext('2d');
+        g.fillStyle = '#ffffff'; g.textAlign = 'center';
+        g.font = 'bold 66px "Sarabun",system-ui,sans-serif'; g.textBaseline = 'alphabetic';
+        g.fillText(main, 512, 72);
+        g.font = '600 34px "Sarabun",system-ui,sans-serif';
+        g.fillText(sub, 512, 116);
+        return new THREE.Mesh(new THREE.PlaneGeometry(wUnit, hUnit),
+            new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
+    }
+    // ขอบฟุตบาธทาสีสลับ (ขาวแดง / ขาวดำ) — กล่องยาวแนวแกน x หรือ y
+    function curbTexture(kind) {
+        var key = 'curb' + kind;
+        if (texCache[key]) return texCache[key];
+        var c = document.createElement('canvas');
+        c.width = 64; c.height = 8;
+        var g = c.getContext('2d');
+        g.fillStyle = '#f8fafc'; g.fillRect(0, 0, 64, 8);
+        g.fillStyle = kind === 'red' ? '#d62f2f' : '#1f242b'; g.fillRect(32, 0, 32, 8);
+        var t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        texCache[key] = t; return t;
+    }
+    function curb(x0, y0, x1, y1, kind, h) {
+        var alongX = Math.abs(x1 - x0) >= Math.abs(y1 - y0), len = alongX ? Math.abs(x1 - x0) : Math.abs(y1 - y0);
+        var t = curbTexture(kind).clone(); t.needsUpdate = true; t.repeat.set(Math.max(1, Math.round(len / 0.32)), 1);
+        var m = new THREE.Mesh(new THREE.BoxGeometry(len, h || 0.07, 0.05), new THREE.MeshLambertMaterial({ map: t }));
+        m.position.set(wx((x0 + x1) / 2), 0.16 + (h || 0.07) / 2, wz((y0 + y1) / 2));
+        if (!alongX) m.rotation.y = Math.PI / 2;
+        return m;
+    }
     // ---------- ลูกศรบอกทางเดินรถบนพื้น ----------
     function roadArrow(x, z, rotY) {
         var g = new THREE.Group();
@@ -641,17 +684,32 @@ var LamhinScene = (function () {
         g1.add(plainBox(grow(st, 0.38), Y3, 0.04, 0xb45a46));
         corrRing(grow(st, 0.42), Y3, 0.22);
         // ป้าย POLICE: แผ่นแดงฝังในขอบหลังคาด้านหน้า ช่วงเหนือ (เหนือบันไดทางขึ้น)
-        var RF = grow(st, 0.42), PB = { y0: st.y + 0.7, d: 2.3 };
+        var SBC = PLAN.apron.y + PLAN.apron.d / 2;                 // แนวกึ่งกลางป้าย (เหนือบันไดทางขึ้น/ทางเข้า)
+        var RF = grow(st, 0.42), PB = { y0: SBC - 1.15, d: 2.3 };
         g1.add(plainBox({ x: RF.x - 0.02, y: PB.y0, w: 0.03, d: PB.d }, Y3, 0.22, 0xb3261e));
         var sgn = signPlane('POLICE', null, '#ffffff', 2.1, 0.2);
         sgn.position.set(wx(RF.x - 0.04), Y3 + 0.11, wz(PB.y0 + PB.d / 2));
         sgn.rotation.y = -Math.PI / 2; g1.add(sgn);
         // ป้ายชื่อสถานี: แผ่นแดงระดับชั้น 2 เหนือทางเข้า
-        var SB = { y: PLAN.apron.y + PLAN.apron.d / 2 - 1.25, d: 2.5 };
+        var SB = { y: SBC - 1.25, d: 2.5 };
         g1.add(plainBox({ x: S2.x - 0.03, y: SB.y, w: 0.03, d: SB.d }, Y1 + 0.2, 0.16, 0xa8291f));
         var sgn2 = signPlane('สถานีตำรวจนครบาลลำหิน', null, '#ffffff', 2.3, 0.14);
         sgn2.position.set(wx(S2.x - 0.05), Y1 + 0.28, wz(SB.y + SB.d / 2));
         sgn2.rotation.y = -Math.PI / 2; g1.add(sgn2);
+        // ป้าย "โรงพักเพื่อประชาชน" เหนือประตูทางเข้าหลัก (ขวาของป้ายชื่อ สน. ต่ำกว่าเล็กน้อย)
+        var PP = { y: SBC + 0.95, d: 1.35 };
+        g1.add(plainBox({ x: st.x - 0.025, y: PP.y, w: 0.025, d: PP.d }, Y0 + GF - 0.27, 0.17, 0xa8291f));
+        var sgn3 = signPlane2('โรงพักเพื่อประชาชน', 'ผู้พิทักษ์ รับใช้ ประชาชน', 1.28, 0.16);
+        sgn3.position.set(wx(st.x - 0.03), Y0 + GF - 0.185, wz(PP.y + PP.d / 2));
+        sgn3.rotation.y = -Math.PI / 2; g1.add(sgn3);
+        // ผนังชั้นล่างช่วงขวาของทางเข้า: ช่วงล่างทาสีแดง (ป้ายประชาสัมพันธ์) + กรอบรูปสีทอง 3 กรอบ
+        var RW = { y: PP.y + PP.d + 0.05, d: st.y + st.d - PP.y - PP.d - 0.2 };
+        g1.add(plainBox({ x: st.x - 0.02, y: RW.y, w: 0.02, d: RW.d }, Y0, 0.25, 0xc62828));
+        [0.25, 0.5, 0.75].forEach(function (k) {
+            var fy = RW.y + RW.d * k;
+            g1.add(plainBox({ x: st.x - 0.03, y: fy - 0.11, w: 0.02, d: 0.22 }, Y0 + 0.3, 0.2, 0xd4a52a));
+            g1.add(plainBox({ x: st.x - 0.035, y: fy - 0.075, w: 0.01, d: 0.15 }, Y0 + 0.33, 0.14, 0xe9e2cf));
+        });
         // เสาอากาศโครงเหล็กบนดาดฟ้า
         (function () {
             var ax = wx(st.x + st.w * 0.62), az = wz(st.y + st.d * 0.55), base = Y3 + 0.04, AH = 2.1, steel = new THREE.MeshLambertMaterial({ color: 0x9aa4b1 });
@@ -673,6 +731,18 @@ var LamhinScene = (function () {
         });
         scene.add(g1);
         lows.concat([f2, f3]).forEach(function (m) { m.userData.key = 'station'; pickables.push(m); });
+        // ฟุตบาธรอบอาคาร: ด้านหน้า (ขอบขาวแดง) ด้านข้าง/หลัง (ขอบขาวดำ) — ไม่มีฟุตบาธหน้าที่จอดใต้อาคาร
+        var SW = 0.32, X0 = st.x, X1 = st.x + st.w, YN = st.y, YS = st.y + st.d, CPE = CARPORT.y + CARPORT.d;
+        [{ x: X0 - SW, y: CPE, w: SW, d: YS + SW - CPE },          // หน้า
+        { x: X0 - SW, y: YS, w: X1 - X0 + SW * 2, d: SW },          // ข้างขวา (ใต้)
+        { x: X1, y: YN - SW, w: SW, d: YS - YN + SW },              // หลัง
+        { x: CARPORT.x + CARPORT.w, y: YN - SW, w: X1 - CARPORT.x - CARPORT.w, d: SW }   // ข้างซ้าย (เหนือ) ช่วงหลังที่จอด
+        ].forEach(function (r) { scene.add(plainBox(r, 0.16, 0.05, 0xd9dee5)); });
+        scene.add(curb(X0 - SW, CPE, X0 - SW, YS + SW, 'red'));
+        scene.add(curb(X0 - SW, CPE, X0, CPE, 'red'));
+        scene.add(curb(X0 - SW, YS + SW, X1 + SW, YS + SW, 'bw'));
+        scene.add(curb(X1 + SW, YN - SW, X1 + SW, YS + SW, 'bw'));
+        scene.add(curb(CARPORT.x + CARPORT.w, YN - SW, X1 + SW, YN - SW, 'bw'));
 
         // ==========================================================
         // อาคารที่พัก 2 หลัง (5 ชั้น ตามภาพถ่าย) — ขนาดเท่ากัน ต่างแค่สีหลังคา
@@ -756,7 +826,7 @@ var LamhinScene = (function () {
 
         // ---- องค์ประกอบย่อย ----
         scene.add(flagpole(5.04, PLAN.station.y + PLAN.station.d / 2));   // กึ่งกลางอาคารที่ทำการ ติดรั้วบนฟุตบาธ
-        scene.add(shrine(5.42, 12.35));      // ศาลพระภูมิ ท้ายช่องจอดรถ
+        scene.add(shrine(5.45, 12.32));      // ศาลพระภูมิบนเกาะยกพื้น ข้างประตูหลัก
         // เสาไฟ: ฝั่งตะวันออกตั้งบนฟุตบาธริมกำแพง (ไม่ขวางรถที่จอด)
         [[5.5, 6.8, 0], [5.5, 10.8, 0], [15.86, 6.0, 1], [15.86, 11.0, 1],
         [15.86, 16.35, 1], [15.86, 21.95, 1], [5.5, 25.75, 0]].forEach(function (p) {
@@ -783,15 +853,15 @@ var LamhinScene = (function () {
         // ทิศหัวรถ: 0 = ตะวันออก, PI = ตะวันตก, PI/2 = เหนือ, -PI/2 = ใต้
         // ข้าง สน. (เหนือ): 2 คันชิดตึก หันไปทางด้านหลัง สน.
         [[10.0, 0xe8eaed], [11.1, 0x28527a]].forEach(function (c) {
-            scene.add(car(c[0], PLAN.station.y - 0.26, c[1], 0));
+            scene.add(car(c[0], PLAN.station.y - 0.52, c[1], 0));
         });
         // ด้านหลัง สน.: 3 คันชิดฟุตบาธ จอดต่อกัน หันไปทางอาคารที่พัก
         [[6.6, 0xf8fafc], [7.7, 0x2b2f36], [8.8, 0x9aa3ad]].forEach(function (c) {
             scene.add(car(15.4, c[0], c[1], -Math.PI / 2));
         });
         // ถนนกลาง: 2 คันจอดต่อท้ายกัน ชิดอาคารที่ทำการ หันไปทางออก
-        [[8.2, 0x2b2f36], [9.3, 0xb8453a]].forEach(function (c) {
-            scene.add(car(c[0], PLAN.driveMid.y + 0.27, c[1], Math.PI));
+        [[8.35, 0x1b1f26], [9.5, 0x1b1f26]].forEach(function (c) {     // ตามภาพ: SUV ดำ + เก๋งดำ จอดเรียงชิดฟุตบาธข้างอาคาร
+            scene.add(car(c[0], PLAN.station.y + PLAN.station.d + 0.32 + 0.21, c[1], 0));
         });
         // ระหว่างอาคารที่พัก: จอดชิดอาคารทั้ง 2 ฝั่ง ฝั่งละ 3 คัน หันไปทาง สน.
         // อยู่ช่วงใต้ ไม่ขวางทางเข้าตึกด้านเหนือ และพ้นช่องบันไดของหลังตะวันตก
