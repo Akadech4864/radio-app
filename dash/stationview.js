@@ -100,6 +100,11 @@ function svNoteText(n) {
     if (!/^\d{1,2}[.:]\d{2}\s*-\s*\d{1,2}[.:]\d{2}/.test(s)) return s;
     return s.replace(/\s*\(24 ชม\.\)/, '').replace(/:/g, '.');
 }
+/** เฉพาะหมายเหตุที่เป็นช่วงเวลา (ข้อความอื่นคืนค่าว่าง) */
+function svNoteTime(n) {
+    var s = String(n || '').trim();
+    return /^\d{1,2}[.:]\d{2}\s*-\s*\d{1,2}[.:]\d{2}/.test(s) ? svNoteText(s) : '';
+}
 // เวลาหลังชื่อของหน้าที่ที่ไม่ได้บันทึกเวลาไว้
 var SV_ROLE_NOTE = { 'เวรอำนวยการ': '08.01-08.00 น.' };
 // ข้อความเวลาที่แสดง (กุญแจในชีตคงเดิม) — ป. ผลัดกลางคืนลงเวรก่อนผลัดเช้ารับ 1 นาที
@@ -134,16 +139,18 @@ function svDayHtml(data, date, opts) {
             }
             list.forEach(function (r, i) {
                 var tel = String(r[6] || '').replace(/[^0-9+]/g, '');
-                var note = r[7] || SV_ROLE_NOTE[role] || '';
+                // หลังชื่อแสดงเฉพาะเวลา (รหัสวิทยุ/ชุด เช่น "ลำหิน 22" "ชุด 1" ไม่แสดง) · มือถือย้ายเวลาไปไว้ใต้ตำแหน่ง
+                var note = svNoteTime(r[7] || SV_ROLE_NOTE[role] || '');
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
                 html += '<tr data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
                     + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(role) + '</td>' : '')
-                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note">' + svEsc(svNoteText(note)) + '</span>' : '')
+                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note sv-note-in">' + svEsc(note) + '</span>' : '')
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
-                    + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div></td>'
+                    + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div>'
+                    + (note ? '<div class="sv-note-row"><span class="sv-note">' + svEsc(note) + '</span></div>' : '') + '</td>'
                     + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
                     + '<td class="sv-c-tel' + (r[11] ? ' sv-mis' : '') + '">' + (tel && !opts.plain ? '<a href="tel:' + tel + '">' + svEsc(r[6]) + '</a>' : svEsc(r[6] || ''))
-                    + (r[11] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ฐานข้อมูล: ' + svEsc(r[11]) + '</div>' : '') + '</td>'
+                    + (r[11] ? '<div class="sv-mis-tag sv-tel-db" title="เบอร์ในฐานข้อมูลกำลังพล"><i class="fas fa-database"></i> ' + svEsc(r[11]) + '</div>' : '') + '</td>'
                     + '</tr>';
             });
         });
@@ -637,7 +644,7 @@ var SV_CSS = ''
     + '.sv-table thead th{background:#f1f5f9;font-weight:800;color:#334155;text-align:center}'
     + '.sv-c-role{width:23%}.sv-c-tel{white-space:nowrap;text-align:center}.sv-c-tel a{color:#1d4ed8;text-decoration:none;font-weight:700}'
     + '.sv-role{font-weight:800;font-size:.95rem;text-align:left;background:#f8fafc;color:#0f172a}'
-    + '.sv-name{font-weight:700}.sv-nm{white-space:nowrap}.sv-name-pos{display:none;font-size:.74rem;font-weight:500;color:#64748b}'
+    + '.sv-name{font-weight:700}.sv-nm{white-space:nowrap}.sv-note-row{display:none;margin-top:2px}.sv-note-row .sv-note{margin-left:0}.sv-name-pos{display:none;font-size:.74rem;font-weight:500;color:#64748b}'
     + '.sv-note{display:inline-block;font-size:.68rem;font-weight:800;color:#92400e;background:#fef3c7;border-radius:999px;padding:0 7px;margin-left:4px}'
     + '.sv-sec td{text-align:left;font-weight:800;color:#0f172a;padding:7px 10px}'
     + '.sv-day thead th{color:#0f172a;font-weight:800;background:#e2e8f0}'   // หัวคอลัมน์ใบเวรรายวัน: หนา เข้ม ขนาดเท่าแถวฝ่ายงาน
@@ -661,7 +668,7 @@ var SV_CSS = ''
     // เวรรายวันไม่ตรงตารางของงาน: กระพริบเตือนให้ธุรการกลับไปแก้
     + '@keyframes svMisBlink{0%,100%{background-color:#fff7ed;box-shadow:inset 0 0 0 2px #fb923c}50%{background-color:#fed7aa;box-shadow:inset 0 0 0 2px #ea580c}}'
     + '.sv-mis{animation:svMisBlink 1.2s ease-in-out infinite;border-radius:4px}'
-    + '.sv-mis-tag{margin-top:3px;font-size:.7rem;font-weight:800;color:#c2410c}.sv-mis-tag i{margin-right:3px}.sv-c-tel .sv-mis-tag{white-space:normal;line-height:1.25}'
+    + '.sv-mis-tag{margin-top:3px;font-size:.7rem;font-weight:800;color:#c2410c}.sv-mis-tag i{margin-right:3px}.sv-c-tel .sv-mis-tag{white-space:nowrap;line-height:1.25}'
     + '@media (prefers-reduced-motion:reduce){.sv-mis{animation:none;background:#fed7aa;box-shadow:inset 0 0 0 2px #ea580c}}'
     // ---- ตารางรายเดือนบนจอ: กล่องเลื่อนสูงราวหนึ่งจอ หัวตารางตรึง วันที่ผ่านไปแล้วตัวจาง ----
     // แผ่นตารางต้องไม่ตัดขอบ (overflow) ไม่งั้นหัวตารางตรึงกับหน้าไม่ได้ — มุมโค้งให้หัว/ท้ายแผ่นทำเอง
@@ -676,9 +683,9 @@ var SV_CSS = ''
     + '@media (max-width:560px){.sv-c-pos{display:none}.sv-name-pos{display:block}.sv-table{font-size:.82rem}.sv-c-role{width:30%}.sv-title{padding:10px 12px}.sv-title-t{font-size:.95rem}.sv-badge{display:none}'
     // มือถือ: ชื่อ-สกุลบรรทัดเดียว (ตัวเล็กลงเล็กน้อย) · ช่องเบอร์โทรแคบพอดีเบอร์
     + '.sv-day .sv-name{font-size:.8rem;padding:5px 6px}.sv-day .sv-role{font-size:.8rem;padding:5px 6px}.sv-day .sv-c-role{width:22%}'
-    + '.sv-day .sv-c-tel{width:1%;font-size:.72rem;padding:5px 5px}.sv-day thead .sv-c-tel{font-size:.72rem}}'
+    + '.sv-day .sv-c-tel{width:1%;font-size:.72rem;padding:5px 5px}.sv-day .sv-note-in{display:none}.sv-day .sv-note-row{display:block}.sv-day thead .sv-c-tel{font-size:.72rem}}'
     // ตอนสร้างภาพ/พิมพ์ ให้แสดงแบบเต็ม (ไม่ซ่อนคอลัมน์แบบจอมือถือ)
-    + '.sv-shot .sv-c-pos,.sv-print .sv-c-pos{display:table-cell}.sv-shot .sv-name-pos,.sv-print .sv-name-pos{display:none}'
+    + '.sv-shot .sv-c-pos,.sv-print .sv-c-pos{display:table-cell}.sv-shot .sv-name-pos,.sv-print .sv-name-pos,.sv-shot .sv-note-row,.sv-print .sv-note-row{display:none}.sv-shot .sv-note-in,.sv-print .sv-note-in{display:inline-block}'
     + '.sv-shot .sv-badge,.sv-print .sv-badge{display:block}.sv-shot .sv-scroll,.sv-print .sv-scroll{overflow:visible;max-height:none!important}'
     + '.sv-shot .sv-past td,.sv-print .sv-past td{color:inherit!important}.sv-shot .sv-past td div,.sv-print .sv-past td div{opacity:1!important}'
     + '.sv-shot thead th,.sv-print thead th{position:static!important}'
