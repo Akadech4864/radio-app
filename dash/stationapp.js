@@ -209,7 +209,7 @@ function svaEditPaint() {
         + '<div class="sva-ed">';
     SVA.ed.forEach(function (s, si) {
         html += '<div class="sva-ed-sec" style="--sc:' + s.color + '"><div class="sva-ed-sh">' + svEsc(s.sec)
-            + (s.time ? ' <small>' + svEsc(s.time) + '</small>' : '') + '</div>';
+            + (s.time ? ' <small>' + svEsc(svTimeText(s.time)) + '</small>' : '') + '</div>';
         s.roles.forEach(function (r, ri) {
             html += '<div class="sva-ed-row"><div class="sva-ed-role">' + svEsc(r.role) + '</div><div class="sva-ed-names">';
             r.names.forEach(function (n, ni) {
@@ -240,7 +240,7 @@ function svaEditPaint() {
     html += '</div>'
         + '<div class="sva-ed-more">'
         + '  <select id="sva-new-sec" class="form-select form-select-sm">' + SVA.ed.map(function (s, i) {
-            return '<option value="' + i + '">' + svEsc(s.sec + (s.time ? ' ' + s.time : '')) + '</option>';
+            return '<option value="' + i + '">' + svEsc(s.sec + (s.time ? ' ' + svTimeText(s.time) : '')) + '</option>';
         }).join('') + '</select>'
         + '  <input id="sva-new-role" class="form-control form-control-sm" placeholder="หน้าที่อื่น เช่น สายตรวจ 191">'
         + '  <button type="button" onclick="svaEditAddRole()"><i class="fas fa-plus"></i> เพิ่มหน้าที่</button>'
@@ -468,7 +468,7 @@ function svaImportResHtml() {
     var rows = L.map(function (e, i) {
         return '<tr class="' + (e.matched ? '' : 'unk') + '">'
             + '<td><input type="checkbox" ' + (e.on ? 'checked' : '') + ' onchange="SVA.imp.list[' + i + '].on=this.checked;svaImportCount()"></td>'
-            + '<td>' + svEsc(e.date) + '</td><td>' + svEsc(e.sec) + (e.time ? '<small>' + svEsc(e.time) + '</small>' : '') + '</td>'
+            + '<td>' + svEsc(e.date) + '</td><td>' + svEsc(e.sec) + (e.time ? '<small>' + svEsc(svTimeText(e.time)) + '</small>' : '') + '</td>'
             + '<td>' + svEsc(e.role) + '</td>'
             + '<td><input class="form-control form-control-sm" list="sva-staff" value="' + svEsc(e.name) + '" onchange="svaImportName(' + i + ',this.value)">'
             + (e.matched ? '' : '<span class="sva-unk">ไม่มีในทะเบียน</span>') + '</td></tr>';
@@ -649,7 +649,7 @@ function svaPlanMisHtml(mis) {
     return '<div class="sva-pl-mis"><div class="sva-pl-mis-h"><i class="fas fa-triangle-exclamation"></i> ตารางรายวันไม่ตรงกับตารางเวร ' + mis.length + ' จุด — เลือกว่าจะใช้ชื่อตามตารางไหน</div>'
         + mis.map(function (m, i) {
             return '<div class="sva-pl-mi"><div class="sva-pl-mt"><b>' + svEsc(svaDayText(m.date)) + '</b> · ' + svEsc(m.unit) + ' ' + svEsc(m.role)
-                + (m.time ? ' <small>' + svEsc(m.time) + '</small>' : '') + '</div>'
+                + (m.time ? ' <small>' + svEsc(svTimeText(m.time)) + '</small>' : '') + '</div>'
                 + '<div class="sva-pl-mv"><span>ตารางรายวัน: <b>' + svEsc(m.daily.join(', ')) + '</b></span><span>ตารางเวร: <b>' + svEsc(m.plan.join(', ')) + '</b></span></div>'
                 + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanFix(' + i + ',\'plan\')" title="ใช้ชื่อตามตารางเวรของงาน (ลบชื่อที่กรอกในตารางรายวันของวันนั้น)"><i class="fas fa-table-list"></i> ตามตารางเวร</button>'
                 + '<button type="button" onclick="svaPlanFix(' + i + ',\'daily\')" title="ใช้ชื่อตามตารางรายวัน (แก้ตารางเวรของงานให้ตรง เช่น มีการแลกเวร)"><i class="fas fa-calendar-day"></i> ตามตารางรายวัน</button>'
