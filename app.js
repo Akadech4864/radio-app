@@ -155,22 +155,47 @@ function misTime(v) {
 // ==========================================================
 // โหลดข้อมูล
 // ==========================================================
+// เปิดหน้าแล้วแสดงข้อมูลชุดล่าสุดที่เก็บไว้ในเครื่องทันที แล้วโหลดของใหม่เบื้องหลัง (ไม่ต้องรอหน้าว่าง)
+const LS_DATA = 'radio-data-v1';
+let shownCached = false;
+function applyData(json, at, cached) {
+    data = { duty: json.duty || [], mission: json.mission || [], personnel: json.personnel || [], leave: json.leave || [],
+        stats: json.stats || null, station: json.station || null };
+    buildPeople();
+    $('lastSync').textContent = (cached ? 'ข้อมูลที่บันทึกไว้ ' : 'ข้อมูลล่าสุด ')
+        + new Date(at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.' + (cached ? ' · กำลังอัปเดต…' : '');
+    renderAll();
+    renderDutyMonth();
+    renderStation();
+    try { renderBoard(); } catch (err) { console.error('board', err); }
+}
 async function loadData() {
+    if (!shownCached) {
+        shownCached = true;
+        try {
+            const c = JSON.parse(localStorage.getItem(LS_DATA) || 'null');
+            if (c && c.json) applyData(c.json, c.at, true);
+        } catch (e) { }
+    }
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => { if (ctrl) ctrl.abort(); }, 60000);
     try {
-        const res = await fetch(API_URL + '?api=radio', { cache: 'no-store' });
-        const json = await res.json();
-        data = { duty: json.duty || [], mission: json.mission || [], personnel: json.personnel || [], leave: json.leave || [],
-            stats: json.stats || null, station: json.station || null };
-        buildPeople();
-        $('lastSync').textContent = 'ข้อมูลล่าสุด ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
-        renderAll();
-        renderDutyMonth();
-        renderStation();
-        try { renderBoard(); } catch (err) { console.error('board', err); }
+        const res = await fetch(API_URL + '?api=radio', { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+        const text = await res.text();
+        const json = JSON.parse(text);
+        applyData(json, Date.now(), false);
+        try { localStorage.setItem(LS_DATA, JSON.stringify({ at: Date.now(), json: json })); } catch (e) { }
     } catch (e) {
         console.error(e);
-        const msg = '<div class="err"><i class="fa-solid fa-triangle-exclamation"></i> โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง (' + esc(e.message) + ')</div>';
-        $('duty').innerHTML = msg; $('missions').innerHTML = msg;
+        if (data && data.duty && data.duty.length) {
+            // มีข้อมูลเดิมแสดงอยู่แล้ว — ใช้ต่อ แจ้งเฉพาะที่แถบเวลา
+            $('lastSync').textContent = $('lastSync').textContent.replace(' · กำลังอัปเดต…', '') + ' · อัปเดตไม่สำเร็จ จะลองใหม่อัตโนมัติ';
+        } else {
+            const msg = '<div class="err"><i class="fa-solid fa-triangle-exclamation"></i> โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง (' + esc(e.name === 'AbortError' ? 'หมดเวลา' : e.message) + ')</div>';
+            $('duty').innerHTML = msg; $('missions').innerHTML = msg;
+        }
+    } finally {
+        clearTimeout(timer);
     }
 }
 
