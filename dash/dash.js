@@ -473,6 +473,7 @@ function dashCrewView(v) {
 // ---------- สายการบังคับบัญชา ----------
 var DASH_ORG_STATUS = {
     duty: { label: 'เข้าเวร', color: '#f59e0b' },
+    command: { label: 'เวรอำนวยการ', color: '#0f766e' },
     mission: { label: 'ภารกิจ', color: '#10b981' },
     leave: { label: 'ลา', color: '#ef4444' },
     free: { label: 'พร้อมปฏิบัติ', color: '#64748b' }
@@ -501,9 +502,9 @@ function dashPaintOrg(c) {
     if (!tiers.length) { el.innerHTML = ''; return; }
 
     // นับสถานะวันนี้จากคนในผังโดยตรง (ตัวเลขชุดเดียวทั้งหน้า)
-    var cnt = { duty: 0, mission: 0, leave: 0, free: 0 };
+    var cnt = { duty: 0, command: 0, mission: 0, leave: 0, free: 0 };
     tiers.forEach(function (t) { t.people.forEach(function (p) { cnt[p.status in cnt ? p.status : 'free']++; }); });
-    var legend = Object.keys(DASH_ORG_STATUS).map(function (k) {
+    var legend = Object.keys(DASH_ORG_STATUS).filter(function (k) { return k !== 'command' || cnt[k]; }).map(function (k) {
         return '<span><i style="background:' + DASH_ORG_STATUS[k].color + '"></i>'
             + DASH_ORG_STATUS[k].label + ' <b>' + cnt[k] + '</b></span>';
     }).join('');

@@ -386,7 +386,12 @@ function dashComputeCrew(personnel, duty, mission, leave, today, helpers) {
     });
     res.onDuty = Object.keys(busy).length;
     res.missions.forEach(function (m) {
-        m.who.concat(m.chair).forEach(function (n) { if (!busy[canon(n)]) busy[canon(n)] = 'mission'; });
+        // เวรอำนวยการ สน. (ภารกิจอัตโนมัติจากตารางเวรทุกสายงาน) แสดงสถานะแยก
+        var st = /^เวรอำนวยการ/.test(m.title) ? 'command' : 'mission';
+        m.who.concat(m.chair).forEach(function (n) {
+            var k = canon(n);
+            if (!busy[k] || (st === 'command' && busy[k] === 'mission')) busy[k] = st;
+        });
     });
     res.leave.forEach(function (l) { busy[canon(l.name)] = 'leave'; });
 
