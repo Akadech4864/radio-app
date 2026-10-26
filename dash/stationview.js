@@ -66,7 +66,7 @@ function svIndex(data) {
 /** หัวข้อทั้งหมดที่จะแสดง: ตามแม่แบบ + หัวข้อ/หน้าที่อื่นที่มีในข้อมูลจริง (ต่อท้าย) */
 function svSlots(data, dayIdx) {
     var tpl = ((data && data.template) || []).map(function (t) {
-        return { sec: t.sec, time: t.time || '', color: t.color || '#2563eb', auto: !!t.auto, roles: t.roles.slice() };
+        return { sec: t.sec, time: t.time || '', timeLabel: t.timeLabel || '', color: t.color || '#2563eb', auto: !!t.auto, roles: t.roles.slice() };
     });
     var find = function (sk) { return tpl.filter(function (t) { return svSlotKey(t.sec, t.time) === sk; })[0]; };
     Object.keys(dayIdx || {}).forEach(function (k) {
@@ -94,6 +94,13 @@ function svTitle(main, sub) {
 var SV_DAY_REMARK = ['ผู้ที่มีรายชื่อตารางเวร รอรับการตรวจ จากผู้บังคับบัญชา หากกรณีติด ว.29 ให้โทรแจ้งเวรอำนวยการ เพื่อให้แจ้งกับผู้บังคับบัญชาทราบ ขณะตรวจเยี่ยมติด ว.29',
     'เวร ศปก.จัดเตรียมห้อง ศปก.ชั้น 3 ให้กับผู้บังคับบัญชา'];
 
+/** หมายเหตุที่เป็นช่วงเวลา แสดงในวงเล็บ เช่น "(08.01-08.00 น.)" (ตัด "(24 ชม.)" ที่ซ้ำความหมายออก) · อื่น ๆ เช่น "ชุด 3" คงเดิม */
+function svNoteText(n) {
+    var s = String(n || '').trim();
+    if (!/^\d{1,2}[.:]\d{2}\s*-\s*\d{1,2}[.:]\d{2}/.test(s)) return s;
+    return '(' + s.replace(/\s*\(24 ชม\.\)/, '').replace(/:/g, '.') + ')';
+}
+
 // ---------- ใบเวรประจำวัน (หน้าตาเหมือนแบบฟอร์มของ สน.) ----------
 function svDayHtml(data, date, opts) {
     opts = opts || {};
@@ -110,7 +117,7 @@ function svDayHtml(data, date, opts) {
         var got = day[k][svSlotKey(t.sec, t.time)] || {};
         if (t.sec !== 'ผู้บังคับบัญชา') {
             html += '<tr class="sv-sec"><td colspan="4" style="background:' + svTint(t.color, 0.24) + ';border-left:5px solid ' + t.color + '">'
-                + svEsc(t.sec) + (t.time ? ' <small>เวลา ' + svEsc(t.time) + '</small>' : '') + '</td></tr>';
+                + svEsc(t.sec) + ((t.time || t.timeLabel) ? ' <small>เวลา ' + svEsc(t.time || t.timeLabel) + '</small>' : '') + '</td></tr>';
         }
         var roleBg = 'background:' + svTint(t.color, 0.12);   // ไฮไลท์จางตามสีของงาน
         t.roles.forEach(function (role) {
@@ -125,7 +132,7 @@ function svDayHtml(data, date, opts) {
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
                 html += '<tr data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
                     + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(role) + '</td>' : '')
-                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + svEsc(r[4]) + (r[7] ? ' <span class="sv-note">' + svEsc(r[7]) + '</span>' : '')
+                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + svEsc(r[4]) + (r[7] ? ' <span class="sv-note">' + svEsc(svNoteText(r[7])) + '</span>' : '')
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div></td>'
                     + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
@@ -162,7 +169,7 @@ function svMonthHtml(data, year, month, secFilter, opts) {
 
     var h1 = '<tr><th rowspan="2" class="sv-m-date">วันที่</th>' + slots.map(function (t) {
         return t.roles.length ? '<th colspan="' + t.roles.length + '" class="sv-m-sec" style="background:' + svTint(t.color, 0.26) + ';border-top:4px solid ' + t.color + '">'
-            + svEsc(t.sec) + (t.time ? '<small>' + svEsc(t.time) + '</small>' : '') + '</th>' : '';
+            + svEsc(t.sec) + ((t.time || t.timeLabel) ? '<small>' + svEsc(t.time || t.timeLabel) + '</small>' : '') + '</th>' : '';
     }).join('') + '</tr>';
     var h2 = '<tr>' + cols.map(function (c) { return '<th class="sv-m-role">' + svEsc(c.role) + '</th>'; }).join('') + '</tr>';
     var body = '', d0 = (opts && opts.from) || 1, d1 = Math.min(days, (opts && opts.to) || days);
