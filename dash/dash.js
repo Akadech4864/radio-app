@@ -606,19 +606,21 @@ function dashOnlineTable(s) {
     var list = (s.byOfficer || []).filter(function (o) { return o.name && o.name !== 'ไม่ระบุ' && (o.online || o.cyber); })
         .sort(function (a, b) { return b.online - a.online || b.damage - a.damage || b.cyber - a.cyber; });
     if (!list.length) return '';
-    var t = { online: 0, damage: 0, cyber: 0 };
-    list.forEach(function (o) { t.online += o.online || 0; t.damage += o.damage || 0; t.cyber += o.cyber || 0; });
+    var t = { online: 0, onlineOpen: 0, onlineDone: 0, damage: 0, cyber: 0 };
+    list.forEach(function (o) { Object.keys(t).forEach(function (k) { t[k] += o[k] || 0; }); });
     var rows = list.map(function (o, i) {
         return '<tr><td class="wl-rank">' + (i + 1) + '</td><td class="wl-name">' + dashEsc(dashRankName(o.name)) + '</td>'
-            + '<td class="wl-n">' + dashNum(o.online) + '</td><td class="wl-m">' + dashNum(Math.round(o.damage || 0)) + '</td>'
+            + '<td class="wl-n">' + dashNum(o.online) + '</td>'
+            + '<td class="wl-o">' + dashNum(o.onlineOpen || 0) + '</td><td class="wl-s">' + dashNum(o.onlineDone || 0) + '</td><td class="wl-m">' + dashNum(Math.round(o.damage || 0)) + '</td>'
             + '<td class="wl-s">' + dashNum(o.cyber || 0) + '</td></tr>';
     }).join('');
     return '<div class="dash-card-h dash-wl-h2"><i class="fas fa-globe"></i> คดีออนไลน์รายบุคคล'
         + '<span class="dash-card-sub">แยกจากภาระงาน · มูลค่าความเสียหายรวม ' + dashNum(Math.round(t.damage)) + ' บาท</span></div>'
         + '<div class="dash-wl-wrap"><table class="dash-wl dash-onl">'
-        + '<thead><tr><th>#</th><th>พนักงานสอบสวน</th><th>รับแจ้งออนไลน์</th><th>มูลค่าความเสียหาย (บาท)</th><th title="คดีอาญาที่ข้อหาเกี่ยวกับคอมพิวเตอร์/ออนไลน์">เป็นคดีอาญาแล้ว</th></tr></thead>'
+        + '<thead><tr><th>#</th><th>พนักงานสอบสวน</th><th>รับแจ้งออนไลน์</th><th>ระหว่างสอบสวน</th><th>สิ้นสุด</th><th>มูลค่าความเสียหาย (บาท)</th><th title="คดีอาญาที่ข้อหาเกี่ยวกับคอมพิวเตอร์/ออนไลน์">เป็นคดีอาญาแล้ว</th></tr></thead>'
         + '<tbody>' + rows + '</tbody>'
         + '<tfoot><tr class="wl-total"><td></td><td class="wl-name">รวม (' + list.length + ' นาย)</td><td class="wl-n">' + dashNum(t.online) + '</td>'
+        + '<td class="wl-o">' + dashNum(t.onlineOpen) + '</td><td class="wl-s">' + dashNum(t.onlineDone) + '</td>'
         + '<td class="wl-m">' + dashNum(Math.round(t.damage)) + '</td><td class="wl-s">' + dashNum(t.cyber) + '</td></tr></tfoot></table></div>';
 }
 
@@ -669,6 +671,7 @@ function dashPaintCases(s) {
         + '<div class="dash-ccol dash-conline" style="--cc:#ec4899">'
         + '  <div class="dash-ccol-h"><i class="fas fa-globe"></i> คดีออนไลน์ <small>(รับแจ้งออนไลน์ นับแยก)</small></div>'
         + '  <div class="dash-ccol-v">' + dashNum(s.online) + '<small>คดี</small></div>'
+        + '  <div class="dash-ccol-x">ระหว่างสอบสวน <b>' + dashNum(s.onlineOpen || 0) + '</b> · สิ้นสุด <b>' + dashNum(s.onlineDone || 0) + '</b></div>'
         + '  <div class="dash-ccol-x">มูลค่าความเสียหายรวม <b>' + dashNum(Math.round(s.damage)) + '</b> บาท'
         + (s.cyber ? ' · เป็นคดีอาญาแล้ว (ข้อหาเกี่ยวกับคอมพิวเตอร์) <b>' + dashNum(s.cyber) + '</b> คดี' : '') + '</div>'
         + '</div>';

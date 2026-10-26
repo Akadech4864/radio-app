@@ -256,6 +256,9 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         var d = dashParseDate(r[1]);
         if (!d || d < from || d > to) return;
         out.online++;
+        // สถานะคดีออนไลน์: สิ้นสุด / ส่งสำนวนอัยการ = สิ้นสุด · อื่น ๆ (พบ พงส., อายัดบัญชี, ออกหมายเรียก …) = ระหว่างสอบสวน
+        var onDone = /สิ้นสุด|ส่งสำนวน|เสร็จ|ยุติ/.test(String(r[14] || ''));
+        if (onDone) out.onlineDone = (out.onlineDone || 0) + 1; else out.onlineOpen = (out.onlineOpen || 0) + 1;
         out.damage += parseFloat(String(r[8] || '0').replace(/[^0-9.\-]/g, '')) || 0;
         var g = String(r[5] || '').trim() || 'ไม่ระบุ';
         gO[g] = (gO[g] || 0) + 1;
@@ -268,6 +271,7 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
             if (!byOfc[ook]) byOfc[ook] = { name: oo, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0, damage: 0, cyber: 0 };
             if (String(oo).length > String(byOfc[ook].name).length) byOfc[ook].name = oo;
             byOfc[ook].online++;
+            if (onDone) byOfc[ook].onlineDone = (byOfc[ook].onlineDone || 0) + 1; else byOfc[ook].onlineOpen = (byOfc[ook].onlineOpen || 0) + 1;
             byOfc[ook].damage += parseFloat(String(r[8] || '0').replace(/[^0-9.-]/g, '')) || 0;
         }
     });

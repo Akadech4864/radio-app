@@ -659,6 +659,7 @@ var SV_CSS = ''
     + '.sv-shot thead th,.sv-print thead th{position:static!important}'
     + '.sv-shot .sv-sheet,.sv-print .sv-sheet{box-shadow:none;border:1px solid #cbd5e1;border-radius:12px}'
     + '.sv-shot .sv-m-date,.sv-print .sv-m-date{position:static}'
+    + '.sv-shot .sv-c-pos,.sv-print .sv-c-pos{white-space:nowrap}'   // ภาพ/PDF ใบเวรรายวัน: ตำแหน่งอยู่บรรทัดเดียว
     + '.sv-shot .sv-mis,.sv-print .sv-mis{animation:none!important;background:none!important;box-shadow:none!important}.sv-shot .sv-mis-tag,.sv-print .sv-mis-tag{display:none}'
     // ---- ใบเวรประจำวันแบบเต็มหน้า A4 ----
     + '.sv-a4{display:flex;flex-direction:column}'
