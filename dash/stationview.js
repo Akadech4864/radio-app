@@ -90,6 +90,10 @@ function svTitle(main, sub) {
         + (sub ? '<span>' + sub + '</span>' : '') + '</div></div>';
 }
 
+// หมายเหตุท้ายใบเวรประจำวัน (ตามแบบฟอร์มของ สน.)
+var SV_DAY_REMARK = ['ผู้ที่มีรายชื่อตารางเวร รอรับการตรวจ จากผู้บังคับบัญชา หากกรณีติด ว.29 ให้โทรแจ้งเวรอำนวยการ เพื่อให้แจ้งกับผู้บังคับบัญชาทราบ ขณะตรวจเยี่ยมติด ว.29',
+    'เวร ศปก.จัดเตรียมห้อง ศปก.ชั้น 3 ให้กับผู้บังคับบัญชา'];
+
 // ---------- ใบเวรประจำวัน (หน้าตาเหมือนแบบฟอร์มของ สน.) ----------
 function svDayHtml(data, date, opts) {
     opts = opts || {};
@@ -132,6 +136,7 @@ function svDayHtml(data, date, opts) {
     });
     html += '</tbody></table>';
     if (!any) html += '<div class="sv-none">ยังไม่มีข้อมูลเวรของวันนี้' + (opts.emptyHint ? ' — ' + opts.emptyHint : '') + '</div>';
+    html += '<div class="sv-remark"><b>หมายเหตุ :</b> ' + svEsc(SV_DAY_REMARK[0]) + '<span>' + svEsc(SV_DAY_REMARK[1]) + '</span></div>';
     return html + svFoot(opts) + '</div>';
 }
 function svFoot(opts) {
@@ -624,6 +629,8 @@ var SV_CSS = ''
     + '.sv-sec small{font-weight:700;margin-left:6px;color:#334155}'
     + '.sv-empty td{color:#a3b0c2}.sv-empty .sv-role{color:#64748b}'
     + '.sv-none{padding:12px;text-align:center;color:#64748b;font-size:.85rem;background:#f8fafc}'
+    + '.sv-remark{padding:9px 14px;font-size:.8rem;font-weight:700;color:#1e293b;line-height:1.6;border-top:1px solid #e2e8f0;background:#fff}'
+    + '.sv-remark b{font-weight:800}.sv-remark span{display:block;padding-left:4.2em}'
     + '.sv-foot{padding:7px 12px;font-size:.7rem;color:#64748b;text-align:right;background:#f8fafc;border-top:1px solid #e2e8f0}'
     + '.sv-scroll{overflow-x:auto}'
     + '.sv-mtable{font-size:.76rem;min-width:640px}.sv-mtable td{text-align:center;white-space:nowrap;padding:4px 6px}'
@@ -675,6 +682,7 @@ var SV_CSS = ''
     + '.sv-a4 .sv-role{font-size:1.14rem}.sv-a4 .sv-name{font-size:1.14rem}'
     + '.sv-a4 .sv-c-pos{font-size:1rem}.sv-a4 .sv-c-tel{font-size:1.1rem}'
     + '.sv-a4 .sv-sec td{font-size:1.1rem;padding:10px 12px}.sv-a4 .sv-sec small{font-size:.95rem}'
+    + '.sv-a4 .sv-remark{font-size:1.02rem;padding:12px 18px}'
     + '.sv-a4 .sv-note{font-size:.82rem}.sv-a4 .sv-foot{font-size:.88rem;padding:9px 14px}'
     + '.sv-print .sv-fit.sv-a4{width:100%;height:100%}'
     // ---- เวรรวม สน. รายเดือน: A4 แนวนอน แถวยืดเต็มหน้า ----
