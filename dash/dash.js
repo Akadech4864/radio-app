@@ -566,6 +566,7 @@ function dashPaintWorkload(s) {
             + '<td class="wl-n">' + dashNum(o.grand) + '</td>'
             + '<td class="wl-s">' + dashNum(o.criminal) + '</td>'
             + '<td class="wl-s">' + dashNum(o.traffic) + '</td>'
+            + '<td class="wl-s wl-onl">' + dashNum(o.online) + '</td>'
             // คดีค้าง (อาญา+จราจรที่ยังสอบสวน) แยกค้าง 3–6 เดือน / เกิน 6 เดือน — ผบ.ดูได้ทันทีว่าใครค้างมาก
             + '<td class="wl-o' + (o.open ? '' : ' z') + '">' + dashNum(o.open) + '</td>'
             + '<td class="wl-o wl-over' + (o.over3 ? '' : ' z') + '">' + dashNum(o.over3) + '</td>'
@@ -577,11 +578,11 @@ function dashPaintWorkload(s) {
     }).join('');
 
     // ยอดรวมทั้งหน่วย (แถวล่างสุด)
-    var sum = { grand: 0, criminal: 0, traffic: 0, open: 0, over3: 0, over6: 0 };
+    var sum = { grand: 0, criminal: 0, traffic: 0, online: 0, open: 0, over3: 0, over6: 0 };
     list.forEach(function (o) { Object.keys(sum).forEach(function (k) { sum[k] += o[k] || 0; }); });
     var foot = '<tr class="wl-total"><td></td><td class="wl-name">รวมทั้งหน่วย (' + list.length + ' นาย)</td><td></td>'
         + '<td class="wl-n">' + dashNum(sum.grand) + '</td><td class="wl-s">' + dashNum(sum.criminal) + '</td>'
-        + '<td class="wl-s">' + dashNum(sum.traffic) + '</td><td class="wl-o">' + dashNum(sum.open) + '</td>'
+        + '<td class="wl-s">' + dashNum(sum.traffic) + '</td><td class="wl-s wl-onl">' + dashNum(sum.online) + '</td><td class="wl-o">' + dashNum(sum.open) + '</td>'
         + '<td class="wl-o wl-over">' + dashNum(sum.over3) + '</td><td class="wl-o wl-over6">' + dashNum(sum.over6) + '</td>'
         + '<td class="wl-r">' + (sum.grand / (s.days / 30.44)).toFixed(1) + '</td><td class="wl-r">' + (sum.grand / s.days).toFixed(2) + '</td>'
         + '<td class="wl-d">' + (sum.grand ? (s.days / sum.grand).toFixed(1) : '-') + '</td></tr>';
@@ -594,14 +595,37 @@ function dashPaintWorkload(s) {
         + '</div>'
         + '<div class="dash-wl-wrap"><table class="dash-wl">'
         + '<thead><tr><th>#</th><th>พนักงานสอบสวน</th><th></th><th>รวม</th>'
-        + '<th>อาญา</th><th>จร.</th><th>ค้าง</th><th>ค้าง 3–6 ด.</th><th>เกิน 6 ด.</th><th>คดี/เดือน</th><th>คดี/วัน</th><th>1 คดีทุก (วัน)</th>'
-        + '</tr></thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
+        + '<th>อาญา</th><th>จร.</th><th title="ไม่นับรวมในช่องรวม">ออนไลน์*</th><th>ค้าง</th><th>ค้าง 3–6 ด.</th><th>เกิน 6 ด.</th><th>คดี/เดือน</th><th>คดี/วัน</th><th>1 คดีทุก (วัน)</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>'
+        + '<div class="dash-wl-note">* คดีออนไลน์แสดงไว้ดู ไม่นับรวมในช่อง "รวม" — คดีออนไลน์ที่เป็นคดีอาญาแล้วจะถูกนับในช่องอาญา</div>'
+        + dashOnlineTable(s);
+}
+
+// ---------- คดีออนไลน์รายบุคคล (ตารางแยก ไม่นับภาระงาน) ----------
+function dashOnlineTable(s) {
+    var list = (s.byOfficer || []).filter(function (o) { return o.name && o.name !== 'ไม่ระบุ' && (o.online || o.cyber); })
+        .sort(function (a, b) { return b.online - a.online || b.damage - a.damage || b.cyber - a.cyber; });
+    if (!list.length) return '';
+    var t = { online: 0, damage: 0, cyber: 0 };
+    list.forEach(function (o) { t.online += o.online || 0; t.damage += o.damage || 0; t.cyber += o.cyber || 0; });
+    var rows = list.map(function (o, i) {
+        return '<tr><td class="wl-rank">' + (i + 1) + '</td><td class="wl-name">' + dashEsc(dashRankName(o.name)) + '</td>'
+            + '<td class="wl-n">' + dashNum(o.online) + '</td><td class="wl-m">' + dashNum(Math.round(o.damage || 0)) + '</td>'
+            + '<td class="wl-s">' + dashNum(o.cyber || 0) + '</td></tr>';
+    }).join('');
+    return '<div class="dash-card-h dash-wl-h2"><i class="fas fa-globe"></i> คดีออนไลน์รายบุคคล'
+        + '<span class="dash-card-sub">แยกจากภาระงาน · มูลค่าความเสียหายรวม ' + dashNum(Math.round(t.damage)) + ' บาท</span></div>'
+        + '<div class="dash-wl-wrap"><table class="dash-wl dash-onl">'
+        + '<thead><tr><th>#</th><th>พนักงานสอบสวน</th><th>รับแจ้งออนไลน์</th><th>มูลค่าความเสียหาย (บาท)</th><th title="คดีอาญาที่ข้อหาเกี่ยวกับคอมพิวเตอร์/ออนไลน์">เป็นคดีอาญาแล้ว</th></tr></thead>'
+        + '<tbody>' + rows + '</tbody>'
+        + '<tfoot><tr class="wl-total"><td></td><td class="wl-name">รวม (' + list.length + ' นาย)</td><td class="wl-n">' + dashNum(t.online) + '</td>'
+        + '<td class="wl-m">' + dashNum(Math.round(t.damage)) + '</td><td class="wl-s">' + dashNum(t.cyber) + '</td></tr></tfoot></table></div>';
 }
 
 
 function dashPaintCases(s) {
     var el = document.getElementById('dash-cases'); if (!el) return;
-    var all = s.total + s.online;
+    var all = s.total;                      // รับแจ้งทั้งหมด = คดีที่มีเลขคดี (อาญา + จราจร) — ออนไลน์นับแยก
     var over = s.age3 + s.age6 + s.age1y;
     function col(title, icon, color, total, open, extra) {
         return '<div class="dash-ccol" style="--cc:' + color + '">'
@@ -614,24 +638,39 @@ function dashPaintCases(s) {
             + '<div class="dash-ccol-x">' + extra + '</div>'
             + '</div>';
     }
+    function box(title, icon, color, n) {
+        return '<div class="dash-ccol dash-cbox" style="--cc:' + color + '">'
+            + '<div class="dash-ccol-h"><i class="fas ' + icon + '"></i> ' + title + '</div>'
+            + '<div class="dash-ccol-v">' + dashNum(n) + '<small>คดี</small></div></div>';
+    }
+    var overAll = s.overCriminal + s.overTraffic;
     el.innerHTML = '<div class="dash-card-h"><i class="fas fa-scale-balanced"></i> สถานภาพคดี</div>'
-        + '<div class="dash-total"><span>รับแจ้งทั้งหมด</span><b>' + dashNum(all) + '</b><small>คดี</small></div>'
-        + '<div class="dash-ccols">'
-        + col('คดีอาญา', 'fa-gavel', '#f59e0b', s.criminal, s.openCriminal,
-            'ค้างเกิน 3 เดือนขึ้นไป <b>' + dashNum(s.overCriminal) + '</b> คดี')
-        + col('คดีจราจร', 'fa-car-burst', '#06b6d4', s.traffic, s.openTraffic,
-            'ค้างเกิน 3 เดือนขึ้นไป <b>' + dashNum(s.overTraffic) + '</b> คดี')
-        + col('คดีออนไลน์', 'fa-globe', '#ec4899', s.online, null,
-            'คิดเป็น <b>' + (all ? Math.round(s.online / all * 100) : 0) + '%</b> ของคดีที่รับแจ้งทั้งหมด')
+        + '<div class="dash-total"><span>รับแจ้งทั้งหมด (อาญา + จราจร)</span><b>' + dashNum(all) + '</b><small>คดี</small></div>'
+        // คดีอาญา / คดีจราจร บรรทัดเดียวกัน (มือถือด้วย) + สรุปสถานะรวมทั้งสองประเภท
+        + '<div class="dash-cpair">'
+        + box('คดีอาญา', 'fa-gavel', '#f59e0b', s.criminal)
+        + box('คดีจราจร', 'fa-car-burst', '#06b6d4', s.traffic)
+        + '</div>'
+        + '<div class="dash-csum">'
+        + '  <div class="dash-ccol-b"><i style="width:' + (all ? (s.open / all * 100).toFixed(1) : 0) + '%"></i></div>'
+        + '  <div class="dash-csum-l"><span>ระหว่างสอบสวน <b>' + dashNum(s.open) + '</b></span><span>เสร็จสิ้น <b>' + dashNum(all - s.open) + '</b></span>'
+        + '<span class="warn">ค้างเกิน 3 เดือนขึ้นไป <b>' + dashNum(overAll) + '</b></span></div>'
         + '</div>'
         + '<div class="dash-agewrap">'
-        + '  <div class="dash-age-h">อายุคดีที่ยังอยู่ระหว่างสอบสวน</div>'
+        + '  <div class="dash-age-h">อยู่ระหว่างสอบสวน</div>'
         + '  <div class="dash-ages">'
         + dashAgeBox('ยังไม่เกิน 3 เดือน', s.open - over, '#10b981')
         + dashAgeBox('เกิน 3 เดือน', s.age3, '#f59e0b')
         + dashAgeBox('เกิน 6 เดือน', s.age6, '#f97316')
         + dashAgeBox('เกิน 1 ปี', s.age1y, '#ef4444')
         + '  </div>'
+        + '</div>'
+        // คดีออนไลน์ (รับแจ้งผ่านระบบออนไลน์ — นับแยก ไม่รวมกับเลขคดี)
+        + '<div class="dash-ccol dash-conline" style="--cc:#ec4899">'
+        + '  <div class="dash-ccol-h"><i class="fas fa-globe"></i> คดีออนไลน์ <small>(รับแจ้งออนไลน์ นับแยก)</small></div>'
+        + '  <div class="dash-ccol-v">' + dashNum(s.online) + '<small>คดี</small></div>'
+        + '  <div class="dash-ccol-x">มูลค่าความเสียหายรวม <b>' + dashNum(Math.round(s.damage)) + '</b> บาท'
+        + (s.cyber ? ' · เป็นคดีอาญาแล้ว (ข้อหาเกี่ยวกับคอมพิวเตอร์) <b>' + dashNum(s.cyber) + '</b> คดี' : '') + '</div>'
         + '</div>';
 }
 function dashAgeBox(label, n, color) {

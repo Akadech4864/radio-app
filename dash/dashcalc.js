@@ -117,6 +117,9 @@ function dashChargeGroup(txt) {
 }
 
 
+// ---- คดีอาญาที่เกี่ยวกับออนไลน์ (ข้อหาตาม พ.ร.บ.คอมพิวเตอร์ / ฉ้อโกงทางออนไลน์) ----
+var DASH_CYBER_RE = /คอมพิวเตอร์|ออนไลน์|อินเทอร์เน็ต|อิเล็กทรอนิกส์/;
+
 // ---- คดีอุกฉกรรจ์และสะเทือนขวัญ (กลุ่มที่ 1 ตามการแบ่งประเภทคดีของ ตร.) ----
 var DASH_SERIOUS = [
     [/ฆ่าผู้อื่น|ฆ่าคนตาย|เจตนาฆ่า|พยายามฆ่า/, 'ฆ่า / พยายามฆ่า'],
@@ -222,11 +225,13 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         if (mi != null) out.byMonth[mi].crime++;
 
         var ok = norm(ofc);
-        if (!byOfc[ok]) byOfc[ok] = { name: ofc, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0 };
+        if (!byOfc[ok]) byOfc[ok] = { name: ofc, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0, damage: 0, cyber: 0 };
         // ชีตคนละใบเขียนยศไม่เหมือนกัน — เก็บชื่อที่ยาวที่สุดไว้แสดง จะได้มียศครบ
         if (String(ofc).length > String(byOfc[ok].name).length) byOfc[ok].name = ofc;
         byOfc[ok].total++;
         if (isTraf) byOfc[ok].traffic++; else byOfc[ok].criminal++;
+        // คดีอาญาที่มาจากออนไลน์ (เลขคดีอาญาแล้ว) ดูจากข้อหา เช่น ฉ้อโกง + นำเข้าข้อมูลคอมพิวเตอร์อันเป็นเท็จ
+        if (!isTraf && DASH_CYBER_RE.test(String(r[5] || ''))) { byOfc[ok].cyber++; out.cyber = (out.cyber || 0) + 1; }
 
         if (fin) { out.finished++; return; }
 
@@ -260,9 +265,10 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         var oo = String(r[12] || '').trim();
         if (oo) {
             var ook = norm(oo);
-            if (!byOfc[ook]) byOfc[ook] = { name: oo, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0 };
+            if (!byOfc[ook]) byOfc[ook] = { name: oo, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0, damage: 0, cyber: 0 };
             if (String(oo).length > String(byOfc[ook].name).length) byOfc[ook].name = oo;
             byOfc[ook].online++;
+            byOfc[ook].damage += parseFloat(String(r[8] || '0').replace(/[^0-9.-]/g, '')) || 0;
         }
     });
 
