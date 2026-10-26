@@ -194,6 +194,17 @@ var LamhinScene = (function () {
         texCache[key] = t; return t;
     }
 
+    function corrTexture() {
+        if (texCache.corr) return texCache.corr;
+        var c = document.createElement('canvas');
+        c.width = 64; c.height = 16;
+        var g = c.getContext('2d');
+        g.fillStyle = '#f7f8fa'; g.fillRect(0, 0, 64, 16);
+        for (var i = 0; i < 8; i++) { g.fillStyle = '#dfe3e8'; g.fillRect(i * 8 + 5, 0, 2, 16); g.fillStyle = '#ffffff'; g.fillRect(i * 8 + 1, 0, 2, 16); }
+        var t = new THREE.CanvasTexture(c);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        texCache.corr = t; return t;
+    }
     function texMats(tex, r, repW, repD, plainHex) {
         var a = tex.clone(); a.needsUpdate = true; a.repeat.set(Math.max(1, repW), 1);
         var b = tex.clone(); b.needsUpdate = true; b.repeat.set(Math.max(1, repD), 1);
@@ -550,90 +561,118 @@ var LamhinScene = (function () {
         pickables = [];
 
         // ==========================================================
-        // อาคารที่ทำการ 2 ชั้น (ตามภาพถ่ายหน้า สน.)
-        // ชั้นล่าง: ฐานแดง ผนังสีครีมน้ำตาล ป้ายชื่อสถานีแผ่นแดงเหนือทางเข้า
-        // ชั้นบน: ยื่นเป็นระเบียงรอบตึก ครีบเสาขาวเรียงถี่ + ราวระเบียง หลังคาแดงทรงปั้นหยาเตี้ย ป้าย POLICE แดงมุมหน้า-เหนือ
-        // ที่จอดใต้อาคารมุมหน้า-เหนือ: ไม่มีผนังด้านหน้าและด้านถนนรอบตึก มีแต่เสา เพดานสูงพอดีรถ (จอด 4 คัน หันหน้าเข้าตึก)
+        // อาคารที่ทำการ 3 ชั้น (ตามภาพถ่ายหน้า/ข้าง สน.)
+        // ชั้น 1: ผนังสีครีมน้ำตาล ฐานแดงสูง เสาขาวโคนแดง · ที่จอดใต้อาคารมุมหน้า-เหนือ (ไม่มีผนังด้านหน้า/ด้านถนน มีแต่เสา)
+        // ชั้น 2: ยื่นออกเล็กน้อย แถบหน้าต่างกรอบขาวยาวต่อเนื่อง ขอบพื้นแผ่นลอนสีขาว
+        // ชั้น 3: ระเบียงยื่นรอบตึก ครีบเสาขาวเรียงห่าง ๆ · ขอบหลังคาแผ่นลอนสีขาวหนา ป้าย POLICE แดงฝังในขอบหลังคา
+        // หลังคาแบน (ดาดฟ้าสีแดงอิฐตามภาพดาวเทียม) + เสาอากาศโครงเหล็กสูง · ป้ายชื่อสถานีแดงที่ระดับชั้น 2 เหนือทางเข้า
         // ==========================================================
         var st = PLAN.station, g1 = new THREE.Group();
-        var GF = 0.62, UF = 0.6, Y0 = 0.16, Y1 = Y0 + GF, Y2 = Y1 + 0.06 + UF;
+        var Y0 = 0.16, GF = 0.58, Y1 = Y0 + GF, F2 = 0.52, Y2 = Y1 + 0.07 + F2, F3 = 0.52, Y3 = Y2 + 0.09 + F3;
         var CARPORT = { x: st.x, y: st.y, w: st.w / 2, d: 2.6 };
         var gfParts = [
             { x: st.x + st.w / 2, y: st.y, w: st.w / 2, d: st.d },                         // ครึ่งหลังตลอดแนว
             { x: st.x, y: CARPORT.y + CARPORT.d, w: st.w / 2, d: st.d - CARPORT.d }        // ครึ่งหน้า (โถงทางเข้า)
         ];
-        var gfTex = wallTexture(1, 0xd3b48d, 0x34465a, 0xc2a37c);
+        var gfTex = wallTexture(1, 0xcdb08d, 0x3c4b5c, 0xbfa27f);
         var lows = gfParts.map(function (r) {
             var m = new THREE.Mesh(new THREE.BoxGeometry(r.w, GF, r.d),
-                texMats(gfTex, r, Math.max(1, Math.round(r.w / 1.5)), Math.max(1, Math.round(r.d / 1.5)), 0xd3b48d));
+                texMats(gfTex, r, Math.max(1, Math.round(r.w / 1.7)), Math.max(1, Math.round(r.d / 1.7)), 0xcdb08d));
             m.position.set(wx(r.x + r.w / 2), Y0 + GF / 2, wz(r.y + r.d / 2));
             m.castShadow = m.receiveShadow = true;
             g1.add(m);
-            g1.add(plainBox(grow(r, 0.012), Y0, 0.1, COL.baseRed));                       // ฐานแดง
+            g1.add(plainBox(grow(r, 0.012), Y0, 0.13, COL.baseRed));                      // ฐานแดง
             return m;
         });
-        // ที่จอดใต้อาคาร: พื้นปูน + เสาแนวหน้าและแนวถนนด้านเหนือ (ไม่มีผนัง)
+        // เสาขาวโคนแดง: มุมตึก + แนวที่จอดใต้อาคาร
+        function whiteCol(x, y) {
+            g1.add(plainBox({ x: x, y: y, w: 0.11, d: 0.11 }, Y0, GF, 0xf6f7f9));
+            g1.add(plainBox({ x: x - 0.005, y: y - 0.005, w: 0.12, d: 0.12 }, Y0, 0.14, COL.baseRed));
+        }
         g1.add(plainBox(CARPORT, Y0, 0.02, COL.concrete));
-        [[st.x + 0.02, st.y + 0.02], [st.x + 0.02, st.y + 1.27], [st.x + 0.02, CARPORT.y + CARPORT.d - 0.12],
-        [st.x + 1.35, st.y + 0.02], [st.x + CARPORT.w - 0.12, st.y + 0.02]].forEach(function (c) {
-            g1.add(plainBox({ x: c[0], y: c[1], w: 0.1, d: 0.1 }, Y0, GF, 0xf4f6f9));
-        });
-        // พื้นชั้น 2 ยื่นรอบตึก (ระเบียง)
-        var U = grow(st, 0.28);
-        g1.add(plainBox(U, Y1, 0.06, 0xf5f7fa));
-        var upTex = wallTexture(1, 0xf1f3f6, COL.glass, 0xe0e5eb);
-        var upMesh = new THREE.Mesh(new THREE.BoxGeometry(st.w, UF, st.d),
-            texMats(upTex, st, Math.round(st.w / 1.2), Math.round(st.d / 1.2), 0xf1f3f6));
-        upMesh.position.set(wx(st.x + st.w / 2), Y1 + 0.06 + UF / 2, wz(st.y + st.d / 2));
-        upMesh.castShadow = upMesh.receiveShadow = true;
-        g1.add(upMesh);
-        // ครีบเสาขาวรอบระเบียง (เรียงถี่ตามภาพ) + ราวระเบียงเตี้ย
-        var finGeo = new THREE.BoxGeometry(0.05, UF, 0.1), finMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-        var finPos = [], STEP = 0.36;
-        for (var fx = U.x; fx <= U.x + U.w + 1e-6; fx += STEP) { finPos.push([fx, U.y, 0]); finPos.push([fx, U.y + U.d, 0]); }
-        for (var fy = U.y + STEP; fy < U.y + U.d - 1e-6; fy += STEP) { finPos.push([U.x, fy, 1]); finPos.push([U.x + U.w, fy, 1]); }
+        [[st.x - 0.02, st.y - 0.02], [st.x - 0.02, st.y + 1.25], [st.x - 0.02, CARPORT.y + CARPORT.d - 0.1],
+        [st.x + 1.35, st.y - 0.02], [st.x + CARPORT.w - 0.1, st.y - 0.02],
+        [st.x - 0.02, st.y + st.d - 0.1], [st.x + st.w - 0.09, st.y - 0.02], [st.x + st.w - 0.09, st.y + st.d - 0.1]]
+            .forEach(function (c) { whiteCol(c[0], c[1]); });
+
+        // แผ่นลอนสีขาว (ขอบพื้น/ขอบหลังคา) — รอบตึกเป็นวง 4 ด้าน
+        function corrRing(r, y, h) {
+            var mat = function (len) {
+                var t = corrTexture().clone(); t.needsUpdate = true; t.repeat.set(Math.max(1, Math.round(len / 0.5)), 1);
+                return new THREE.MeshLambertMaterial({ map: t });
+            };
+            [[{ x: r.x, y: r.y, w: r.w, d: 0.05 }, r.w], [{ x: r.x, y: r.y + r.d - 0.05, w: r.w, d: 0.05 }, r.w],
+            [{ x: r.x, y: r.y, w: 0.05, d: r.d }, r.d], [{ x: r.x + r.w - 0.05, y: r.y, w: 0.05, d: r.d }, r.d]].forEach(function (p) {
+                var m = new THREE.Mesh(new THREE.BoxGeometry(p[0].w, h, p[0].d), mat(p[1]));
+                m.position.set(wx(p[0].x + p[0].w / 2), y + h / 2, wz(p[0].y + p[0].d / 2));
+                m.castShadow = true; g1.add(m);
+            });
+        }
+        // ---- ชั้น 2 ----
+        var S2 = grow(st, 0.13);
+        g1.add(plainBox(S2, Y1, 0.07, 0xf3f5f8));
+        corrRing(grow(st, 0.15), Y1, 0.08);
+        var winTex = wallTexture(1, 0xf3f5f7, 0x5a7590, 0xe4e8ed);
+        var f2 = new THREE.Mesh(new THREE.BoxGeometry(S2.w, F2, S2.d),
+            texMats(winTex, S2, Math.round(S2.w / 1.0), Math.round(S2.d / 1.0), 0xf3f5f7));
+        f2.position.set(wx(S2.x + S2.w / 2), Y1 + 0.07 + F2 / 2, wz(S2.y + S2.d / 2));
+        f2.castShadow = f2.receiveShadow = true; g1.add(f2);
+        // ---- ชั้น 3: ระเบียงยื่น + ครีบเสาขาว ----
+        var S3 = grow(st, 0.4);
+        g1.add(plainBox(S3, Y2, 0.09, 0xf3f5f8));
+        corrRing(grow(st, 0.42), Y2, 0.11);
+        var W3 = grow(st, 0.13);
+        var f3 = new THREE.Mesh(new THREE.BoxGeometry(W3.w, F3, W3.d),
+            texMats(winTex, W3, Math.round(W3.w / 1.0), Math.round(W3.d / 1.0), 0xf3f5f7));
+        f3.position.set(wx(W3.x + W3.w / 2), Y2 + 0.09 + F3 / 2, wz(W3.y + W3.d / 2));
+        f3.castShadow = f3.receiveShadow = true; g1.add(f3);
+        var finGeo = new THREE.BoxGeometry(0.06, F3, 0.13), finMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        var finPos = [], STEP = 0.62, FE = grow(st, 0.36);
+        for (var fx = FE.x; fx <= FE.x + FE.w + 1e-6; fx += STEP) { finPos.push([fx, FE.y, 0]); finPos.push([fx, FE.y + FE.d, 0]); }
+        for (var fy = FE.y + STEP; fy < FE.y + FE.d - 1e-6; fy += STEP) { finPos.push([FE.x, fy, 1]); finPos.push([FE.x + FE.w, fy, 1]); }
         var fins = new THREE.InstancedMesh(finGeo, finMat, finPos.length), fm = new THREE.Matrix4(), fq = new THREE.Quaternion(), fe = new THREE.Euler();
         finPos.forEach(function (p, i) {
             fe.set(0, p[2] ? 0 : Math.PI / 2, 0); fq.setFromEuler(fe);
-            fm.compose(new THREE.Vector3(wx(p[0]), Y1 + 0.06 + UF / 2, wz(p[1])), fq, new THREE.Vector3(1, 1, 1));
+            fm.compose(new THREE.Vector3(wx(p[0]), Y2 + 0.09 + F3 / 2, wz(p[1])), fq, new THREE.Vector3(1, 1, 1));
             fins.setMatrixAt(i, fm);
         });
         fins.castShadow = true; g1.add(fins);
-        [{ x: U.x, y: U.y, w: U.w, d: 0.025 }, { x: U.x, y: U.y + U.d - 0.025, w: U.w, d: 0.025 },
-        { x: U.x, y: U.y, w: 0.025, d: U.d }, { x: U.x + U.w - 0.025, y: U.y, w: 0.025, d: U.d }].forEach(function (r) {
-            g1.add(plainBox(r, Y1 + 0.06, 0.16, 0xe9edf2));
-        });
-        // ชายคา + หลังคาแดงทรงปั้นหยาเตี้ย
-        var E = grow(st, 0.34);
-        g1.add(plainBox(E, Y2, 0.07, 0xf7f9fb));
-        var roofGeo = new THREE.CylinderGeometry(0.42, 1, 0.42, 4, 1);
-        roofGeo.rotateY(Math.PI / 4);
-        var roof = new THREE.Mesh(roofGeo, new THREE.MeshLambertMaterial({ color: COL.roofRed, flatShading: true }));
-        var RR = grow(st, 0.3);
-        roof.scale.set(RR.w / 2 / Math.SQRT1_2, 1, RR.d / 2 / Math.SQRT1_2);
-        roof.position.set(wx(RR.x + RR.w / 2), Y2 + 0.07 + 0.21, wz(RR.y + RR.d / 2));
-        roof.castShadow = true; g1.add(roof);
-        // ถังน้ำ/ห้องเครื่องบนหลังคาด้านหลัง
-        g1.add(plainBox({ x: st.x + st.w - 1.5, y: st.y + st.d / 2 - 0.45, w: 0.9, d: 0.9 }, Y2 + 0.07, 0.62, 0xc9d0d8));
-        // ป้าย POLICE: แผ่นแดงบนขอบหลังคา มุมหน้า-เหนือ หันออกซอย
-        var PB = { y0: st.y - 0.2, d: 2.5 };
-        g1.add(plainBox({ x: E.x - 0.04, y: PB.y0, w: 0.06, d: PB.d }, Y2 + 0.04, 0.34, 0xb3261e));
-        var sgn = signPlane('POLICE', null, '#ffffff', 2.3, 0.32);
-        sgn.position.set(wx(E.x - 0.05), Y2 + 0.21, wz(PB.y0 + PB.d / 2));
+        // ---- ขอบหลังคาแผ่นลอนหนา + ดาดฟ้า ----
+        g1.add(plainBox(grow(st, 0.38), Y3, 0.04, 0xb45a46));
+        corrRing(grow(st, 0.42), Y3, 0.22);
+        // ป้าย POLICE: แผ่นแดงฝังในขอบหลังคาด้านหน้า ช่วงเหนือ (เหนือบันไดทางขึ้น)
+        var RF = grow(st, 0.42), PB = { y0: st.y + 0.7, d: 2.3 };
+        g1.add(plainBox({ x: RF.x - 0.02, y: PB.y0, w: 0.03, d: PB.d }, Y3, 0.22, 0xb3261e));
+        var sgn = signPlane('POLICE', null, '#ffffff', 2.1, 0.2);
+        sgn.position.set(wx(RF.x - 0.04), Y3 + 0.11, wz(PB.y0 + PB.d / 2));
         sgn.rotation.y = -Math.PI / 2; g1.add(sgn);
-        // ป้ายชื่อสถานี: แผ่นแดงเหนือทางเข้าชั้นล่าง กึ่งกลางลานหน้าทางเข้า
-        var SB = { y: PLAN.apron.y + PLAN.apron.d / 2 - 1.3, d: 2.6 };
-        g1.add(plainBox({ x: st.x - 0.05, y: SB.y, w: 0.05, d: SB.d }, Y1 - 0.2, 0.17, 0xa8291f));
-        var sgn2 = signPlane('สถานีตำรวจนครบาลลำหิน', null, '#ffffff', 2.4, 0.15);
-        sgn2.position.set(wx(st.x - 0.08), Y1 - 0.115, wz(SB.y + SB.d / 2));
+        // ป้ายชื่อสถานี: แผ่นแดงระดับชั้น 2 เหนือทางเข้า
+        var SB = { y: PLAN.apron.y + PLAN.apron.d / 2 - 1.25, d: 2.5 };
+        g1.add(plainBox({ x: S2.x - 0.03, y: SB.y, w: 0.03, d: SB.d }, Y1 + 0.2, 0.16, 0xa8291f));
+        var sgn2 = signPlane('สถานีตำรวจนครบาลลำหิน', null, '#ffffff', 2.3, 0.14);
+        sgn2.position.set(wx(S2.x - 0.05), Y1 + 0.28, wz(SB.y + SB.d / 2));
         sgn2.rotation.y = -Math.PI / 2; g1.add(sgn2);
+        // เสาอากาศโครงเหล็กบนดาดฟ้า
+        (function () {
+            var ax = wx(st.x + st.w * 0.62), az = wz(st.y + st.d * 0.55), base = Y3 + 0.04, AH = 2.1, steel = new THREE.MeshLambertMaterial({ color: 0x9aa4b1 });
+            [[0.09, 0], [-0.045, 0.078], [-0.045, -0.078]].forEach(function (o) {
+                var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, AH, 4), steel);
+                leg.position.set(ax + o[0], base + AH / 2, az + o[1]); g1.add(leg);
+            });
+            for (var k = 1; k < 9; k++) {
+                var ring = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.005, 3, 3), steel);
+                ring.rotation.x = Math.PI / 2; ring.position.set(ax, base + k * AH / 9, az); g1.add(ring);
+            }
+            var whip = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.6, 4), steel);
+            whip.position.set(ax, base + AH + 0.3, az); g1.add(whip);
+        })();
         // บันไดทางเข้า
         [0, 1, 2].forEach(function (k) {
             g1.add(plainBox({ x: PLAN.apron.x - 0.06 + k * 0.14, y: PLAN.apron.y + 0.3, w: 0.14, d: 1.7 },
                 0.16 + k * 0.035, 0.035, 0xc3cad3));
         });
         scene.add(g1);
-        lows.concat([upMesh]).forEach(function (m) { m.userData.key = 'station'; pickables.push(m); });
+        lows.concat([f2, f3]).forEach(function (m) { m.userData.key = 'station'; pickables.push(m); });
 
         // ==========================================================
         // อาคารที่พัก 2 หลัง (5 ชั้น ตามภาพถ่าย) — ขนาดเท่ากัน ต่างแค่สีหลังคา
@@ -642,7 +681,7 @@ var LamhinScene = (function () {
         // ด้านนอกเป็นหน้าต่างเรียง มีกันสาดเล็ก + เครื่องปรับอากาศ · บนหลังคามีหอบันได/ถังน้ำด้านเหนือ
         // ==========================================================
         var GH = 0.55, FH = 0.56, NF = 4, BAL = 0.36, FLAT_BAY = 0.56;   // FLAT_BAY = ช่องจอดเข้าซอง 1 คัน
-        [[PLAN.flat1, 'flat1', COL.roofGrey, 1], [PLAN.flat2, 'flat2', COL.roofRed, -1]].forEach(function (cfg) {
+        [[PLAN.flat1, 'flat1', COL.roofGrey, 1, 0xd8d1c5], [PLAN.flat2, 'flat2', COL.roofRed, -1, 0xf6f7f9]].forEach(function (cfg) {
             var r = cfg[0], g = new THREE.Group(), side = cfg[3];      // side 1 = ระเบียงด้านตะวันออก, -1 = ด้านตะวันตก
             var B = { x: side > 0 ? r.x : r.x + BAL, y: r.y, w: r.w - BAL, d: r.d };      // ตัวอาคาร (ไม่รวมระเบียง)
             var balX = side > 0 ? r.x + r.w - BAL : r.x;
@@ -674,13 +713,18 @@ var LamhinScene = (function () {
             // ระเบียงแต่ละชั้น: พื้นยื่น + ผนังราวทึบสีขาว
             for (var f = 0; f < NF; f++) {
                 var fy0 = yT + f * FH;
-                g.add(plainBox({ x: balX, y: r.y + 0.06, w: BAL, d: r.d - 0.12 }, fy0 - 0.05, 0.05, 0xf3f5f8));
-                g.add(plainBox({ x: side > 0 ? r.x + r.w - 0.04 : r.x, y: r.y + 0.06, w: 0.04, d: r.d - 0.12 }, fy0, 0.2, 0xf8f9fb));
+                g.add(plainBox({ x: balX, y: r.y + 0.06, w: BAL, d: r.d - 0.12 }, fy0 - 0.06, 0.06, cfg[4]));
+                g.add(plainBox({ x: side > 0 ? r.x + r.w - 0.05 : r.x, y: r.y + 0.06, w: 0.05, d: r.d - 0.12 }, fy0, 0.26, cfg[4]));
             }
             // ผนังปิดหัวท้ายระเบียง (ช่องบันไดขึ้นลงที่หัวตึก)
             [r.y + 0.06, r.y + r.d - 0.1].forEach(function (yy) {
                 g.add(plainBox({ x: balX, y: yy, w: BAL, d: 0.04 }, yT - 0.05, H, 0xe9edf2));
             });
+            // ท่อ/ราวเหล็กแนวตั้งเรียงริมระเบียง ตั้งแต่พื้นถึงชั้นบนสุด (ตามภาพ)
+            for (var rod = r.y + 0.5; rod < r.y + r.d - 0.3; rod += 1.25) {
+                var rm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, GH + H, 5), new THREE.MeshLambertMaterial({ color: 0x8a939e }));
+                rm.position.set(wx(side > 0 ? r.x + r.w + 0.02 : r.x - 0.02), 0.16 + (GH + H) / 2, wz(rod)); g.add(rm);
+            }
             // หลังคา: แผ่นพื้น + ขอบกันตก ตามสีหลังคาจากภาพดาวเทียม
             g.add(plainBox(grow(r, 0.04), yT + H, 0.07, cfg[2]));
             g.add(plainBox({ x: r.x - 0.04, y: r.y - 0.04, w: r.w + 0.08, d: 0.05 }, yT + H + 0.07, 0.1, 0xf1f3f6));
@@ -790,7 +834,7 @@ var LamhinScene = (function () {
 
     // ---------- จุดยึดป้ายข้อมูลในพิกัดโลก ----------
     var ANCHOR = {
-        station: [PLAN.station.x + PLAN.station.w / 2, 2.4, PLAN.station.y + PLAN.station.d / 2],
+        station: [PLAN.station.x + PLAN.station.w / 2, 3.0, PLAN.station.y + PLAN.station.d / 2],
         flat1:   [PLAN.flat1.x + PLAN.flat1.w / 2, 3.8, PLAN.flat1.y + PLAN.flat1.d / 2],
         flat2:   [PLAN.flat2.x + PLAN.flat2.w / 2, 3.6, PLAN.flat2.y + PLAN.flat2.d / 2],
         parking: [PLAN.parkN.x + PLAN.parkN.w / 2, 3.4, PLAN.parkN.y + PLAN.parkN.d * 0.3],

@@ -441,6 +441,8 @@
 .dash-wl-sum span { font-size: 0.74rem; color: var(--d-mute); padding: 7px 12px; border-radius: 12px; background: var(--d-soft); }
 .dash-wl-sum b { color: var(--d-ink); font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .dash-wl-wrap { overflow-x: auto; }
+.dash-wl tfoot .wl-total td { font-weight: 800; border-top: 2px solid var(--dash-line, #cbd5e1); background: rgba(29, 78, 216, 0.06); }
+.dash-wl .wl-over6 { color: #b91c1c; }
 .dash-wl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.76rem; min-width: 600px; }
 .dash-wl th {
     text-align: right; font-size: 0.66rem; font-weight: 800; color: var(--d-faint);

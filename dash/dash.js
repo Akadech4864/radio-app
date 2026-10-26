@@ -540,7 +540,11 @@ function dashPaintWorkload(s) {
     var list = (s.byOfficer || []).filter(function (o) {
         return o.name && o.name !== 'ไม่ระบุ' && o.grand > 0;
     });
-    if (!list.length) { el.innerHTML = ''; return; }
+    if (!list.length) {
+        el.innerHTML = '<div class="dash-card-h"><i class="fas fa-list-ol"></i> ภาระงาน พงส. - จัดอันดับตามจำนวนคดี</div>'
+            + '<div class="dash-none">ยังไม่มีคดีที่มีเลขคดีในช่วงนี้ (คดีออนไลน์ไม่นับภาระงาน)</div>';
+        return;
+    }
     var max = list[0].grand || 1;
     var short = function (n) { return dashRankName(n); };
     // คนที่ไม่อยู่ในชีตกำลังพลแล้ว = ย้ายออกไปแล้ว (ยังนับคดีที่เคยรับไว้ตามจริง)
@@ -562,26 +566,36 @@ function dashPaintWorkload(s) {
             + '<td class="wl-n">' + dashNum(o.grand) + '</td>'
             + '<td class="wl-s">' + dashNum(o.criminal) + '</td>'
             + '<td class="wl-s">' + dashNum(o.traffic) + '</td>'
-            + '<td class="wl-s">' + dashNum(o.online) + '</td>'
-            // คดีค้าง (อาญา+จราจรที่ยังสอบสวน) และค้างเกิน 3 เดือน — ผบ.ดูได้ทันทีว่าใครค้างมาก
+            // คดีค้าง (อาญา+จราจรที่ยังสอบสวน) แยกค้าง 3–6 เดือน / เกิน 6 เดือน — ผบ.ดูได้ทันทีว่าใครค้างมาก
             + '<td class="wl-o' + (o.open ? '' : ' z') + '">' + dashNum(o.open) + '</td>'
             + '<td class="wl-o wl-over' + (o.over3 ? '' : ' z') + '">' + dashNum(o.over3) + '</td>'
+            + '<td class="wl-o wl-over6' + (o.over6 ? '' : ' z') + '">' + dashNum(o.over6 || 0) + '</td>'
             + '<td class="wl-r">' + o.perMonth.toFixed(1) + '</td>'
             + '<td class="wl-r">' + o.perDay.toFixed(2) + '</td>'
             + '<td class="wl-d">' + (o.daysPerCase ? o.daysPerCase.toFixed(1) : '-') + '</td>'
             + '</tr>';
     }).join('');
 
-    el.innerHTML = '<div class="dash-card-h"><i class="fas fa-list-ol"></i> ภาระงานพนักงานสอบสวน — จัดอันดับจำนวนคดีที่รับ'
-        + '<span class="dash-card-sub">นับมาแล้ว ' + dashNum(s.days) + ' วัน</span></div>'
+    // ยอดรวมทั้งหน่วย (แถวล่างสุด)
+    var sum = { grand: 0, criminal: 0, traffic: 0, open: 0, over3: 0, over6: 0 };
+    list.forEach(function (o) { Object.keys(sum).forEach(function (k) { sum[k] += o[k] || 0; }); });
+    var foot = '<tr class="wl-total"><td></td><td class="wl-name">รวมทั้งหน่วย (' + list.length + ' นาย)</td><td></td>'
+        + '<td class="wl-n">' + dashNum(sum.grand) + '</td><td class="wl-s">' + dashNum(sum.criminal) + '</td>'
+        + '<td class="wl-s">' + dashNum(sum.traffic) + '</td><td class="wl-o">' + dashNum(sum.open) + '</td>'
+        + '<td class="wl-o wl-over">' + dashNum(sum.over3) + '</td><td class="wl-o wl-over6">' + dashNum(sum.over6) + '</td>'
+        + '<td class="wl-r">' + (sum.grand / (s.days / 30.44)).toFixed(1) + '</td><td class="wl-r">' + (sum.grand / s.days).toFixed(2) + '</td>'
+        + '<td class="wl-d">' + (sum.grand ? (s.days / sum.grand).toFixed(1) : '-') + '</td></tr>';
+
+    el.innerHTML = '<div class="dash-card-h"><i class="fas fa-list-ol"></i> ภาระงาน พงส. - จัดอันดับตามจำนวนคดี'
+        + '<span class="dash-card-sub">นับเฉพาะคดีที่มีเลขคดี (ไม่รวมคดีออนไลน์) · นับมาแล้ว ' + dashNum(s.days) + ' วัน</span></div>'
         + '<div class="dash-wl-sum">'
         + '  <span>ทั้งหน่วยรับแจ้งเฉลี่ย <b>' + s.unitPerDay.toFixed(2) + '</b> คดี/วัน</span>'
         + '  <span>เฉลี่ยต่อ พงส. <b>' + Math.round(s.avgPerOfficer) + '</b> คดี/คน</span>'
         + '</div>'
         + '<div class="dash-wl-wrap"><table class="dash-wl">'
         + '<thead><tr><th>#</th><th>พนักงานสอบสวน</th><th></th><th>รวม</th>'
-        + '<th>อาญา</th><th>จร.</th><th>ออนไลน์</th><th>ค้าง</th><th>เกิน 3 ด.</th><th>คดี/เดือน</th><th>คดี/วัน</th><th>1 คดีทุก (วัน)</th>'
-        + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+        + '<th>อาญา</th><th>จร.</th><th>ค้าง</th><th>ค้าง 3–6 ด.</th><th>เกิน 6 ด.</th><th>คดี/เดือน</th><th>คดี/วัน</th><th>1 คดีทุก (วัน)</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
 }
 
 

@@ -44,6 +44,8 @@ function parseDate(s) {
 }
 function rowKey(r) { const d = parseDate(r && r[0]); return d ? keyOf(d) : 0; }
 function thShort(dt) { return dt.getDate() + ' ' + TH_MON[dt.getMonth()] + String((dt.getFullYear() + 543) % 100); }
+// ป้ายวันที่สั้นบนแถบเลื่อนวัน: "วันจันทร์ที่ 26 ต.ค.69"
+function thDay(dt) { return 'วัน' + TH_DOW[dt.getDay()] + 'ที่ ' + thShort(dt); }
 function thFull(dt) { return 'วัน' + TH_DOW[dt.getDay()] + 'ที่ ' + dt.getDate() + ' ' + TH_MON_FULL[dt.getMonth()] + ' ' + (dt.getFullYear() + 543); }
 function addDays(dt, n) { const x = new Date(dt); x.setDate(x.getDate() + n); return x; }
 function midnight(dt) { const x = new Date(dt); x.setHours(0, 0, 0, 0); return x; }
@@ -211,6 +213,7 @@ function renderDay() {
     const cur = currentDutyDate();
     const dt = viewDate || cur;
     const live = keyOf(dt) === keyOf(cur);
+    $('dutyDayLabel').textContent = thDay(dt);
 
     // แถบบอกวันที่
     const banner = $('dayBanner');
@@ -385,7 +388,9 @@ window.pickDate = function (y, m, d) { setView(new Date(y, m, d)); };
 window.pickKey = function (k) { setView(new Date(Math.floor(k / 10000), Math.floor(k / 100) % 100 - 1, k % 100)); };
 window.goToday = function () { setView(null); };
 
-function setView(dt) {
+// แถบเลื่อนวัน (แบบเวร สน.): ไม่เลื่อนหน้าจอ
+window.dutyDayStep = function (n) { setView(addDays(viewDate || currentDutyDate(), n), true); };
+function setView(dt, stay) {
     viewDate = (dt && keyOf(dt) !== keyOf(currentDutyDate())) ? midnight(dt) : null;
     const show = viewDate || currentDutyDate();
     calMonth = new Date(show.getFullYear(), show.getMonth(), 1);
@@ -394,7 +399,7 @@ function setView(dt) {
     renderCalendar();
     showTab('duty');
     setDutyView('day');
-    $('dayBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!stay) $('dayBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ==========================================================
@@ -408,6 +413,7 @@ function setDutyView(v) {
     $('dutyDay').hidden = v !== 'day';
     $('dutyMonth').hidden = v !== 'month';
     $('dutyMonthNav').hidden = v !== 'month';
+    $('dutyDayNav').hidden = v !== 'day';
     $('dutyExport').hidden = v !== 'month';
     if (v === 'month') renderDutyMonth(true);
 }
@@ -438,13 +444,13 @@ function renderStation(jump) {
     const box = $('stView'); if (!box) return;
     const prev = box.querySelector('.sv-vscroll');
     const keepLeft = prev ? prev.scrollLeft : 0;
-    if (!stDate) stDate = currentDutyDate();
+    if (!stDate) stDate = midnight(new Date());
     if (!data.station) { box.innerHTML = '<div class="empty">ยังไม่มีข้อมูลเวรทุกสายงาน</div>'; return; }
     document.querySelectorAll('#stSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === stView));
     const sel = $('stSec');
     sel.hidden = stView !== 'month';
     sel.innerHTML = svSecOptions(data.station, stSec);
-    $('stLabel').textContent = stView === 'day' ? thFull(stDate) : (TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543));
+    $('stLabel').textContent = stView === 'day' ? thDay(stDate) : (TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543));
     box.innerHTML = stView === 'day'
         ? svDayHtml(data.station, stDate, { emptyHint: 'งานธุรการกดปุ่ม "แก้ไข/เพิ่มเวร" ด้านบน' })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec);
@@ -464,7 +470,7 @@ window.stStep = function (n) {
     stDate = stView === 'day' ? addDays(stDate, n) : new Date(stDate.getFullYear(), stDate.getMonth() + n, 1);
     renderStation(true);
 };
-window.stToday = function () { stDate = currentDutyDate(); renderStation(true); };
+window.stToday = function () { stDate = midnight(new Date()); renderStation(true); };
 window.exportStation = function (kind) {
     const day = stView === 'day';
     const title = day ? 'ตารางเวร สน.ลำหิน ' + thShort(stDate)
@@ -483,7 +489,7 @@ window.exportStation = function (kind) {
 // ==========================================================
 let curTab = 'station';   // เปิดหน้าแรก = เวร สน. รายวัน
 // หน้านี้เป็นกระดานงานสอบสวน ที่ให้ธุรการ สน. ยืมใช้แท็บ "เวร สน." — หัวบาร์จึงต่างกันตามแท็บ
-const HERO_TITLE = { station: 'ตารางเวรทุกสายงาน สน.ลำหิน', other: 'ภาพรวมงานสอบสวน สน.ลำหิน' };
+const HERO_TITLE = { station: 'ตารางเวรทุกสายงาน สน.ลำหิน', other: 'สอบสวน สน.ลำหิน' };
 function heroFollowTab() {
     const hero = $('dash-hero'); if (!hero) return;
     const st = curTab === 'station';
@@ -609,6 +615,14 @@ function renderBoard() {
 // เริ่มต้น
 // ==========================================================
 function init() {
+    let calToday = keyOf(midnight(new Date()));
+    setInterval(() => {
+        const nowKey = keyOf(midnight(new Date()));
+        if (nowKey !== calToday) {
+            if (stDate && stView === 'day' && keyOf(stDate) === calToday) { stDate = midnight(new Date()); renderStation(); }
+            calToday = nowKey;
+        }
+    }, 30 * 1000);
     setInterval(() => {
         const before = keyOf(currentDutyDate());
         // สถานะ "กำลังเข้าเวร/ภารกิจถัดไป" ขึ้นกับเวลา จึงวาดใหม่ทุกนาที
@@ -640,7 +654,7 @@ function init() {
     document.querySelectorAll('#dutySeg button').forEach((b) => b.addEventListener('click', () => setDutyView(b.dataset.v)));
     document.querySelectorAll('#stSeg button').forEach((b) => b.addEventListener('click', () => {
         stView = b.dataset.v; if (stView === 'month' && stDate) stDate = new Date(stDate.getFullYear(), stDate.getMonth(), 1);
-        if (stView === 'day') stDate = currentDutyDate();
+        if (stView === 'day') stDate = midnight(new Date());
         renderStation(true);
     }));
     $('stSec').addEventListener('change', (e) => { stSec = e.target.value; renderStation(true); });

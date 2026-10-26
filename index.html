@@ -7,8 +7,8 @@
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="dash/dash.css?v=79">
-    <link rel="stylesheet" href="style.css?v=79">
+    <link rel="stylesheet" href="dash/dash.css?v=80">
+    <link rel="stylesheet" href="style.css?v=80">
 </head>
 <body>
     <!--
@@ -34,6 +34,12 @@
                     <button type="button" data-v="day" class="on"><i class="fa-solid fa-calendar-day"></i> รายวัน</button>
                     <button type="button" data-v="month"><i class="fa-solid fa-table"></i> ทั้งเดือน</button>
                 </div>
+                <div class="mnav" id="dutyDayNav">
+                    <button type="button" class="icon-btn" onclick="dutyDayStep(-1)" title="วันก่อน"><i class="fa-solid fa-chevron-left"></i></button>
+                    <b id="dutyDayLabel">-</b>
+                    <button type="button" class="icon-btn" onclick="dutyDayStep(1)" title="วันถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button type="button" class="chip-btn" id="todayBtn">วันนี้</button>
+                </div>
                 <div class="mnav" id="dutyMonthNav" hidden>
                     <button type="button" class="icon-btn" onclick="dutyMonthStep(-1)" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
                     <b id="dutyMonthLabel">-</b>
@@ -43,29 +49,6 @@
             </div>
             <div id="dutyMonth" hidden></div>
             <div id="dutyDay" class="rstack">
-            <section class="search-bar">
-                <div class="search-field">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input id="q" type="search" list="peopleList" autocomplete="off" placeholder="ค้นหาชื่อ หรือ ภารกิจ…">
-                    <datalist id="peopleList"></datalist>
-                </div>
-                <div class="search-field search-date">
-                    <i class="fa-regular fa-calendar"></i>
-                    <input id="dateInput" type="date" title="เลือกวันที่">
-                </div>
-                <button id="todayBtn" class="btn-today" type="button"><i class="fa-solid fa-rotate-left"></i> วันนี้</button>
-            </section>
-
-            <section class="card results" id="results" hidden>
-                <div class="card-h">
-                    <i class="fa-solid fa-list-check"></i>
-                    <span id="resultsTitle">ผลการค้นหา</span>
-                    <button class="chip-btn" id="pastToggle" type="button">แสดงย้อนหลัง</button>
-                    <button class="icon-x" id="closeResults" type="button" title="ปิด"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div id="resultsList" class="res-list"></div>
-            </section>
-
             <div class="day-banner" id="dayBanner"></div>
 
             <main class="day-grid">
@@ -103,6 +86,29 @@
                     <span><i class="dot dot-mis"></i>มีภารกิจ</span>
                     <span id="legendPerson" hidden><i class="dot dot-person"></i>วันที่คนที่ค้นหาเข้าเวร/ภารกิจ</span>
                 </div>
+            </section>
+
+            <!-- ค้นหาชื่อ/ภารกิจ หรือเลือกวันที่ (ล่างสุด) -->
+            <section class="search-bar">
+                <div class="search-field">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="q" type="search" list="peopleList" autocomplete="off" placeholder="ค้นหาชื่อ หรือ ภารกิจ…">
+                    <datalist id="peopleList"></datalist>
+                </div>
+                <div class="search-field search-date">
+                    <i class="fa-regular fa-calendar"></i>
+                    <input id="dateInput" type="date" title="เลือกวันที่">
+                </div>
+            </section>
+
+            <section class="card results" id="results" hidden>
+                <div class="card-h">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span id="resultsTitle">ผลการค้นหา</span>
+                    <button class="chip-btn" id="pastToggle" type="button">แสดงย้อนหลัง</button>
+                    <button class="icon-x" id="closeResults" type="button" title="ปิด"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="resultsList" class="res-list"></div>
             </section>
             </div>
         </section>
@@ -156,13 +162,13 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="dash/scene3d.js?v=79"></script>
-    <script src="dash/dashcalc.js?v=79"></script>
-    <script src="dash/dash.js?v=79"></script>
-    <script src="dash/stationview.js?v=79"></script>
-    <script src="dash/stationapp.js?v=79"></script>
-    <script src="stationcheck.js?v=79"></script>
-    <script src="app.js?v=79"></script>
-    <script src="stationedit.js?v=79"></script>
+    <script src="dash/scene3d.js?v=80"></script>
+    <script src="dash/dashcalc.js?v=80"></script>
+    <script src="dash/dash.js?v=80"></script>
+    <script src="dash/stationview.js?v=80"></script>
+    <script src="dash/stationapp.js?v=80"></script>
+    <script src="stationcheck.js?v=80"></script>
+    <script src="app.js?v=80"></script>
+    <script src="stationedit.js?v=80"></script>
 </body>
 </html>

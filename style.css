@@ -440,3 +440,8 @@ body.st-editing #pane-station .dash-stagewrap { display: none !important; }
 
 /* หัวบาร์แท็บ "เวร สน." (ภาพรวม สน.): ตรา + ชื่อ เท่านั้น — ปีงบ/Present เป็นของงานสอบสวน */
 .board .dash-hero.hero-station .dash-hero-right { display: none; }
+/* จอแคบ: ปุ่ม Present เหลือไอคอน ให้ชื่อหัวบาร์ "สอบสวน สน.ลำหิน" แสดงครบ */
+@media (max-width: 440px) {
+    .board .dash-hero .dash-ic-present span { display: none; }
+    .board .dash-hero .dash-ic-present { padding-left: 10px; padding-right: 10px; }
+}

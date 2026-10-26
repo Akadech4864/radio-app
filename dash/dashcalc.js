@@ -222,7 +222,7 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         if (mi != null) out.byMonth[mi].crime++;
 
         var ok = norm(ofc);
-        if (!byOfc[ok]) byOfc[ok] = { name: ofc, total: 0, open: 0, over3: 0, online: 0, criminal: 0, traffic: 0 };
+        if (!byOfc[ok]) byOfc[ok] = { name: ofc, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0 };
         // ชีตคนละใบเขียนยศไม่เหมือนกัน — เก็บชื่อที่ยาวที่สุดไว้แสดง จะได้มียศครบ
         if (String(ofc).length > String(byOfc[ok].name).length) byOfc[ok].name = ofc;
         byOfc[ok].total++;
@@ -236,7 +236,7 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         var m3 = dashAddMonths(d, 3), m6 = dashAddMonths(d, 6), y1 = dashAddMonths(d, 12);
         if (today >= m3) {
             if (today >= y1) out.age1y++; else if (today >= m6) out.age6++; else out.age3++;
-            byOfc[ok].over3++;
+            if (today >= m6) byOfc[ok].over6++; else byOfc[ok].over3++;   // ภาระงาน: ค้าง 3–6 เดือน / เกิน 6 เดือน
             if (isTraf) out.overTraffic++; else out.overCriminal++;
         }
         openList.push({
@@ -260,7 +260,7 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         var oo = String(r[12] || '').trim();
         if (oo) {
             var ook = norm(oo);
-            if (!byOfc[ook]) byOfc[ook] = { name: oo, total: 0, open: 0, over3: 0, online: 0, criminal: 0, traffic: 0 };
+            if (!byOfc[ook]) byOfc[ook] = { name: oo, total: 0, open: 0, over3: 0, over6: 0, online: 0, criminal: 0, traffic: 0 };
             if (String(oo).length > String(byOfc[ook].name).length) byOfc[ook].name = oo;
             byOfc[ook].online++;
         }
@@ -282,16 +282,16 @@ function dashComputeCases(crimeRows, onlineRows, range, today, canon) {
         .sort(function (a, b) { return b.n - a.n; });
     out.byOfficer = Object.keys(byOfc).map(function (k) {
         var o = byOfc[k];
-        o.grand = o.total + o.online;                        // คดีที่รับทั้งหมด (อาญา+จราจร+ออนไลน์)
+        o.grand = o.total;                                   // คดีที่รับ (มีเลขคดี: อาญา+จราจร) — คดีออนไลน์ไม่มีเลขคดี ไม่นับภาระงาน
         o.perDay = o.grand / elapsedDays;                    // เฉลี่ยคดี/วัน
         o.perMonth = o.grand / (elapsedDays / 30.44);         // เฉลี่ยคดี/เดือน
         o.daysPerCase = o.grand ? elapsedDays / o.grand : 0;  // รับ 1 คดีทุก ๆ กี่วัน
         return o;
     }).sort(function (a, b) { return b.grand - a.grand || b.open - a.open; });
     // ค่าเฉลี่ยทั้งหน่วย
-    out.unitPerDay = (out.total + out.online) / elapsedDays;
-    out.avgPerOfficer = out.byOfficer.length
-        ? (out.total + out.online) / out.byOfficer.length : 0;
+    var withCases = out.byOfficer.filter(function (o) { return o.grand > 0; }).length;
+    out.unitPerDay = out.total / elapsedDays;
+    out.avgPerOfficer = withCases ? out.total / withCases : 0;
     out.oldest = openList.sort(function (a, b) { return b.days - a.days; }).slice(0, 8);
     return out;
 }
