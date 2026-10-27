@@ -105,6 +105,11 @@ function svNoteTime(n) {
     var s = String(n || '').trim();
     return /^\d{1,2}[.:]\d{2}\s*-\s*\d{1,2}[.:]\d{2}/.test(s) ? svNoteText(s) : '';
 }
+// ฝ่ายที่ไม่มีแถวหัวฝ่ายในใบเวรรายวัน · ชื่อหน้าที่ที่แสดงแทน (กุญแจในชีตคงเดิม)
+var SV_NO_HEAD = { 'ผู้บังคับบัญชา': 1, 'เวร ศปก.': 1 };
+var SV_ROLE_LABEL = { 'เวร ศปก.|เจ้าหน้าที่': 'เวร ศปก.' };
+// ฝ่ายที่แสดงเวลาเข้าเวรที่หัวฝ่ายแทนหลังชื่อ
+var SV_HEAD_TIME = { 'ฝ่ายสืบสวน': 1 };
 // เวลาหลังชื่อของหน้าที่ที่ไม่ได้บันทึกเวลาไว้
 var SV_ROLE_NOTE = { 'เวรอำนวยการ': '08.01-08.00 น.' };
 // ข้อความเวลาที่แสดง (กุญแจในชีตคงเดิม) — ป. ผลัดกลางคืนลงเวรก่อนผลัดเช้ารับ 1 นาที
@@ -125,25 +130,31 @@ function svDayHtml(data, date, opts) {
     var any = false;
     slots.forEach(function (t) {
         var got = day[k][svSlotKey(t.sec, t.time)] || {};
-        if (t.sec !== 'ผู้บังคับบัญชา') {
+        var head = !SV_NO_HEAD[t.sec];   // ผู้บังคับบัญชา / เวร ศปก. ไม่มีแถวหัวฝ่าย (เวร ศปก. ยุบเหลือแถวเดียว)
+        var headTime = '';
+        if (SV_HEAD_TIME[t.sec]) t.roles.forEach(function (role) {
+            (got[role] || []).forEach(function (r) { headTime = headTime || svNoteTime(r[7]); });
+        });
+        if (head) {
             html += '<tr class="sv-sec"><td colspan="4" style="background:' + svTint(t.color, 0.24) + ';border-left:5px solid ' + t.color + '">'
-                + svEsc(t.sec) + ((t.time || t.timeLabel) ? ' <small>เวลา ' + svEsc(svTimeText(t.time) || t.timeLabel) + '</small>' : '') + '</td></tr>';
+                + svEsc(t.sec) + ((t.time || t.timeLabel || headTime) ? ' <small>เวลา ' + svEsc(svTimeText(t.time) || t.timeLabel || headTime) + '</small>' : '') + '</td></tr>';
         }
         var roleBg = 'background:' + svTint(t.color, 0.12);   // ไฮไลท์จางตามสีของงาน
         t.roles.forEach(function (role) {
             var list = got[role] || [];
+            var roleText = SV_ROLE_LABEL[t.sec + '|' + role] || role;
             if (list.length) any = true;
             if (!list.length) {
-                html += '<tr class="sv-empty"><td class="sv-role" style="' + roleBg + '">' + svEsc(role) + '</td><td colspan="3">—</td></tr>';
+                html += '<tr class="sv-empty"><td class="sv-role" style="' + roleBg + '">' + svEsc(roleText) + '</td><td colspan="3">—</td></tr>';
                 return;
             }
             list.forEach(function (r, i) {
                 var tel = String(r[6] || '').replace(/[^0-9+]/g, '');
                 // หลังชื่อแสดงเฉพาะเวลา (รหัสวิทยุ/ชุด เช่น "ลำหิน 22" "ชุด 1" ไม่แสดง) · มือถือย้ายเวลาไปไว้ใต้ตำแหน่ง
-                var note = svNoteTime(r[7] || SV_ROLE_NOTE[role] || '');
+                var note = SV_HEAD_TIME[t.sec] ? '' : svNoteTime(r[7] || SV_ROLE_NOTE[role] || (head ? '' : t.timeLabel) || '');
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
                 html += '<tr data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
-                    + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(role) + '</td>' : '')
+                    + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(roleText) + '</td>' : '')
                     + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note sv-note-in">' + svEsc(note) + '</span>' : '')
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div>'
