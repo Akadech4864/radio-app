@@ -746,7 +746,7 @@ var SV_CSS = ''
     + '.sv-a4 .sv-role{font-size:1.05rem}.sv-a4 .sv-name{font-size:1.14rem}'
     + '.sv-a4 .sv-c-pos{font-size:1rem}.sv-a4 .sv-c-tel{font-size:1.1rem}'
     + '.sv-a4 .sv-sec td{font-size:1.1rem;padding:10px 12px}.sv-a4 .sv-sec small{font-size:.95rem}'
-    + '.sv-a4 .sv-remark{font-size:.95rem;padding:11px 18px}'
+    + '.sv-a4 .sv-remark{font-size:1rem;padding:11px 18px}.sv-shot .sv-remark,.sv-print .sv-remark{font-weight:400}'
     + '.sv-a4 .sv-note{font-size:.82rem}.sv-a4 .sv-foot{font-size:.88rem;padding:9px 14px}'
     + '.sv-print .sv-fit.sv-a4{width:100%;height:100%}'
     // ---- เวรรวม สน. รายเดือน: A4 แนวนอน แถวยืดเต็มหน้า ----
