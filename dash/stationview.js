@@ -619,13 +619,30 @@ function svExportImage(title, sheetHtml, landscape, opts) {
         svInjectCss();
         var box = document.createElement('div');
         box.className = 'sv-shot';
-        box.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + W + 'px;background:#fff;padding:' + (a4 ? 24 : 18) + 'px';
+        box.style.cssText = 'position:fixed;left:-20000px;top:0;box-sizing:border-box;width:' + W + 'px;background:#fff;padding:' + (a4 ? 24 : 18) + 'px';
         // A4 แนวตั้ง = กว้าง:สูง 1:1.414 — ให้ใบเวรยืดเต็มความสูงนั้น
         box.innerHTML = a4 ? '<div class="sv-a4" style="min-height:' + Math.round(W * 1.4142 - 48) + 'px">' + sheetHtml + '</div>' : sheetHtml;
         document.body.appendChild(box);
         var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
         ready.then(function () {
-            return window.html2canvas(box, { scale: 2, backgroundColor: '#ffffff', logging: false });
+            var opt = { scale: 2, backgroundColor: '#ffffff', logging: false };
+            if (a4) {
+                // ใบเวรยาวเกินหน้า A4 (คนเยอะ) → ขยายความกว้างที่จัดหน้าแทน ให้ทั้งแผ่นพอดี 1 หน้า A4 (ตัวอักษรเล็กลงตามสัดส่วน)
+                var inner = box.querySelector('.sv-a4');
+                for (var i = 0; i < 6; i++) {
+                    inner.style.minHeight = '0';
+                    var need = box.offsetHeight, pageH = W * 1.4142;
+                    if (need <= pageH + 1) break;
+                    W = Math.ceil(W * Math.sqrt(need / pageH)) + 8;
+                    box.style.width = W + 'px';
+                }
+                inner.style.minHeight = Math.round(W * 1.4142 - 48) + 'px';
+                // ภาพออกมาขนาดเดียวกันทุกครั้ง (กว้าง 2000 px สัดส่วน A4) · จัดหน้าแบบจอคอมเสมอ แม้กดจากมือถือ
+                opt.scale = 2000 / W;
+                opt.width = W; opt.height = Math.round(W * 1.4142);
+                opt.windowWidth = Math.max(1280, W + 200);
+            }
+            return window.html2canvas(box, opt);
         }).then(function (canvas) {
             box.parentNode.removeChild(box);
             var url = canvas.toDataURL('image/png');
