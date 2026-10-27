@@ -106,8 +106,9 @@ function svNoteTime(n) {
     return /^\d{1,2}[.:]\d{2}\s*-\s*\d{1,2}[.:]\d{2}/.test(s) ? svNoteText(s) : '';
 }
 // ฝ่ายที่ไม่มีแถวหัวฝ่ายในใบเวรรายวัน · ชื่อหน้าที่ที่แสดงแทน (กุญแจในชีตคงเดิม)
-var SV_NO_HEAD = { 'ผู้บังคับบัญชา': 1, 'เวร ศปก.': 1 };
-var SV_ROLE_LABEL = { 'เวร ศปก.|เจ้าหน้าที่': 'เวร ศปก.' };
+// เวร ศปก. มีหัวฝ่ายของตัวเอง (เวลา 08.01-08.00 น.) แยกจากฝ่ายจราจร
+var SV_NO_HEAD = { 'ผู้บังคับบัญชา': 1 };
+var SV_ROLE_LABEL = {};
 // ฝ่ายที่แสดงเวลาเข้าเวรที่หัวฝ่ายแทนหลังชื่อ
 var SV_HEAD_TIME = { 'ฝ่ายสืบสวน': 1 };
 // เวลาหลังชื่อของหน้าที่ที่ไม่ได้บันทึกเวลาไว้
@@ -147,7 +148,7 @@ function svDayHtml(data, date, opts) {
     var any = false;
     slots.forEach(function (t) {
         var got = day[k][svSlotKey(t.sec, t.time)] || {};
-        var head = !SV_NO_HEAD[t.sec];   // ผู้บังคับบัญชา / เวร ศปก. ไม่มีแถวหัวฝ่าย (เวร ศปก. ยุบเหลือแถวเดียว)
+        var head = !SV_NO_HEAD[t.sec];   // ผู้บังคับบัญชา ไม่มีแถวหัวฝ่าย
         var headTime = '';
         if (SV_HEAD_TIME[t.sec]) t.roles.forEach(function (role) {
             (got[role] || []).forEach(function (r) { headTime = headTime || svNoteTime(r[7]); });
