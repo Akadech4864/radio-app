@@ -115,6 +115,23 @@ var SV_ROLE_NOTE = { 'เวรอำนวยการ': '08.01-08.00 น.' };
 // ข้อความเวลาที่แสดง (กุญแจในชีตคงเดิม) — ป. ผลัดกลางคืนลงเวรก่อนผลัดเช้ารับ 1 นาที
 var SV_TIME_LABEL = { '20.01-08.00 น. (ของวันรุ่งขึ้น)': '20.01-07.59 น. (ของวันรุ่งขึ้น)' };
 function svTimeText(t) { return SV_TIME_LABEL[t] || t || ''; }
+/**
+ * สถานะตอนนี้ของคนในใบเวรวันที่ date ตามช่วงเวลา "08.01-17.00" ('on' | 'post' ออกเวรแล้ว | 'pre' ยังไม่ถึงเวลา | '' ไม่ทราบ)
+ * เวลาสิ้นสุดไม่เกินเวลาเริ่ม = สิ้นสุดวันรุ่งขึ้น (08.01-08.00, 20.01-07.59, 05.00-05.00)
+ * ดูเฉพาะใบเวรวันนี้และเช้าวันรุ่งขึ้น (วันที่ผ่านไปนานแล้วไม่ต้องจางทั้งแผ่น)
+ */
+function svShiftState(date, txt, now) {
+    var m = String(txt || '').match(/(\d{1,2})[.:](\d{2})\s*-\s*(\d{1,2})[.:](\d{2})/);
+    if (!m) return '';
+    now = now || new Date();
+    var d0 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (now < d0 || now - d0 > 36 * 3600000) return '';
+    var st = new Date(d0.getTime()), en = new Date(d0.getTime());
+    st.setHours(+m[1], +m[2], 0, 0); en.setHours(+m[3], +m[4], 59, 999);
+    if (+m[3] * 60 + +m[4] <= +m[1] * 60 + +m[2]) en.setDate(en.getDate() + 1);
+    return now < st ? 'pre' : (now > en ? 'post' : 'on');
+}
+var SV_OFF_TEXT = { post: 'ออกเวรแล้ว', pre: 'ยังไม่ถึงเวลาเข้าเวร' };
 
 // ---------- ใบเวรประจำวัน (หน้าตาเหมือนแบบฟอร์มของ สน.) ----------
 function svDayHtml(data, date, opts) {
@@ -152,11 +169,15 @@ function svDayHtml(data, date, opts) {
                 var tel = String(r[6] || '').replace(/[^0-9+]/g, '');
                 // หลังชื่อแสดงเฉพาะเวลา (รหัสวิทยุ/ชุด เช่น "ลำหิน 22" "ชุด 1" ไม่แสดง) · มือถือย้ายเวลาไปไว้ใต้ตำแหน่ง
                 var note = SV_HEAD_TIME[t.sec] ? '' : svNoteTime(r[7] || SV_ROLE_NOTE[role] || (head ? '' : t.timeLabel) || '');
+                // คนที่ไม่ได้อยู่เวรตอนนี้ (ออกเวรแล้ว / ผลัดที่ยังไม่ถึงเวลา) ทำตัวจาง — เฉพาะบนจอ ไม่ใช่ภาพ/PDF
+                var off = opts.plain ? '' : svShiftState(date, svNoteTime(r[7]) || SV_ROLE_NOTE[role] || svTimeText(t.time) || t.timeLabel || headTime);
+                off = SV_OFF_TEXT[off] ? off : '';
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
-                html += '<tr data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
+                html += '<tr' + (off ? ' class="sv-off sv-off-' + off + '"' : '') + ' data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
                     + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(roleText) + '</td>' : '')
                     + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note sv-note-in">' + svEsc(note) + '</span>' : '')
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
+                    + (off ? '<span class="sv-off-tag">' + SV_OFF_TEXT[off] + '</span>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div>'
                     + (note ? '<div class="sv-note-row"><span class="sv-note">' + svEsc(note) + '</span></div>' : '') + '</td>'
                     + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
@@ -655,7 +676,12 @@ var SV_CSS = ''
     + '.sv-table thead th{background:#f1f5f9;font-weight:800;color:#334155;text-align:center}'
     + '.sv-c-role{width:23%}.sv-c-tel{white-space:nowrap;text-align:center}.sv-c-tel a{color:#1d4ed8;text-decoration:none;font-weight:700}'
     + '.sv-role{font-weight:800;font-size:.95rem;text-align:left;background:#f8fafc;color:#0f172a}'
-    + '.sv-name{font-weight:700}.sv-nm{white-space:nowrap}.sv-note-row{display:none;margin-top:2px}.sv-note-row .sv-note{margin-left:0}.sv-name-pos{display:none;font-size:.74rem;font-weight:500;color:#64748b}'
+    + '.sv-name{font-weight:700}.sv-nm{white-space:nowrap}.sv-note-row{display:none;margin-top:2px}'
+    // ออกเวรแล้ว / ยังไม่ถึงเวลา: จางเฉพาะช่องชื่อ-ตำแหน่ง-เบอร์ (ช่องหน้าที่ที่รวมหลายแถวคงเดิม)
+    + '.sv-off>td:not(.sv-role){opacity:.42}.sv-off .sv-nm{font-weight:600}'
+    + '.sv-off-tag{display:inline-block;margin-left:5px;font-size:.62rem;font-weight:800;color:#475569;background:#e2e8f0;border-radius:999px;padding:0 6px;vertical-align:1px}'
+    + '.sv-shot .sv-off>td,.sv-print .sv-off>td{opacity:1}.sv-shot .sv-off-tag,.sv-print .sv-off-tag{display:none}'
+    + '.sv-note-row .sv-note{margin-left:0}.sv-name-pos{display:none;font-size:.74rem;font-weight:500;color:#64748b}'
     + '.sv-note{display:inline-block;font-size:.68rem;font-weight:800;color:#92400e;background:#fef3c7;border-radius:999px;padding:0 7px;margin-left:4px}'
     + '.sv-sec td{text-align:left;font-weight:800;color:#0f172a;padding:7px 10px}'
     + '.sv-day thead th{color:#0f172a;font-weight:800;background:#e2e8f0}'   // หัวคอลัมน์ใบเวรรายวัน: หนา เข้ม ขนาดเท่าแถวฝ่ายงาน
