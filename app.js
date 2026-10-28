@@ -238,6 +238,7 @@ function renderDay() {
     const cur = currentDutyDate();
     const dt = viewDate || cur;
     const live = keyOf(dt) === keyOf(cur);
+    $('todayBtn').disabled = live;   // ดูเวรปัจจุบันอยู่แล้ว = กดไม่ได้
     $('dutyDayLabel').textContent = thDay(dt);
 
     // แถบบอกวันที่
@@ -523,6 +524,7 @@ window.dutyMonthStep = function (n) { dutyMonth = new Date(dutyMonth.getFullYear
 function renderDutyMonth(jump) {
     if (dutyView !== 'month') return;
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
+    $('dutyMonthTodayBtn').disabled = y === new Date().getFullYear() && m === new Date().getMonth();
     $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
     $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m);
     // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · ไม่เลื่อนไปวันนี้เอง (แถววันนี้กระพริบแทน)
@@ -551,6 +553,9 @@ function renderStation(jump) {
     sel.hidden = stView !== 'month';
     sel.innerHTML = stView === 'month' ? svSecChips(data.station, stSec, 'stSecSet') : '';   // ติ๊กเลือกฝ่าย (หลายฝ่ายได้)
     $('stTodayBtn').textContent = stView === 'day' ? 'วันนี้' : 'เดือนนี้';
+    const tNow = new Date();
+    $('stTodayBtn').disabled = stView === 'day' ? keyOf(stDate) === keyOf(tNow)
+        : (stDate.getFullYear() === tNow.getFullYear() && stDate.getMonth() === tNow.getMonth());
     $('stLabel').textContent = stView === 'day' ? thDay(stDate) : (TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543));
     box.innerHTML = stView === 'day'
         ? svDayHtml(data.station, stDate, { emptyHint: 'งานธุรการกดปุ่ม "แก้ไข/เพิ่มเวร" ด้านบน' })

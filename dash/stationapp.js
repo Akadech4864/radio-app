@@ -134,7 +134,7 @@ function svaPaint() {
             ? '<input type="date" value="' + dateVal + '" onchange="svaPick(this.value)">'
             : '<input type="month" value="' + monthVal + '" onchange="svaPick(this.value + \'-01\')">')
         + '    <button type="button" onclick="svaStep(1)" title="ถัดไป"><i class="fas fa-chevron-right"></i></button>'
-        + '    <button type="button" class="sva-today" onclick="svaPick(null)">' + (SVA.view === 'month' ? 'เดือนนี้' : 'วันนี้') + '</button>'
+        + '    <button type="button" class="sva-today" onclick="svaPick(null)"' + (svaIsNow() ? ' disabled' : '') + '>' + (SVA.view === 'month' ? 'เดือนนี้' : 'วันนี้') + '</button>'
         + '  </div>'
         + (SVA.view === 'month' ? '<div class="sva-secs">' + svSecChips(SVA.data, SVA.sec, 'svaSecSet') + '</div>' : '')
         + '  <div class="sva-act">'
@@ -173,6 +173,12 @@ function svaPaint() {
 }
 
 function svaSetView(v) { SVA.view = v; svaPaint(); }
+/** กำลังดูวันนี้ (รายวัน) / เดือนนี้ (รายเดือน) อยู่หรือไม่ — ปุ่มวันนี้/เดือนนี้กดไม่ได้ */
+function svaIsNow() {
+    var d = SVA.date, t = svaToday();
+    if (!d) return true;
+    return SVA.view === 'month' ? (d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth()) : svKey(d) === svKey(t);
+}
 function svaSecSet(v) { SVA.sec = v; svaPaint(); }
 function svaPick(v) {
     if (!v) SVA.date = svaToday();
@@ -937,7 +943,7 @@ var SVA_CSS = ''
     + '.sva-seg{display:flex;gap:4px;padding:3px;border-radius:12px;background:#f1f5f9}.sva-seg button{border:0;background:transparent}'
     + '.sva-seg button.on{background:#1d4ed8;color:#fff}'
     + '.sva-nav{display:flex;gap:4px;align-items:center}.sva-nav input{border:1px solid #dbe3ee;border-radius:10px;padding:5px 8px;font:inherit;font-size:.85rem;color:#0f172a}'
-    + '.sva-sel{border:1px solid #dbe3ee;border-radius:10px;padding:6px 8px;font-size:.82rem;max-width:230px}.sva-secs{flex:1 1 100%;order:9}'
+    + '.sva-sel{border:1px solid #dbe3ee;border-radius:10px;padding:6px 8px;font-size:.82rem;max-width:230px}.sva-secs{flex:1 1 100%;order:9}.sva-today:disabled{opacity:.4;cursor:default;pointer-events:none;filter:grayscale(.7)}'
     + '@media (max-width:560px){.sva-secs .sv-secchips{display:grid;grid-template-columns:repeat(3,1fr)}.sva-secs .sv-chip{justify-content:center;padding:7px 4px;border-radius:12px}.sva-secs .sv-chip:first-child{grid-column:1/-1}}'
     + '.sva-act{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}'
     + '.sva-bar .sv-x-pdf{background:#dc2626;color:#fff;border-color:#dc2626}.sva-bar .sv-x-img{background:#059669;color:#fff;border-color:#059669}'

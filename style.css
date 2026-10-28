@@ -206,6 +206,8 @@ body {
     font: inherit; font-size: 0.76rem; font-weight: 800; color: var(--ink2); padding: 5px 12px; border-radius: 999px;
 }
 .chip-btn.on { background: var(--brand2); border-color: var(--brand2); color: #fff; }
+/* ปุ่มวันนี้/เดือนนี้ขณะกำลังดูวันนี้/เดือนนี้อยู่ = กดไม่ได้ */
+.chip-btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; box-shadow: none; filter: grayscale(0.7); }
 .icon-x {
     width: 32px; height: 32px; border: 0; border-radius: 10px; cursor: pointer;
     background: var(--soft); color: var(--mute);
