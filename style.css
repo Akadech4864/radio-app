@@ -383,6 +383,17 @@ body {
 .ms-row-now .ms-c-time { box-shadow: inset 4px 0 0 #22c55e; }
 .ms-empty { text-align: center; color: #94a3b8; padding: 18px !important; }
 .ms-inline { display: none; }
+/* ตารางภารกิจรายเดือน */
+.ms-month-wrap { margin-top: 14px; }
+.ms-mtable .sv-m-date { width: 54px; text-align: left; vertical-align: top !important; background: #f8fafc; }
+.ms-mtable .sv-m-date b { font-size: 1.05rem; margin-right: 4px; }
+.ms-mtable .sv-m-date span { font-size: 0.7rem; color: #64748b; }
+.ms-mtable tr.sv-we td.sv-m-date { background: #fff7ed; }
+.ms-mtable tr.ms-dayend td { border-bottom: 2px solid #cbd5e1; }
+.ms-mtable tr.sv-past td { opacity: 0.55; }
+.ms-mtable tr.sv-today td { background: #f0fdf4; animation: svTodayBlink 1.3s ease-in-out infinite; }
+.ms-mtable tr.sv-today td.sv-m-date b { color: #047857; }
+.ms-mtable .ms-c-time b { font-size: 0.86rem; }
 .st-ckbtn {
     border: 1px solid #bfdbfe; border-radius: 10px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
     font: inherit; font-weight: 800; font-size: 0.82rem; color: #1d4ed8; background: #eff6ff;
@@ -436,6 +447,13 @@ body {
     .ms-inline { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 6px; }
     .ms-inline .sv-dash { display: none; }
     .ms-c-time b { font-size: 0.82rem; }
+    /* ตารางภารกิจรายเดือนบนมือถือ: ผู้ร่วมภารกิจแสดงเป็นภาพหน้าเรียงกัน (ชื่อเต็มอยู่ใน title) ประธานยังมีชื่อ */
+    .ms-mtable .ms-inline .ms-people { gap: 3px; }
+    .ms-mtable .ms-inline .ms-p:not(.chair) { padding: 0; background: none; }
+    .ms-mtable .ms-inline .ms-p:not(.chair) > span { display: none; }
+    .ms-inline .ms-p > span { white-space: normal; }
+    .ms-mtable .sv-m-date { width: 40px; padding-left: 6px !important; padding-right: 4px !important; }
+    .ms-mtable .ms-c-time { padding-left: 5px !important; padding-right: 5px !important; }
     #pane-station .st-btns .xslot, #pane-station .st-btns .sv-xbtns { display: contents; }
     #pane-station .st-btns button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 0.76rem; text-align: center; }
     #pane-station .st-btns #stCkSlot { display: contents; }

@@ -298,17 +298,52 @@ function renderDay() {
  * ภารกิจวันนี้ เป็นใบรายการธีมเดียวกับตารางเวร
  * คอลัมน์: เวลา | ภารกิจ / สถานที่ | ประธาน · ผู้ร่วมภารกิจ (ภาพหน้า) | สถานะ — มือถือรวมผู้ร่วม/สถานะไว้ใต้ชื่อภารกิจ
  */
+// ภาพหน้า + ชื่อผู้ร่วมภารกิจ (ประธานขึ้นก่อน มีป้าย "ประธาน")
+function msFace(n, chair) {
+    const info = person(n);
+    return '<span class="ms-p' + (chair ? ' chair' : '') + '" title="' + esc(n) + '">'
+        + '<img src="' + esc(info.photo) + '" alt="" loading="lazy" onerror="this.src=\'' + DEFAULT_AVATAR + '\'">'
+        + '<span>' + esc(rankName(n)) + (chair ? '<small>ประธาน</small>' : '') + '</span></span>';
+}
+function msPeople(m) {
+    return (m.chair.length || m.who.length)
+        ? '<div class="ms-people">' + m.chair.map((n) => msFace(n, true)).join('') + m.who.map((n) => msFace(n, false)).join('') + '</div>'
+        : '<span class="sv-dash">—</span>';
+}
+
+/**
+ * ตารางภารกิจรายเดือน (ธีมเดียวกับตารางเวร) — เฉพาะวันที่มีภารกิจ · วันนี้กระพริบ · วันที่ผ่านไปแล้วตัวจาง
+ * คอลัมน์: วันที่ | เวลา | ภารกิจ / สถานที่ | ประธาน · ผู้ร่วมภารกิจ (มือถือ: ผู้ร่วมอยู่ใต้ชื่อภารกิจ)
+ */
+function missionMonthSheet(y, m) {
+    const days = new Date(y, m + 1, 0).getDate(), todayK = keyOf(new Date());
+    let body = '', total = 0;
+    for (let d = 1; d <= days; d++) {
+        const dt = new Date(y, m, d), k = keyOf(dt), list = missionsFor(dt);
+        if (!list.length) continue;
+        total += list.length;
+        const dow = dt.getDay(), cls = (dow === 0 || dow === 6 ? 'sv-we' : '') + (k === todayK ? ' sv-today' : '') + (k < todayK ? ' sv-past' : '');
+        list.forEach((x, i) => {
+            const t = String(x.time || '').replace(/–/, ' – ');
+            body += '<tr class="' + cls + (i === list.length - 1 ? ' ms-dayend' : '') + '">'
+                + (i === 0 ? '<td class="sv-m-date" rowspan="' + list.length + '"><b>' + d + '</b><span>' + SV_DOW_S[dow] + '</span></td>' : '')
+                + '<td class="ms-c-time"><b>' + esc(t || 'ทั้งวัน') + '</b></td>'
+                + '<td class="ms-c-title"><div class="ms-title">' + esc(x.title) + '</div>'
+                + (x.place ? '<div class="ms-place"><i class="fa-solid fa-location-dot"></i> ' + esc(x.place) + '</div>' : '')
+                + '<div class="ms-inline">' + msPeople(x) + '</div></td>'
+                + '<td class="ms-c-who">' + msPeople(x) + '</td></tr>';
+        });
+    }
+    if (!body) body = '<tr><td colspan="4" class="ms-empty"><i class="fa-regular fa-calendar-check"></i> ไม่มีภารกิจในเดือนนี้</td></tr>';
+    return '<div class="sv-sheet ms-sheet ms-month">'
+        + svTitle('ตารางภารกิจงานสอบสวน สน.ลำหิน', 'ประจำเดือน ' + TH_MON_FULL[m] + ' ' + (y + 543) + (total ? ' · ' + total + ' ภารกิจ' : ''))
+        + '<table class="sv-table ms-mtable"><thead><tr><th class="sv-m-date">วันที่</th><th class="ms-c-time">เวลา</th><th>ภารกิจ / สถานที่</th>'
+        + '<th class="ms-c-who">ประธาน · ผู้ร่วมภารกิจ</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+
 function missionSheet(list, day, live) {
     const ST = { now: ['กำลังดำเนินการ', 'ms-now'], next: ['ถัดไป', 'ms-next'], later: ['รอดำเนินการ', 'ms-later'], past: ['เสร็จแล้ว', 'ms-past'] };
-    const face = (n, chair) => {
-        const info = person(n);
-        return '<span class="ms-p' + (chair ? ' chair' : '') + '" title="' + esc(n) + '">'
-            + '<img src="' + esc(info.photo) + '" alt="" loading="lazy" onerror="this.src=\'' + DEFAULT_AVATAR + '\'">'
-            + '<span>' + esc(rankName(n)) + (chair ? '<small>ประธาน</small>' : '') + '</span></span>';
-    };
-    const people = (m) => (m.chair.length || m.who.length)
-        ? '<div class="ms-people">' + m.chair.map((n) => face(n, true)).join('') + m.who.map((n) => face(n, false)).join('') + '</div>'
-        : '<span class="sv-dash">—</span>';
+    const people = msPeople;
     const stTag = (m) => ST[m.state] ? '<span class="ms-st ' + ST[m.state][1] + '">' + (m.state === 'now' ? '<i class="fa-solid fa-circle-dot"></i> ' : '') + ST[m.state][0] + '</span>' : '';
     const body = list.length ? list.map((m) => {
         const t = String(m.time || '').replace(/–/, ' – ');
@@ -526,7 +561,8 @@ function renderDutyMonth(jump) {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
     $('dutyMonthTodayBtn').disabled = y === new Date().getFullYear() && m === new Date().getMonth();
     $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
-    $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m);
+    $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m)
+        + '<div class="ms-month-wrap">' + missionMonthSheet(y, m) + '</div>';   // ตารางภารกิจรายเดือนต่อท้าย
     // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · ไม่เลื่อนไปวันนี้เอง (แถววันนี้กระพริบแทน)
     svFloatHeads($('dutyMonth'));
 }
