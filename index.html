@@ -7,8 +7,8 @@
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="dash/dash.css?v=107">
-    <link rel="stylesheet" href="style.css?v=107">
+    <link rel="stylesheet" href="dash/dash.css?v=108">
+    <link rel="stylesheet" href="style.css?v=108">
 </head>
 <body>
     <!--
@@ -44,12 +44,15 @@
                     <button type="button" class="icon-btn" onclick="dutyMonthStep(-1)" title="เดือนก่อน"><i class="fa-solid fa-chevron-left"></i></button>
                     <b id="dutyMonthLabel">-</b>
                     <button type="button" class="icon-btn" onclick="dutyMonthStep(1)" title="เดือนถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button type="button" class="chip-btn" onclick="dutyMonthToday()">เดือนนี้</button>
                 </div>
-                <div class="xslot" id="dutyExport" hidden></div>
+                <div class="xslot" id="dutyExport"></div>
             </div>
             <div id="dutyMonth" hidden></div>
             <div id="dutyDay" class="rstack">
-            <div class="day-banner" id="dayBanner"></div>
+            <div class="day-banner" id="dayBanner" hidden></div>
+            <!-- ใบเวรงานสอบสวนประจำวัน (ธีมเดียวกับเวร สน.) -->
+            <div id="dutySheet"></div>
 
             <main class="day-grid">
                 <section class="card duty-card">
@@ -166,13 +169,13 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="dash/scene3d.js?v=107"></script>
-    <script src="dash/dashcalc.js?v=107"></script>
-    <script src="dash/dash.js?v=107"></script>
-    <script src="dash/stationview.js?v=107"></script>
-    <script src="dash/stationapp.js?v=107"></script>
-    <script src="stationcheck.js?v=107"></script>
-    <script src="app.js?v=107"></script>
-    <script src="stationedit.js?v=107"></script>
+    <script src="dash/scene3d.js?v=108"></script>
+    <script src="dash/dashcalc.js?v=108"></script>
+    <script src="dash/dash.js?v=108"></script>
+    <script src="dash/stationview.js?v=108"></script>
+    <script src="dash/stationapp.js?v=108"></script>
+    <script src="stationcheck.js?v=108"></script>
+    <script src="app.js?v=108"></script>
+    <script src="stationedit.js?v=108"></script>
 </body>
 </html>

@@ -143,7 +143,7 @@ function svDayHtml(data, date, opts) {
     var day = {}; day[k] = idx[k] || {};
     var slots = svSlots(data, day);
     var html = '<div class="sv-sheet sv-day">'
-        + svTitle('ตารางเวรการปฏิบัติหน้าที่ของ สน.ลำหิน', 'ประจำวัน' + SV_DOW_L[date.getDay()] + 'ที่ ' + svThaiLong(date))
+        + svTitle(opts.title || 'ตารางเวรการปฏิบัติหน้าที่ของ สน.ลำหิน', 'ประจำวัน' + SV_DOW_L[date.getDay()] + 'ที่ ' + svThaiLong(date))
         + '<table class="sv-table"><thead><tr><th class="sv-c-role">หน้าที่</th><th>ยศ ชื่อ สกุล</th>'
         + '<th class="sv-c-pos">ตำแหน่ง</th><th class="sv-c-tel">เบอร์โทรศัพท์</th></tr></thead><tbody>';
     var any = false;
@@ -191,7 +191,7 @@ function svDayHtml(data, date, opts) {
     });
     html += '</tbody></table>';
     if (!any) html += '<div class="sv-none">ยังไม่มีข้อมูลเวรของวันนี้' + (opts.emptyHint ? ' — ' + opts.emptyHint : '') + '</div>';
-    html += '<div class="sv-remark"><b>หมายเหตุ :</b> ' + svEsc(SV_DAY_REMARK[0]) + '<span>' + svEsc(SV_DAY_REMARK[1]) + '</span></div>';
+    if (!opts.noRemark) html += '<div class="sv-remark"><b>หมายเหตุ :</b> ' + svEsc(SV_DAY_REMARK[0]) + '<span>' + svEsc(SV_DAY_REMARK[1]) + '</span></div>';
     return html + svFoot(opts) + '</div>';
 }
 function svFoot(opts) {
@@ -778,7 +778,9 @@ var SV_CSS = ''
     + '.sv-chip.on{border-color:var(--c);color:#0f172a;box-shadow:inset 0 0 0 999px rgba(255,255,255,.82);background:var(--c)}'
     // ตารางเวร สน. รายเดือน: แถววันนี้กระพริบ (เฉพาะบนจอ)
     + '@keyframes svTodayBlink{0%,100%{box-shadow:inset 0 0 0 999px rgba(34,197,94,0)}50%{box-shadow:inset 0 0 0 999px rgba(34,197,94,.38)}}'
-    + '.sv-mtable:not(.sv-itable) .sv-today td{animation:svTodayBlink 1.3s ease-in-out infinite}'
+    + '.sv-mtable .sv-today td{animation:svTodayBlink 1.3s ease-in-out infinite}'
+    // ตารางเวรสอบสวนรายเดือนบนจอ: ชื่ออยู่บรรทัดเดียว (เลื่อนซ้าย-ขวาแทนการตัดบรรทัด)
+    + '.sv-itable td div,.sv-itable th small{white-space:nowrap}'
     + '.sv-shot .sv-today td,.sv-print .sv-today td{animation:none!important;box-shadow:none!important}'
     + '@media (prefers-reduced-motion:reduce){.sv-mtable .sv-today td{animation:none}}'
     + '.sv-dash{color:#cbd5e1}.sv-cnote{display:block;font-size:.62rem;color:#b45309;font-weight:700}'

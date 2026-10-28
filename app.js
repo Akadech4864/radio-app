@@ -251,6 +251,10 @@ function renderDay() {
           + '<span class="db-date">' + esc(thFull(dt)) + '</span>'
           + '<button class="db-back" type="button" onclick="goToday()"><i class="fa-solid fa-rotate-left"></i> กลับมาเวรปัจจุบัน</button>';
 
+    // ใบเวรประจำวัน (ธีมเดียวกับเวร สน.) — คนที่ออกเวรแล้ว/ยังไม่ถึงเวลาแสดงตัวจาง
+    $('dutySheet').innerHTML = svDayHtml(investDayData(dt), dt, { title: 'ตารางเวรงานสอบสวน สน.ลำหิน', noRemark: true });
+    if (dutyView === 'day') $('dutyExport').innerHTML = svExportButtons("exportDutyDay('pdf')", "exportDutyDay('img')");
+
     // เวร
     const row = dutyRowFor(dt);
     const d = dutyPeople(row, live);
@@ -424,8 +428,48 @@ function setView(dt, stay) {
     renderCalendar();
     showTab('duty');
     setDutyView('day');
-    if (!stay) $('dayBanner').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!stay) $('dutySheet').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+/** แถวเวรสอบสวนวันที่ dt → ข้อมูลรูปแบบเดียวกับเวร สน. (ใช้ svDayHtml วาดใบเวร) */
+function investDayData(dt) {
+    const row = dutyRowFor(dt), k = keyOf(dt), ds = svDateStr(dt);
+    const P = 'พนักงานสอบสวน', A = 'ผู้ช่วยพนักงานสอบสวน', O = 'ส่งของกลาง / เวรเสริม';
+    const rows = [], roles = { [P]: [], [A]: [], [O]: [] };
+    const add = (sec, role, n, note) => {
+        const p = person(n);
+        if (roles[sec].indexOf(role) < 0) roles[sec].push(role);
+        rows.push([ds, sec, '', role, p.name || n, p.pos || '', p.phone || '', note]);
+    };
+    if (row) {
+        const a = splitNames(row[1]), b = splitNames(row[6]);
+        const same = a.length && b.length && personKey(a.join()) === personKey(b.join());
+        if (same || !a.length || !b.length) (a.length ? a : b).forEach((n) => add(P, 'ร้อยเวร 30', n, '08.01-08.00 น.'));
+        else if (k >= PAIR_START) {
+            b.forEach((n) => add(P, 'ร้อยเวร 30', n, '08.01-08.00 น.'));
+            a.forEach((n) => add(P, 'คู่เวรกลางวัน', n, '08.01-17.00 น.'));
+        } else if (k >= SPLIT_START) {
+            a.forEach((n) => add(P, 'ผลัดเช้า', n, '08.01-17.00 น.'));
+            b.forEach((n) => add(P, 'ผลัดเย็น', n, '17.01-08.00 น.'));
+        } else a.concat(b).forEach((n) => add(P, 'ร้อยเวร 30', n, '08.01-08.00 น.'));
+        splitNames(row[2]).forEach((n) => add(A, 'ผช.พงส.', n, '08.01-08.00 น.'));
+        splitNames(row[3]).forEach((n) => add(O, 'ส่งของกลาง', n, ''));
+        splitNames(row[5]).forEach((n) => add(O, 'เวรเสริม', n, ''));
+    }
+    const template = [
+        { sec: P, time: '', color: '#d97706', roles: roles[P].length ? roles[P] : ['ร้อยเวร 30'] },
+        { sec: A, time: '', color: '#0ea5e9', roles: roles[A].length ? roles[A] : ['ผช.พงส.'] }
+    ];
+    if (roles[O].length) template.push({ sec: O, time: '', color: '#8b5cf6', roles: roles[O] });
+    return { template, rows };
+}
+window.exportDutyDay = function (kind) {
+    const dt = viewDate || currentDutyDate();
+    const title = 'ตารางเวรงานสอบสวน สน.ลำหิน ' + thShort(dt);
+    const html = svDayHtml(investDayData(dt), dt, { title: 'ตารางเวรงานสอบสวน สน.ลำหิน', noRemark: true, foot: true, plain: true });
+    if (kind === 'img') svExportImage(title, html, false); else svExportPdf(title, html, false);
+};
+window.dutyMonthToday = function () { const t = new Date(); dutyMonth = new Date(t.getFullYear(), t.getMonth(), 1); renderDutyMonth(); };
 
 // ==========================================================
 // เวรสอบสวน: ดูทั้งเดือนเป็นตาราง + ส่งออก PDF/ภาพ (เฉพาะตาราง)
@@ -439,7 +483,8 @@ function setDutyView(v) {
     $('dutyMonth').hidden = v !== 'month';
     $('dutyMonthNav').hidden = v !== 'month';
     $('dutyDayNav').hidden = v !== 'day';
-    $('dutyExport').hidden = v !== 'month';
+    $('dutyExport').innerHTML = v === 'month' ? svExportButtons("exportDutyMonth('pdf')", "exportDutyMonth('img')")
+        : svExportButtons("exportDutyDay('pdf')", "exportDutyDay('img')");
     if (v === 'month') renderDutyMonth(true);
 }
 window.dutyMonthStep = function (n) { dutyMonth = new Date(dutyMonth.getFullYear(), dutyMonth.getMonth() + n, 1); renderDutyMonth(true); };
@@ -449,9 +494,8 @@ function renderDutyMonth(jump) {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
     $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
     $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m);
-    $('dutyExport').innerHTML = svExportButtons("exportDutyMonth('pdf')", "exportDutyMonth('img')");
-    // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ
-    if (jump) svScrollToToday($('dutyMonth')); else svFloatHeads($('dutyMonth'));
+    // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · ไม่เลื่อนไปวันนี้เอง (แถววันนี้กระพริบแทน)
+    svFloatHeads($('dutyMonth'));
 }
 window.exportDutyMonth = function (kind) {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();

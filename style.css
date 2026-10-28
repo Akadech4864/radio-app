@@ -347,6 +347,12 @@ body {
 #pane-station .st-btns { order: 4; margin-left: auto; display: flex; align-items: center; gap: 6px; }
 #pane-station .st-btns .xslot { margin-left: 0; }
 #stCkSlot:empty { display: none; }
+/* แท็บเวรสอบสวน: ธีม/ลำดับปุ่มเดียวกับเวร สน. · ใบเวรแทนการ์ดรายบุคคล */
+#pane-duty .subbar > .seg { order: 1; }
+#pane-duty .subbar > .mnav { order: 2; }
+#pane-duty .subbar > .xslot { order: 4; }
+#pane-duty .duty-card { display: none; }
+#pane-duty .day-grid { grid-template-columns: 1fr; }
 .st-ckbtn {
     border: 1px solid #bfdbfe; border-radius: 10px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
     font: inherit; font-weight: 800; font-size: 0.82rem; color: #1d4ed8; background: #eff6ff;
@@ -387,6 +393,10 @@ body {
     #pane-station .subbar > .mnav { order: 3; flex: 1 1 100%; justify-content: center; }
     .mnav b { flex: 1 1 auto; width: auto; }
     #pane-station .subbar > .st-sec { order: 4; }
+    #pane-duty .subbar > .xslot { order: 2; flex: 1 1 100%; display: flex; }
+    #pane-duty .subbar > .xslot .sv-xbtns { flex: 1 1 100%; display: flex; gap: 5px; }
+    #pane-duty .subbar > .xslot button { flex: 1 1 0; padding: 8px 4px; font-size: 0.76rem; }
+    #pane-duty .subbar > .mnav { order: 3; flex: 1 1 100%; justify-content: center; }
     #pane-station .st-btns .xslot, #pane-station .st-btns .sv-xbtns { display: contents; }
     #pane-station .st-btns button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 0.76rem; text-align: center; }
     #pane-station .st-btns #stCkSlot { display: contents; }
