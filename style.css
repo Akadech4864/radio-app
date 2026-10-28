@@ -343,8 +343,8 @@ body {
 /* หน้าเวร สน.: กลุ่มปุ่มท้ายแถบ (จอใหญ่) · มือถือ = แถวเต็มเหนือแถบเลือกวันที่ */
 #pane-station .subbar > .seg { order: 1; }
 #pane-station .subbar > .mnav { order: 2; }
-#pane-station .subbar > .st-sec { order: 3; }
-#pane-station .st-btns { order: 4; margin-left: auto; display: flex; align-items: center; gap: 6px; }
+#pane-station .subbar > .st-sec { order: 5; }
+#pane-station .st-btns { order: 3; margin-left: auto; display: flex; align-items: center; gap: 6px; }
 #pane-station .st-btns .xslot { margin-left: 0; }
 #stCkSlot:empty { display: none; }
 /* แท็บเวรสอบสวน: ธีม/ลำดับปุ่มเดียวกับเวร สน. · ใบเวรแทนการ์ดรายบุคคล */
@@ -393,6 +393,10 @@ body {
     #pane-station .subbar > .mnav { order: 3; flex: 1 1 100%; justify-content: center; }
     .mnav b { flex: 1 1 auto; width: auto; }
     #pane-station .subbar > .st-sec { order: 4; }
+    /* เลือกฝ่าย: "ทุกฝ่าย" เต็มแถว แล้ว 6 ฝ่ายเรียงตาราง 3 คอลัมน์ ขนาดเท่ากัน */
+    #stSec .sv-secchips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    #stSec .sv-chip { justify-content: center; padding: 7px 4px; font-size: 0.78rem; border-radius: 12px; }
+    #stSec .sv-chip:first-child { grid-column: 1 / -1; }
     #pane-duty .subbar > .xslot { order: 2; flex: 1 1 100%; display: flex; }
     #pane-duty .subbar > .xslot .sv-xbtns { flex: 1 1 100%; display: flex; gap: 5px; }
     #pane-duty .subbar > .xslot button { flex: 1 1 0; padding: 8px 4px; font-size: 0.76rem; }
