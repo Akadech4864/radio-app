@@ -96,7 +96,7 @@ function ckPaint() {
         if (cell) { cell.className = 'ck-cell' + (v.s ? ' ck-c-' + v.s : ''); cell.innerHTML = ckCellHtml(v); }
     });
     if (on && table) ckJump(table);
-    if (!rows.length) return;
+    if (!rows.length) { ckSlot(on, 0, 0); return; }
     const done = n.in + n.busy + n.out;
     const bar = document.createElement('div');
     bar.className = 'ck-bar' + (on ? ' on' : '');
@@ -110,8 +110,17 @@ function ckPaint() {
         : `<button type="button" class="ck-act pri" data-a="on"><i class="fa-solid fa-list-check"></i> เช็คชื่อ</button>`
           + (done ? `<span class="ck-sum">เช็คแล้ว ${done}/${rows.length} · มา ${n.in}</span>` : '')
           + `<span class="ck-note">บันทึกในเครื่องนี้ ไม่ออกในภาพ/PDF</span>`;
-    box.insertBefore(bar, box.firstChild);
+    // ปุ่มเปิด/ปิดเช็คชื่ออยู่ในแถบปุ่มด้านบน (แถวเดียวกับ PDF / ภาพ / แก้ไขเวร) · แถบสรุปแสดงเฉพาะตอนกำลังเช็คชื่อ
+    ckSlot(on, done, rows.length);
+    if (on) box.insertBefore(bar, box.firstChild);
 }
+function ckSlot(on, done, total) {
+    const slot = document.getElementById('stCkSlot'); if (!slot) return;
+    slot.innerHTML = '<button type="button" class="st-ckbtn' + (on ? ' on' : '') + '" title="บันทึกในเครื่องนี้ ไม่ออกในภาพ/PDF">'
+        + '<i class="fa-solid fa-list-check"></i> เช็คชื่อ' + (done && !on ? '<small>' + done + '/' + total + '</small>' : '') + '</button>';
+    slot.firstChild.onclick = () => { ckSetOn(!on); renderStation(); };
+}
+window.stCheckOff = function () { const s = document.getElementById('stCkSlot'); if (s) s.innerHTML = ''; };
 
 function ckSet(k, s) {
     const day = ckDay(), v = day[k] || {};

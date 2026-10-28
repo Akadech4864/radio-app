@@ -12,6 +12,7 @@
 
 var SV_TH_MON = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 var SV_DOW_S = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+var SV_DOW_L = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
 var SV_H2C_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
 var SV_PAIR_START = 20261022, SV_SPLIT_START = 20260910;   // ระบบเวร พงส. (ดู dutySchedule.js)
 
@@ -142,7 +143,7 @@ function svDayHtml(data, date, opts) {
     var day = {}; day[k] = idx[k] || {};
     var slots = svSlots(data, day);
     var html = '<div class="sv-sheet sv-day">'
-        + svTitle('ตารางเวรการปฏิบัติหน้าที่ของ สน.ลำหิน', 'ประจำวันที่ ' + svThaiLong(date))
+        + svTitle('ตารางเวรการปฏิบัติหน้าที่ของ สน.ลำหิน', 'ประจำวัน' + SV_DOW_L[date.getDay()] + 'ที่ ' + svThaiLong(date))
         + '<table class="sv-table"><thead><tr><th class="sv-c-role">หน้าที่</th><th>ยศ ชื่อ สกุล</th>'
         + '<th class="sv-c-pos">ตำแหน่ง</th><th class="sv-c-tel">เบอร์โทรศัพท์</th></tr></thead><tbody>';
     var any = false;
@@ -430,6 +431,8 @@ function svScrollToToday(root) {
 // opts.a4 = ใบเวรประจำวัน: ยืดตารางเต็มหน้ากระดาษ ตัวอักษรใหญ่ (แทนการย่อเนื้อหาให้พอดีแผ่น)
 function svExportPdf(title, sheetHtml, landscape, opts) {
     var a4 = !!(opts && opts.a4);
+    // ใบเวรประจำวัน: ใช้ภาพ A4 แบบปุ่ม "ภาพ" (มือถือจัดหน้าพิมพ์ต่างจากจอ ทำให้ล้นเป็น 2 หน้า)
+    if (a4 && !landscape) return svExportImage(title, sheetHtml, false, { a4: true, pdf: true });
     var w = window.open('', '_blank');
     if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
     var pw = landscape ? 281 : 194, ph = landscape ? 194 : 281;   // พื้นที่พิมพ์ได้ของ A4 (ขอบ 8 มม.)
@@ -616,9 +619,11 @@ function svShowImages(w, title, urls) {
 function svExportImage(title, sheetHtml, landscape, opts) {
     var a4 = !!(opts && opts.a4) && !landscape;
     var W = landscape ? 1240 : (a4 ? 1000 : 860);
+    var pdf = !!(opts && opts.pdf) && a4;   // PDF ใบเวรประจำวัน = พิมพ์ภาพ A4 ชุดเดียวกับปุ่ม "ภาพ" (ทุกเครื่องได้ 1 หน้าเหมือนกัน)
     var touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-    var w = touch ? window.open('', '_blank') : null;   // เปิดตอนกด (หลังรอสร้างภาพเบราว์เซอร์จะบล็อก)
-    if (w) w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#334155">กำลังสร้างภาพ…</p>');
+    var w = (touch || pdf) ? window.open('', '_blank') : null;   // เปิดตอนกด (หลังรอสร้างภาพเบราว์เซอร์จะบล็อก)
+    if ((touch || pdf) && !w) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
+    if (w) w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#334155">กำลังสร้าง' + (pdf ? ' PDF' : 'ภาพ') + '…</p>');
     svLoadH2C(function (err) {
         if (err) { if (w) w.close(); alert('สร้างภาพไม่สำเร็จ (โหลดตัวช่วยไม่ได้)'); return; }
         svInjectCss();
@@ -652,7 +657,21 @@ function svExportImage(title, sheetHtml, landscape, opts) {
             box.parentNode.removeChild(box);
             var url = canvas.toDataURL('image/png');
             var name = String(title).replace(/[\\/:*?"<>|]/g, ' ').trim() + '.png';
-            if (w) {
+            if (pdf) {
+                // ภาพเต็มหน้า A4 (ไม่มีขอบกระดาษ) → พิมพ์/บันทึกเป็น PDF ได้ 1 หน้าพอดีทุกเครื่อง
+                w.document.open();
+                w.document.write('<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+                    + '<title>' + svEsc(title) + '</title><style>'
+                    + '@page{size:A4 portrait;margin:0}html,body{margin:0;background:#e2e8f0;font-family:sans-serif}'
+                    + '.t{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px;font-size:14px;color:#334155}'
+                    + '.t button{border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;color:#fff;background:#dc2626;cursor:pointer}'
+                    + 'img{display:block;width:100%;max-width:210mm;margin:0 auto 16px;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.18)}'
+                    + '@media print{.t{display:none}html,body{background:#fff}img{width:210mm;height:296mm;max-width:none;margin:0;box-shadow:none}}'
+                    + '</style></head><body><div class="t"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button>'
+                    + '<span>A4 แนวตั้ง 1 หน้า · ในหน้าพิมพ์เลือก "บันทึกเป็น PDF"</span></div>'
+                    + '<img src="' + url + '" alt="' + svEsc(title) + '" onload="setTimeout(function(){window.print()},400)"></body></html>');
+                w.document.close();
+            } else if (w) {
                 w.document.open();
                 w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
                     + '<title>' + svEsc(title) + '</title></head><body style="margin:0;background:#0f172a;text-align:center;font-family:sans-serif">'

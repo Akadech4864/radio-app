@@ -337,6 +337,19 @@ body {
 .mnav .icon-btn { width: 34px; height: 34px; }
 .st-sec { border: 1px solid var(--line); border-radius: 10px; padding: 7px 8px; font: inherit; font-size: 0.82rem; max-width: 230px; background: #fff; }
 .xslot { margin-left: auto; }
+/* หน้าเวร สน.: กลุ่มปุ่มท้ายแถบ (จอใหญ่) · มือถือ = แถวเต็มเหนือแถบเลือกวันที่ */
+#pane-station .subbar > .seg { order: 1; }
+#pane-station .subbar > .mnav { order: 2; }
+#pane-station .subbar > .st-sec { order: 3; }
+#pane-station .st-btns { order: 4; margin-left: auto; display: flex; align-items: center; gap: 6px; }
+#pane-station .st-btns .xslot { margin-left: 0; }
+#stCkSlot:empty { display: none; }
+.st-ckbtn {
+    border: 1px solid #bfdbfe; border-radius: 10px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
+    font: inherit; font-weight: 800; font-size: 0.82rem; color: #1d4ed8; background: #eff6ff;
+}
+.st-ckbtn.on { color: #fff; background: #1d4ed8; border-color: #1d4ed8; }
+.st-ckbtn small { font-weight: 700; opacity: 0.8; margin-left: 3px; }
 
 /* โหมดนำเสนอบนกระดาน: การ์ดอยู่ในแท็บ จึงต้องเปิดแท็บที่มีสไลด์ปัจจุบันขึ้นมา */
 .dash-root.present .rpane:has(> .dash-slide-on) { display: block !important; max-width: 1280px; margin: 0 auto; }
@@ -366,6 +379,14 @@ body {
     .subbar { gap: 6px; padding: 6px; }
     .seg button { padding: 6px 9px; font-size: 0.78rem; }
     .xslot { margin-left: 0; }
+    #pane-station .subbar > .seg { order: 1; }
+    #pane-station .st-btns { order: 2; flex: 1 1 100%; margin-left: 0; gap: 5px; }
+    #pane-station .subbar > .mnav { order: 3; flex: 1 1 100%; justify-content: center; }
+    #pane-station .subbar > .st-sec { order: 4; }
+    #pane-station .st-btns .xslot, #pane-station .st-btns .sv-xbtns { display: contents; }
+    #pane-station .st-btns button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 0.76rem; text-align: center; }
+    #pane-station .st-btns #stCkSlot { display: contents; }
+    .st-lg { display: none; }
     .dash-root.present .rpane > .dash-slide-on { zoom: 1; }
     .search-date { flex: 1 1 140px; }
     .btn-today { flex: 0 0 auto; }
