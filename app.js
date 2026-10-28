@@ -483,13 +483,10 @@ function renderStation(jump) {
     if (stView === 'day') stCheckApply(box, stDate);   // เช็คชื่อ (ในเครื่องนี้ ไม่ออกในภาพ/PDF)
     else if (window.stCheckOff) stCheckOff();
     if (stView === 'month') {
-        // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · เปิดแท็บ/เปลี่ยนเดือน = เลื่อนมาเวรวันนี้รอไว้
-        if (jump || !prev) svScrollToToday(box);
-        else {
-            svFloatHeads(box);
-            const nb = box.querySelector('.sv-vscroll');
-            if (nb) nb.scrollLeft = keepLeft;
-        }
+        // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · ไม่เลื่อนไปวันนี้เอง (แถววันนี้กระพริบให้เห็นแทน)
+        svFloatHeads(box);
+        const nb = box.querySelector('.sv-vscroll');
+        if (nb && prev) nb.scrollLeft = keepLeft;
     }
 }
 window.stStep = function (n) {

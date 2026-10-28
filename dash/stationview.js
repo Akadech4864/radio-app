@@ -743,6 +743,11 @@ var SV_CSS = ''
     + 'thead .sv-m-date{background:#f1f5f9}'
     + '.sv-we td{background:#fff7ed}'
     + '.sv-today td{background:#dcfce7!important;font-weight:800}.sv-today .sv-m-date b{color:#047857}'
+    // ตารางเวร สน. รายเดือน: แถววันนี้กระพริบ (เฉพาะบนจอ)
+    + '@keyframes svTodayBlink{0%,100%{box-shadow:inset 0 0 0 999px rgba(34,197,94,0)}50%{box-shadow:inset 0 0 0 999px rgba(34,197,94,.38)}}'
+    + '.sv-mtable:not(.sv-itable) .sv-today td{animation:svTodayBlink 1.3s ease-in-out infinite}'
+    + '.sv-shot .sv-today td,.sv-print .sv-today td{animation:none!important;box-shadow:none!important}'
+    + '@media (prefers-reduced-motion:reduce){.sv-mtable .sv-today td{animation:none}}'
     + '.sv-dash{color:#cbd5e1}.sv-cnote{display:block;font-size:.62rem;color:#b45309;font-weight:700}'
     // เวรรายวันไม่ตรงตารางของงาน: กระพริบเตือนให้ธุรการกลับไปแก้
     + '@keyframes svMisBlink{0%,100%{background-color:#fff7ed;box-shadow:inset 0 0 0 2px #fb923c}50%{background-color:#fed7aa;box-shadow:inset 0 0 0 2px #ea580c}}'

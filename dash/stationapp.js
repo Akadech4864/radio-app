@@ -158,12 +158,13 @@ function svaPaint() {
             return '<option value="' + svEsc(s.name) + '">' + svEsc(s.pos) + '</option>';
         }).join('') + '</datalist>'
         + '</div>';
-    // ตารางรายเดือนเลื่อนทั้งหน้า หัวตารางตรึงกับขอบบน · เปิดเมนู/เปลี่ยนเดือน = เลื่อนมาเวรวันนี้รอไว้
+    // ตารางรายเดือนเลื่อนทั้งหน้า หัวตารางตรึงกับขอบบน · ไม่เลื่อนไปวันนี้เอง (แถววันนี้กระพริบให้เห็นแทน)
     // วาดซ้ำเพราะบันทึก/เปิดแผงแก้ไข = คงตำแหน่งเดิม
     if (SVA.view === 'month') {
         var jk = monthVal + '|' + SVA.sec, view = document.getElementById('sva-view');
-        if (SVA.jumped !== jk) { SVA.jumped = jk; svScrollToToday(view); }
-        else { svFloatHeads(view); var nb = view.querySelector('.sv-vscroll'); if (nb) nb.scrollLeft = keepLeft; }
+        svFloatHeads(view);
+        if (SVA.jumped !== jk) SVA.jumped = jk;
+        else { var nb = view.querySelector('.sv-vscroll'); if (nb) nb.scrollLeft = keepLeft; }
     } else SVA.jumped = '';
     if (SVA.mode === 'edit') svaEditPaint();
     else if (SVA.mode === 'import') svaImportPaint();
