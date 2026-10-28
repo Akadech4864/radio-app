@@ -315,8 +315,13 @@ function msPeople(m) {
  * ตารางภารกิจรายเดือน (ธีมเดียวกับตารางเวร) — เฉพาะวันที่มีภารกิจ · วันนี้กระพริบ · วันที่ผ่านไปแล้วตัวจาง
  * คอลัมน์: วันที่ | เวลา | ภารกิจ / สถานที่ | ประธาน · ผู้ร่วมภารกิจ (มือถือ: ผู้ร่วมอยู่ใต้ชื่อภารกิจ)
  */
-function missionMonthSheet(y, m) {
-    const days = new Date(y, m + 1, 0).getDate(), todayK = keyOf(new Date());
+function missionMonthSheet(y, m, plain) {
+    const days = new Date(y, m + 1, 0).getDate(), todayK = plain ? -1 : keyOf(new Date());
+    // ภาพ/PDF: ชื่อเป็นข้อความ (ภาพหน้าจากที่อื่นวาดลงภาพไม่ได้)
+    const who = plain
+        ? (x) => (x.chair.length ? '<b>ประธาน</b> ' + x.chair.map((n) => esc(rankName(n))).join(', ') + (x.who.length ? '<br>' : '') : '')
+            + x.who.map((n) => esc(rankName(n))).join(', ') || '<span class="sv-dash">—</span>'
+        : msPeople;
     let body = '', total = 0;
     for (let d = 1; d <= days; d++) {
         const dt = new Date(y, m, d), k = keyOf(dt), list = missionsFor(dt);
@@ -330,15 +335,16 @@ function missionMonthSheet(y, m) {
                 + '<td class="ms-c-time"><b>' + esc(t || 'ทั้งวัน') + '</b></td>'
                 + '<td class="ms-c-title"><div class="ms-title">' + esc(x.title) + '</div>'
                 + (x.place ? '<div class="ms-place"><i class="fa-solid fa-location-dot"></i> ' + esc(x.place) + '</div>' : '')
-                + '<div class="ms-inline">' + msPeople(x) + '</div></td>'
-                + '<td class="ms-c-who">' + msPeople(x) + '</td></tr>';
+                + (plain ? '</td>' : '<div class="ms-inline">' + who(x) + '</div></td>')
+                + '<td class="ms-c-who">' + who(x) + '</td></tr>';
         });
     }
     if (!body) body = '<tr><td colspan="4" class="ms-empty"><i class="fa-regular fa-calendar-check"></i> ไม่มีภารกิจในเดือนนี้</td></tr>';
-    return '<div class="sv-sheet ms-sheet ms-month">'
+    return '<div class="sv-sheet ms-sheet ms-month' + (plain ? ' ms-print' : '') + '">'
         + svTitle('ตารางภารกิจงานสอบสวน สน.ลำหิน', 'ประจำเดือน ' + TH_MON_FULL[m] + ' ' + (y + 543) + (total ? ' · ' + total + ' ภารกิจ' : ''))
         + '<table class="sv-table ms-mtable"><thead><tr><th class="sv-m-date">วันที่</th><th class="ms-c-time">เวลา</th><th>ภารกิจ / สถานที่</th>'
-        + '<th class="ms-c-who">ประธาน · ผู้ร่วมภารกิจ</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+        + '<th class="ms-c-who">ประธาน · ผู้ร่วมภารกิจ</th></tr></thead><tbody>' + body + '</tbody></table>'
+        + (plain ? svFoot({ foot: true }) : '') + '</div>';
 }
 
 function missionSheet(list, day, live) {
@@ -561,17 +567,37 @@ function renderDutyMonth(jump) {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
     $('dutyMonthTodayBtn').disabled = y === new Date().getFullYear() && m === new Date().getMonth();
     $('dutyMonthLabel').textContent = TH_MON_FULL[m] + ' ' + (y + 543);
-    $('dutyMonth').innerHTML = svInvestMonthHtml(data.duty, y, m)
-        + '<div class="ms-month-wrap">' + missionMonthSheet(y, m) + '</div>';   // ตารางภารกิจรายเดือนต่อท้าย
+    const tabs = [['duty', 'fa-user-shield', 'ตารางเวร'], ['mission', 'fa-clipboard-list', 'ตารางภารกิจ']];
+    $('dutyMonth').innerHTML = '<div class="dm-tabs">' + tabs.map((t) => '<button type="button" class="' + (dutyMonthTab === t[0] ? 'on' : '') + '" onclick="setDutyMonthTab(\'' + t[0] + '\')">'
+            + '<i class="fa-solid ' + t[1] + '"></i> ' + t[2] + '</button>').join('') + '</div>'
+        + (dutyMonthTab === 'mission' ? missionMonthSheet(y, m) : svInvestMonthHtml(data.duty, y, m));
     // เลื่อนทั้งหน้า หัวตารางตรึงกับขอบบนจอ · ไม่เลื่อนไปวันนี้เอง (แถววันนี้กระพริบแทน)
     svFloatHeads($('dutyMonth'));
 }
 window.exportDutyMonth = function (kind) {
     const y = dutyMonth.getFullYear(), m = dutyMonth.getMonth();
+    if (dutyMonthTab === 'mission') {   // บันทึกตารางภารกิจรายเดือน (ชื่อเป็นข้อความ ไม่มีภาพหน้า)
+        const title = 'ตารางภารกิจงานสอบสวน สน.ลำหิน ' + TH_MON_FULL[m] + ' ' + (y + 543);
+        const html = missionMonthSheet(y, m, true);
+        if (kind === 'img') svExportImage(title, html, false); else svExportPdf(title, html, false, { css: msCss() });
+        return;
+    }
     const title = 'ตารางเวรพนักงานสอบสวน สน.ลำหิน ' + TH_MON_FULL[m] + ' ' + (y + 543);
     const html = svInvestMonthHtml(data.duty, y, m, { foot: true });
     if (kind === 'img') svExportImage(title, html, false); else svExportPdf(title, html, false);
 };
+// สไตล์ตารางภารกิจ (.ms-*) จาก style.css — ใส่ในหน้าพิมพ์ PDF ที่เปิดเป็นหน้าต่างใหม่
+function msCss() {
+    let out = '';
+    [...document.styleSheets].forEach((sh) => {
+        let rules; try { rules = sh.cssRules; } catch (e) { return; }
+        [...(rules || [])].forEach((r) => { if (r.selectorText && /\.ms-/.test(r.selectorText)) out += r.cssText; });
+    });
+    return out;
+}
+// ทั้งเดือน: เลือกดู "ตารางเวร" หรือ "ตารางภารกิจ" (ตารางยาว ดูทีละตาราง)
+let dutyMonthTab = 'duty';
+window.setDutyMonthTab = function (v) { dutyMonthTab = v; renderDutyMonth(); };
 
 // ==========================================================
 // เวรทุกสายงาน สน. (อ่านอย่างเดียว — เพิ่ม/แก้ไข/นำเข้าจากรูปที่เว็บแอปเมนู "เวรทุกสายงาน")

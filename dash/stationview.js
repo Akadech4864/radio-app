@@ -473,7 +473,7 @@ function svExportPdf(title, sheetHtml, landscape, opts) {
         + '<meta name="viewport" content="width=device-width, initial-scale=1">'
         + '<title>' + svEsc(title) + '</title>'
         + '<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap" rel="stylesheet">'
-        + '<style>' + SV_CSS + SV_PRINT_CSS
+        + '<style>' + SV_CSS + SV_PRINT_CSS + ((opts && opts.css) || '')
         + '.sv-page{width:' + pw + 'mm;height:' + ph + 'mm}'
         + '@media print{@page{size:A4 ' + (landscape ? 'landscape' : 'portrait') + ';margin:8mm}}</style></head><body class="sv-print">'
         + '<div class="sv-tools"><button onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button><span>ปรับให้พอดีกระดาษ A4 '
