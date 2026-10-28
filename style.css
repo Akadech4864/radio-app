@@ -333,9 +333,12 @@ body {
 }
 .seg button.on { background: var(--brand); color: #fff; }
 .mnav { display: flex; align-items: center; gap: 6px; }
-.mnav b { font-size: 0.92rem; color: var(--ink); min-width: 0; text-align: center; }
+/* ป้ายวันที่/เดือนกว้างคงที่ — ปุ่มลูกศรไม่ขยับตามความยาวข้อความ */
+.mnav b { font-size: 0.92rem; color: var(--ink); flex: 0 0 13.5em; width: 13.5em; min-width: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mnav .chip-btn { min-width: 5.4em; text-align: center; }
 .mnav .icon-btn { width: 34px; height: 34px; }
-.st-sec { border: 1px solid var(--line); border-radius: 10px; padding: 7px 8px; font: inherit; font-size: 0.82rem; max-width: 230px; background: #fff; }
+.st-sec[hidden] { display: none !important; }
+#pane-station .subbar > .st-sec { flex: 1 1 100%; }
 .xslot { margin-left: auto; }
 /* หน้าเวร สน.: กลุ่มปุ่มท้ายแถบ (จอใหญ่) · มือถือ = แถวเต็มเหนือแถบเลือกวันที่ */
 #pane-station .subbar > .seg { order: 1; }
@@ -382,6 +385,7 @@ body {
     #pane-station .subbar > .seg { order: 1; }
     #pane-station .st-btns { order: 2; flex: 1 1 100%; margin-left: 0; gap: 5px; }
     #pane-station .subbar > .mnav { order: 3; flex: 1 1 100%; justify-content: center; }
+    .mnav b { flex: 1 1 auto; width: auto; }
     #pane-station .subbar > .st-sec { order: 4; }
     #pane-station .st-btns .xslot, #pane-station .st-btns .sv-xbtns { display: contents; }
     #pane-station .st-btns button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 0.76rem; text-align: center; }

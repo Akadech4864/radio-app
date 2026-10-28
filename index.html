@@ -7,8 +7,8 @@
     <link rel="icon" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="dash/dash.css?v=106">
-    <link rel="stylesheet" href="style.css?v=106">
+    <link rel="stylesheet" href="dash/dash.css?v=107">
+    <link rel="stylesheet" href="style.css?v=107">
 </head>
 <body>
     <!--
@@ -124,9 +124,9 @@
                     <button type="button" class="icon-btn" onclick="stStep(-1)" title="ก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
                     <b id="stLabel">-</b>
                     <button type="button" class="icon-btn" onclick="stStep(1)" title="ถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
-                    <button type="button" class="chip-btn" onclick="stToday()">วันนี้</button>
+                    <button type="button" class="chip-btn" id="stTodayBtn" onclick="stToday()">วันนี้</button>
                 </div>
-                <select id="stSec" class="st-sec" hidden></select>
+                <div id="stSec" class="st-sec" hidden></div>
                 <!-- ปุ่ม PDF / ภาพ / แก้ไขเวร / เช็คชื่อ (มือถือ: แถวเดียวกัน อยู่เหนือแถบเลือกวันที่) -->
                 <div class="st-btns">
                     <div class="xslot" id="stExport"></div>
@@ -166,13 +166,13 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="dash/scene3d.js?v=106"></script>
-    <script src="dash/dashcalc.js?v=106"></script>
-    <script src="dash/dash.js?v=106"></script>
-    <script src="dash/stationview.js?v=106"></script>
-    <script src="dash/stationapp.js?v=106"></script>
-    <script src="stationcheck.js?v=106"></script>
-    <script src="app.js?v=106"></script>
-    <script src="stationedit.js?v=106"></script>
+    <script src="dash/scene3d.js?v=107"></script>
+    <script src="dash/dashcalc.js?v=107"></script>
+    <script src="dash/dash.js?v=107"></script>
+    <script src="dash/stationview.js?v=107"></script>
+    <script src="dash/stationapp.js?v=107"></script>
+    <script src="stationcheck.js?v=107"></script>
+    <script src="app.js?v=107"></script>
+    <script src="stationedit.js?v=107"></script>
 </body>
 </html>

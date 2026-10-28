@@ -134,9 +134,9 @@ function svaPaint() {
             ? '<input type="date" value="' + dateVal + '" onchange="svaPick(this.value)">'
             : '<input type="month" value="' + monthVal + '" onchange="svaPick(this.value + \'-01\')">')
         + '    <button type="button" onclick="svaStep(1)" title="ถัดไป"><i class="fas fa-chevron-right"></i></button>'
-        + '    <button type="button" class="sva-today" onclick="svaPick(null)">วันนี้</button>'
+        + '    <button type="button" class="sva-today" onclick="svaPick(null)">' + (SVA.view === 'month' ? 'เดือนนี้' : 'วันนี้') + '</button>'
         + '  </div>'
-        + (SVA.view === 'month' ? '<select class="sva-sel" onchange="SVA.sec=this.value;svaPaint()">' + svSecOptions(SVA.data, SVA.sec) + '</select>' : '')
+        + (SVA.view === 'month' ? '<div class="sva-secs">' + svSecChips(SVA.data, SVA.sec, 'svaSecSet') + '</div>' : '')
         + '  <div class="sva-act">'
         + '    <button type="button" onclick="svaEditOpen()"><i class="fas fa-pen-to-square"></i> เพิ่ม/แก้ไขเวร</button>'
         + '    <button type="button" class="sva-plbtn' + (SVA.mode === 'plan' ? ' on' : '') + '" onclick="svaPlanOpen()" title="ไฟล์และตารางเวรของ ป. / จร. / สส. / ศปก. / อำนวยการ แยกรายเดือน">'
@@ -173,6 +173,7 @@ function svaPaint() {
 }
 
 function svaSetView(v) { SVA.view = v; svaPaint(); }
+function svaSecSet(v) { SVA.sec = v; svaPaint(); }
 function svaPick(v) {
     if (!v) SVA.date = svaToday();
     else { var p = v.split('-'); SVA.date = new Date(+p[0], +p[1] - 1, +p[2]); }
@@ -193,7 +194,7 @@ function svaExport(kind) {
     var html = day ? svDayHtml(SVA.data, d, { foot: true, plain: true })
         : svMonthHtml(SVA.data, d.getFullYear(), d.getMonth(), SVA.sec, { foot: true });
     // ทุกฝ่ายทั้งเดือน = A4 แนวนอน ไม่พอขึ้นหน้าถัดไปพร้อมหัวตาราง
-    if (!day && !SVA.sec) { svExportMonth(kind, title, SVA.data, d.getFullYear(), d.getMonth(), ''); return; }
+    if (!day) { svExportMonth(kind, title, SVA.data, d.getFullYear(), d.getMonth(), SVA.sec); return; }
     var landscape = false;
     var opt = { a4: day };   // ใบเวรประจำวัน = ยืดเต็มหน้า A4 ตัวอักษรใหญ่
     if (kind === 'img') svExportImage(title, html, landscape, opt); else svExportPdf(title, html, landscape, opt);
@@ -936,7 +937,7 @@ var SVA_CSS = ''
     + '.sva-seg{display:flex;gap:4px;padding:3px;border-radius:12px;background:#f1f5f9}.sva-seg button{border:0;background:transparent}'
     + '.sva-seg button.on{background:#1d4ed8;color:#fff}'
     + '.sva-nav{display:flex;gap:4px;align-items:center}.sva-nav input{border:1px solid #dbe3ee;border-radius:10px;padding:5px 8px;font:inherit;font-size:.85rem;color:#0f172a}'
-    + '.sva-sel{border:1px solid #dbe3ee;border-radius:10px;padding:6px 8px;font-size:.82rem;max-width:230px}'
+    + '.sva-sel{border:1px solid #dbe3ee;border-radius:10px;padding:6px 8px;font-size:.82rem;max-width:230px}.sva-secs{flex:1 1 100%;order:9}'
     + '.sva-act{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}'
     + '.sva-bar .sv-x-pdf{background:#dc2626;color:#fff;border-color:#dc2626}.sva-bar .sv-x-img{background:#059669;color:#fff;border-color:#059669}'
     + '.sva-bar .sva-exit{background:#0f172a;color:#fff;border-color:#0f172a}'

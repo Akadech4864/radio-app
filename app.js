@@ -474,7 +474,8 @@ function renderStation(jump) {
     document.querySelectorAll('#stSeg button').forEach((b) => b.classList.toggle('on', b.dataset.v === stView));
     const sel = $('stSec');
     sel.hidden = stView !== 'month';
-    sel.innerHTML = svSecOptions(data.station, stSec);
+    sel.innerHTML = stView === 'month' ? svSecChips(data.station, stSec, 'stSecSet') : '';   // ติ๊กเลือกฝ่าย (หลายฝ่ายได้)
+    $('stTodayBtn').textContent = stView === 'day' ? 'วันนี้' : 'เดือนนี้';
     $('stLabel').textContent = stView === 'day' ? thDay(stDate) : (TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543));
     box.innerHTML = stView === 'day'
         ? svDayHtml(data.station, stDate, { emptyHint: 'งานธุรการกดปุ่ม "แก้ไข/เพิ่มเวร" ด้านบน' })
@@ -493,15 +494,20 @@ window.stStep = function (n) {
     stDate = stView === 'day' ? addDays(stDate, n) : new Date(stDate.getFullYear(), stDate.getMonth() + n, 1);
     renderStation(true);
 };
-window.stToday = function () { stDate = midnight(new Date()); renderStation(true); };
+window.stToday = function () {
+    const t = midnight(new Date());
+    stDate = stView === 'month' ? new Date(t.getFullYear(), t.getMonth(), 1) : t;
+    renderStation(true);
+};
+window.stSecSet = function (v) { stSec = v; renderStation(); };
 window.exportStation = function (kind) {
     const day = stView === 'day';
     const title = day ? 'ตารางเวร สน.ลำหิน ' + thShort(stDate)
         : 'ตารางเวร สน.ลำหิน ' + TH_MON_FULL[stDate.getMonth()] + ' ' + (stDate.getFullYear() + 543);
     const html = day ? svDayHtml(data.station, stDate, { foot: true, plain: true })
         : svMonthHtml(data.station, stDate.getFullYear(), stDate.getMonth(), stSec, { foot: true });
-    // ทุกฝ่ายทั้งเดือน = A4 แนวนอน ไม่พอขึ้นหน้าถัดไปพร้อมหัวตาราง
-    if (!day && !stSec) { svExportMonth(kind, title, data.station, stDate.getFullYear(), stDate.getMonth(), ''); return; }
+    // ทั้งเดือน (ทุกฝ่าย หรือฝ่ายที่ติ๊กเลือก) = A4 แนวนอน ไม่พอขึ้นหน้าถัดไปพร้อมหัวตาราง
+    if (!day) { svExportMonth(kind, title, data.station, stDate.getFullYear(), stDate.getMonth(), stSec); return; }
     const landscape = false;
     const opt = { a4: day };   // ใบเวรประจำวัน = ยืดเต็มหน้า A4 ตัวอักษรใหญ่
     if (kind === 'img') svExportImage(title, html, landscape, opt); else svExportPdf(title, html, landscape, opt);
@@ -680,7 +686,6 @@ function init() {
         if (stView === 'day') stDate = midnight(new Date());
         renderStation(true);
     }));
-    $('stSec').addEventListener('change', (e) => { stSec = e.target.value; renderStation(true); });
 
     let t = 0;
     $('q').addEventListener('input', (e) => {

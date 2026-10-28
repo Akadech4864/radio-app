@@ -202,14 +202,42 @@ function svFoot(opts) {
 }
 
 // ---------- ตารางเวรทุกสายงานรายเดือน (แถว = วันที่, คอลัมน์ = หน้าที่) ----------
-// secFilter: '' = ทุกฝ่าย หรือ 'ฝ่าย|ช่วงเวลา'
+// secFilter: '' = ทุกฝ่าย · 'ฝ่าย||ฝ่าย' = เฉพาะฝ่ายที่ติ๊กเลือก (ทุกช่วงเวลาของฝ่ายนั้น) · 'ฝ่าย|ช่วงเวลา' (แบบเดิม) ยังใช้ได้
+function svSecMatch(t, f) {
+    if (!f) return true;
+    var list = String(f).split('||');
+    return list.indexOf(t.sec) >= 0 || list.indexOf(svSlotKey(t.sec, t.time)) >= 0;
+}
+var SV_SEC_SHORT = { 'ผู้บังคับบัญชา': 'ผู้บังคับบัญชา', 'ฝ่ายป้องกันปราบปราม': 'งาน ป.', 'ฝ่ายสอบสวน': 'สอบสวน', 'ฝ่ายสืบสวน': 'สืบสวน', 'ฝ่ายจราจร': 'จราจร', 'เวร ศปก.': 'ศปก.' };
+function svSecName(f) {
+    if (!f) return 'ทุกสายงาน';
+    return String(f).split('||').map(function (x) { return x.split('|')[0]; }).join(' · ');
+}
+/** ปุ่มติ๊กเลือกฝ่าย (เลือกได้หลายฝ่าย · ไม่เลือก/เลือกครบ = ทุกฝ่าย) — fn = ชื่อฟังก์ชันที่รับค่าตัวกรอง */
+function svSecChips(data, selected, fn) {
+    var sel = selected ? String(selected).split('||') : [], secs = [], color = {};
+    svSlots(data, {}).forEach(function (t) { if (secs.indexOf(t.sec) < 0) { secs.push(t.sec); color[t.sec] = t.color; } });
+    var on = function (s) { return sel.indexOf(s) >= 0 || sel.some(function (x) { return x.split('|')[0] === s; }); };
+    var chip = function (attr, label, checked, c) {
+        return '<label class="sv-chip' + (checked ? ' on' : '') + '" style="--c:' + (c || '#1d4ed8') + '">'
+            + '<input type="checkbox" ' + attr + (checked ? ' checked' : '') + ' onchange="' + fn + '(svSecPicked(this))"> ' + svEsc(label) + '</label>';
+    };
+    return '<div class="sv-secchips">' + chip('data-all="1"', 'ทุกฝ่าย', !sel.length)
+        + secs.map(function (s) { return chip('value="' + svEsc(s) + '"', SV_SEC_SHORT[s] || s, on(s), color[s]); }).join('') + '</div>';
+}
+function svSecPicked(el) {
+    if (el.getAttribute('data-all')) return '';
+    var ins = el.closest('.sv-secchips').querySelectorAll('input[value]');
+    var v = [].filter.call(ins, function (i) { return i.checked; }).map(function (i) { return i.value; });
+    return v.length === ins.length ? '' : v.join('||');
+}
 function svMonthHtml(data, year, month, secFilter, opts) {
     svInjectCss();
     var idx = svIndex(data);
     var days = new Date(year, month + 1, 0).getDate();
     var inMonth = {};
     for (var d = 1; d <= days; d++) { var kk = year * 10000 + (month + 1) * 100 + d; if (idx[kk]) inMonth[kk] = idx[kk]; }
-    var slots = svSlots(data, inMonth).filter(function (t) { return !secFilter || svSlotKey(t.sec, t.time) === secFilter; });
+    var slots = svSlots(data, inMonth).filter(function (t) { return svSecMatch(t, secFilter); });
     var cols = [];
     slots.forEach(function (t) { t.roles.forEach(function (r) { cols.push({ t: t, role: r }); }); });
     var todayK = svKey(new Date());
@@ -233,7 +261,7 @@ function svMonthHtml(data, year, month, secFilter, opts) {
                 }).join('') : '<span class="sv-dash">—</span>') + '</td>';
             }).join('') + '</tr>';
     }
-    var secName = secFilter ? secFilter.replace('|', ' ').trim() : 'ทุกสายงาน';
+    var secName = svSecName(secFilter);
     return '<div class="sv-sheet sv-month">'
         + svTitle('ตารางเวร' + svEsc(secName) + ' สน.ลำหิน', 'ประจำเดือน ' + SV_TH_MON[month] + ' ' + (year + 543) + (opts && opts.page ? ' · ' + opts.page : ''))
         + '<div class="sv-scroll sv-vscroll"><table class="sv-table sv-mtable"><thead>' + h1 + h2 + '</thead><tbody>' + body + '</tbody></table></div>'
@@ -743,6 +771,11 @@ var SV_CSS = ''
     + 'thead .sv-m-date{background:#f1f5f9}'
     + '.sv-we td{background:#fff7ed}'
     + '.sv-today td{background:#dcfce7!important;font-weight:800}.sv-today .sv-m-date b{color:#047857}'
+    // ปุ่มติ๊กเลือกฝ่าย (ตารางรายเดือน)
+    + '.sv-secchips{display:flex;flex-wrap:wrap;gap:6px}'
+    + '.sv-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px 5px 8px;border-radius:999px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;font-size:.8rem;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;white-space:nowrap;line-height:1.2}'
+    + '.sv-chip input{margin:0;width:15px;height:15px;accent-color:var(--c);cursor:pointer}'
+    + '.sv-chip.on{border-color:var(--c);color:#0f172a;box-shadow:inset 0 0 0 999px rgba(255,255,255,.82);background:var(--c)}'
     // ตารางเวร สน. รายเดือน: แถววันนี้กระพริบ (เฉพาะบนจอ)
     + '@keyframes svTodayBlink{0%,100%{box-shadow:inset 0 0 0 999px rgba(34,197,94,0)}50%{box-shadow:inset 0 0 0 999px rgba(34,197,94,.38)}}'
     + '.sv-mtable:not(.sv-itable) .sv-today td{animation:svTodayBlink 1.3s ease-in-out infinite}'
