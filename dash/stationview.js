@@ -446,7 +446,12 @@ function svExportPdf(title, sheetHtml, landscape, opts) {
         + '<div class="sv-page"><div class="sv-fit' + (a4 ? ' sv-a4' : '') + '">' + sheetHtml + '</div></div>'
         + '<script>(function(){'
         + 'function fit(){var p=document.querySelector(".sv-page"),f=document.querySelector(".sv-fit");f.style.zoom=1;'
-        + 'var s=Math.min(f.classList.contains("sv-a4")?1:1.8,p.clientWidth/f.scrollWidth,p.clientHeight/f.scrollHeight);f.style.zoom=s;}'
+        // ใบเวรประจำวัน A4: วัดความสูงจริงของเนื้อหา (ไม่ใช่กล่องที่ยืดเต็มหน้า) แล้วย่อให้ทั้งแผ่นอยู่ในหน้าเดียว
+        // จัดหน้าที่ความกว้าง pw/s แล้วย่อด้วย s → กว้างพอดีกระดาษ · ทำซ้ำเพราะยิ่งกว้างข้อความยิ่งตัดบรรทัดน้อยลง
+        + 'if(f.classList.contains("sv-a4")){var pw=p.clientWidth,ph=p.clientHeight,s=1;'
+        + 'for(var i=0;i<6;i++){f.style.width=(pw/s)+"px";f.style.height="auto";var h=f.scrollHeight;var n=Math.min(1,ph/h);if(Math.abs(n-s)<0.002)break;s=n;}'
+        + 's=Math.min(1,ph/f.scrollHeight)*0.995;f.style.width=(pw/s)+"px";f.style.height=(ph/s)+"px";f.style.zoom=s;return;}'
+        + 'var s=Math.min(1.8,p.clientWidth/f.scrollWidth,p.clientHeight/f.scrollHeight);f.style.zoom=s;}'
         + 'var go=function(){fit();setTimeout(function(){window.print();},350);};'
         + 'if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){setTimeout(go,150);});}else{window.onload=go;}'
         + '})();<\/script></body></html>');
