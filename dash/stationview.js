@@ -174,14 +174,18 @@ function svDayHtml(data, date, opts) {
                 // คนที่ไม่ได้อยู่เวรตอนนี้ (ออกเวรแล้ว / ผลัดที่ยังไม่ถึงเวลา) ทำตัวจาง — เฉพาะบนจอ ไม่ใช่ภาพ/PDF
                 var off = opts.plain ? '' : svShiftState(date, svNoteTime(r[7]) || SV_ROLE_NOTE[role] || svTimeText(t.time) || t.timeLabel || headTime);
                 off = SV_OFF_TEXT[off] ? off : '';
+                var av = opts.plain ? '' : (r[12] || '');
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
                 html += '<tr' + (off ? ' class="sv-off sv-off-' + off + '"' : '') + ' data-ck="' + svEsc(svSlotKey(t.sec, t.time) + '|' + role + '|' + r[4]) + '">'
                     + (i === 0 ? '<td class="sv-role" rowspan="' + list.length + '" style="' + roleBg + '">' + svEsc(roleText) + '</td>' : '')
-                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">' + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note sv-note-in">' + svEsc(note) + '</span>' : '')
+                    + '<td class="sv-name' + (r[10] ? ' sv-mis' : '') + '">'
+                    // r[12] = ภาพหน้า (เฉพาะบนจอ — ภาพ/PDF ที่ส่งออกไม่ใส่ เพราะรูปจากที่อื่นวาดลงภาพไม่ได้)
+                    + (av ? '<div class="sv-avrow"><img class="sv-av" src="' + svEsc(av) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'"><div class="sv-avtx">' : '')
+                    + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note sv-note-in">' + svEsc(note) + '</span>' : '')
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
                     + (off ? '<span class="sv-off-tag">' + SV_OFF_TEXT[off] + '</span>' : '')
                     + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div>'
-                    + (note ? '<div class="sv-note-row"><span class="sv-note">' + svEsc(note) + '</span></div>' : '') + '</td>'
+                    + (note ? '<div class="sv-note-row"><span class="sv-note">' + svEsc(note) + '</span></div>' : '') + (av ? '</div></div>' : '') + '</td>'
                     + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
                     + '<td class="sv-c-tel' + (r[11] ? ' sv-mis' : '') + '">' + (tel && !opts.plain ? '<a href="tel:' + tel + '">' + svEsc(r[6]) + '</a>' : svEsc(r[6] || ''))
                     + (r[11] ? '<div class="sv-mis-tag sv-tel-db" title="เบอร์ในฐานข้อมูลกำลังพล"><i class="fas fa-database"></i> ' + svEsc(r[11]) + '</div>' : '') + '</td>'
@@ -771,6 +775,9 @@ var SV_CSS = ''
     + 'thead .sv-m-date{background:#f1f5f9}'
     + '.sv-we td{background:#fff7ed}'
     + '.sv-today td{background:#dcfce7!important;font-weight:800}.sv-today .sv-m-date b{color:#047857}'
+    // ภาพหน้าหน้าชื่อ (ใบเวรงานสอบสวนบนจอ)
+    + '.sv-avrow{display:flex;align-items:center;gap:9px}.sv-avtx{min-width:0}'
+    + '.sv-av{width:38px;height:38px;flex:0 0 38px;border-radius:50%;object-fit:cover;background:#e2e8f0;border:2px solid #fff;box-shadow:0 0 0 1.5px #cbd5e1}'
     // ปุ่มติ๊กเลือกฝ่าย (ตารางรายเดือน)
     + '.sv-secchips{display:flex;flex-wrap:wrap;gap:6px}'
     + '.sv-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px 5px 8px;border-radius:999px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;font-size:.8rem;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;white-space:nowrap;line-height:1.2}'

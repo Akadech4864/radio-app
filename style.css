@@ -353,6 +353,34 @@ body {
 #pane-duty .subbar > .xslot { order: 4; }
 #pane-duty .duty-card { display: none; }
 #pane-duty .day-grid { grid-template-columns: 1fr; }
+/* ภารกิจวันนี้: ใบรายการธีมเดียวกับตารางเวร */
+#pane-duty .mission-card { padding: 0; background: transparent; box-shadow: none; border: 0; }
+#pane-duty .mission-card > .card-h { display: none; }
+.ms-sheet .sv-table td { vertical-align: middle; }
+.ms-sheet thead th { background: #e2e8f0; color: #0f172a; }
+.ms-c-time { width: 1%; white-space: nowrap; text-align: center; }
+.ms-c-time b { display: block; font-size: 0.95rem; color: #1d4ed8; }
+.ms-c-time small { color: #64748b; font-size: 0.7rem; }
+.ms-title { font-weight: 800; color: #0f172a; line-height: 1.4; }
+.ms-place { margin-top: 2px; font-size: 0.8rem; color: #475569; }
+.ms-place i { color: #ef4444; margin-right: 2px; }
+.ms-c-who { width: 38%; }
+.ms-c-st { width: 1%; white-space: nowrap; text-align: center; }
+.ms-people { display: flex; flex-wrap: wrap; gap: 5px; }
+.ms-p { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 2px; border-radius: 999px; background: #f1f5f9; font-size: 0.78rem; font-weight: 700; color: #334155; white-space: nowrap; }
+.ms-p img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: #e2e8f0; }
+.ms-p small { margin-left: 4px; padding: 0 5px; border-radius: 999px; background: #fde68a; color: #92400e; font-size: 0.64rem; font-weight: 800; }
+.ms-p.chair { background: #fef3c7; box-shadow: inset 0 0 0 1px #fcd34d; }
+.ms-st { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; white-space: nowrap; }
+.ms-now { background: #dcfce7; color: #047857; }
+.ms-now i { font-size: 0.6rem; animation: blink 1.2s infinite; }
+.ms-next { background: #dbeafe; color: #1d4ed8; }
+.ms-later { background: #f1f5f9; color: #475569; }
+.ms-past { background: #e2e8f0; color: #64748b; }
+.ms-row-now td { background: #f0fdf4; }
+.ms-row-now .ms-c-time { box-shadow: inset 4px 0 0 #22c55e; }
+.ms-empty { text-align: center; color: #94a3b8; padding: 18px !important; }
+.ms-inline { display: none; }
 .st-ckbtn {
     border: 1px solid #bfdbfe; border-radius: 10px; padding: 6px 12px; cursor: pointer; white-space: nowrap;
     font: inherit; font-weight: 800; font-size: 0.82rem; color: #1d4ed8; background: #eff6ff;
@@ -401,6 +429,11 @@ body {
     #pane-duty .subbar > .xslot .sv-xbtns { flex: 1 1 100%; display: flex; gap: 5px; }
     #pane-duty .subbar > .xslot button { flex: 1 1 0; padding: 8px 4px; font-size: 0.76rem; }
     #pane-duty .subbar > .mnav { order: 3; flex: 1 1 100%; justify-content: center; }
+    /* ภารกิจวันนี้บนมือถือ: 2 คอลัมน์ (เวลา | ภารกิจ) สถานะ/ผู้ร่วมอยู่ใต้ชื่อภารกิจ */
+    .ms-c-who, .ms-c-st { display: none; }
+    .ms-inline { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 6px; }
+    .ms-inline .sv-dash { display: none; }
+    .ms-c-time b { font-size: 0.82rem; }
     #pane-station .st-btns .xslot, #pane-station .st-btns .sv-xbtns { display: contents; }
     #pane-station .st-btns button { flex: 1 1 0; min-width: 0; padding: 8px 4px; font-size: 0.76rem; text-align: center; }
     #pane-station .st-btns #stCkSlot { display: contents; }

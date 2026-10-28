@@ -290,8 +290,39 @@ function renderDay() {
     }
     $('missionTitle').textContent = live ? 'ภารกิจวันนี้' : 'ภารกิจ';
     $('missionSub').textContent = list.length ? (list.length + ' ภารกิจ') : thShort(calDay);
-    $('missions').innerHTML = list.length ? '<div class="mis-list">' + list.map(missionCard).join('') + '</div>'
-        : '<div class="empty"><i class="fa-regular fa-calendar-check"></i> ไม่มีภารกิจ</div>';
+    $('missions').innerHTML = missionSheet(list, calDay, live);
+}
+
+/**
+ * ภารกิจวันนี้ เป็นใบรายการธีมเดียวกับตารางเวร
+ * คอลัมน์: เวลา | ภารกิจ / สถานที่ | ประธาน · ผู้ร่วมภารกิจ (ภาพหน้า) | สถานะ — มือถือรวมผู้ร่วม/สถานะไว้ใต้ชื่อภารกิจ
+ */
+function missionSheet(list, day, live) {
+    const ST = { now: ['กำลังดำเนินการ', 'ms-now'], next: ['ถัดไป', 'ms-next'], later: ['รอดำเนินการ', 'ms-later'], past: ['เสร็จแล้ว', 'ms-past'] };
+    const face = (n, chair) => {
+        const info = person(n);
+        return '<span class="ms-p' + (chair ? ' chair' : '') + '" title="' + esc(n) + '">'
+            + '<img src="' + esc(info.photo) + '" alt="" loading="lazy" onerror="this.src=\'' + DEFAULT_AVATAR + '\'">'
+            + '<span>' + esc(rankName(n)) + (chair ? '<small>ประธาน</small>' : '') + '</span></span>';
+    };
+    const people = (m) => (m.chair.length || m.who.length)
+        ? '<div class="ms-people">' + m.chair.map((n) => face(n, true)).join('') + m.who.map((n) => face(n, false)).join('') + '</div>'
+        : '<span class="sv-dash">—</span>';
+    const stTag = (m) => ST[m.state] ? '<span class="ms-st ' + ST[m.state][1] + '">' + (m.state === 'now' ? '<i class="fa-solid fa-circle-dot"></i> ' : '') + ST[m.state][0] + '</span>' : '';
+    const body = list.length ? list.map((m) => {
+        const t = String(m.time || '').replace(/–/, ' – ');
+        return '<tr class="' + (m.state === 'past' ? 'sv-off ' : '') + (m.state === 'now' ? 'ms-row-now' : '') + '">'
+            + '<td class="ms-c-time"><b>' + esc(t || 'ทั้งวัน') + '</b>' + (t ? '<small>น.</small>' : '') + '</td>'
+            + '<td class="ms-c-title"><div class="ms-title">' + esc(m.title) + '</div>'
+            + (m.place ? '<div class="ms-place"><i class="fa-solid fa-location-dot"></i> ' + esc(m.place) + '</div>' : '')
+            + '<div class="ms-inline">' + stTag(m) + people(m) + '</div></td>'
+            + '<td class="ms-c-who">' + people(m) + '</td>'
+            + '<td class="ms-c-st">' + (stTag(m) || '<span class="sv-dash">—</span>') + '</td></tr>';
+    }).join('') : '<tr><td colspan="4" class="ms-empty"><i class="fa-regular fa-calendar-check"></i> ไม่มีภารกิจ</td></tr>';
+    return '<div class="sv-sheet ms-sheet">'
+        + svTitle(live ? 'ภารกิจวันนี้' : 'ภารกิจ', 'ประจำวัน' + SV_DOW_L[day.getDay()] + 'ที่ ' + svThaiLong(day) + (list.length ? ' · ' + list.length + ' ภารกิจ' : ''))
+        + '<table class="sv-table"><thead><tr><th class="ms-c-time">เวลา</th><th>ภารกิจ / สถานที่</th>'
+        + '<th class="ms-c-who">ประธาน · ผู้ร่วมภารกิจ</th><th class="ms-c-st">สถานะ</th></tr></thead><tbody>' + body + '</tbody></table></div>';
 }
 
 function missionCard(m) {
@@ -439,7 +470,7 @@ function investDayData(dt) {
     const add = (sec, role, n, note) => {
         const p = person(n);
         if (roles[sec].indexOf(role) < 0) roles[sec].push(role);
-        rows.push([ds, sec, '', role, p.name || n, p.pos || '', p.phone || '', note]);
+        rows.push([ds, sec, '', role, p.name || n, p.pos || '', p.phone || '', note, '', '', '', '', p.photo || DEFAULT_AVATAR]);
     };
     if (row) {
         const a = splitNames(row[1]), b = splitNames(row[6]);
