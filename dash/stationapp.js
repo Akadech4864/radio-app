@@ -692,11 +692,23 @@ function svaPlanCall(fn, args, done, label) {
 // บันทึกแล้วโหลดใหม่ทั้งหน้าตารางงานและตารางเวรรายวัน (ชื่อตามตารางงานเติมให้ทุกวันที่ไม่ได้กรอก)
 function svaPlanReload(msg) { svaPlanLoad(); svaLoad(true); if (msg) setTimeout(function () { alert(msg); }, 60); }
 
-/** ช่องของงาน: [{sec,time,role}] ตามแม่แบบ + หน้าที่อื่นที่มีในตารางงานจริง */
-function svaPlanCols(u, plan) {
-    var cols = [], seen = {};
+/**
+ * ช่องของงาน: [{sec,time,role}] ตามแม่แบบ + หน้าที่อื่นที่มีในตารางงานจริง
+ * untilKey (yyyymmdd, เฉพาะหน้าดู) = หน้าที่ในแม่แบบที่ยังไม่เริ่มมีถึงวันนั้นและเดือนนี้ไม่มีข้อมูล ไม่แสดงคอลัมน์
+ * หน้าแก้ไขไม่ส่ง untilKey — มีครบทุกช่องให้กรอกหน้าที่ใหม่ได้
+ */
+function svaPlanCols(u, plan, untilKey) {
+    var cols = [], seen = {}, has = {}, start = SVA.pl.d.roleStart;
+    plan.forEach(function (x) { has[svSlotKey(x.sec, x.time) + '|' + x.role] = 1; });
     function add(sec, time, role) { var k = svSlotKey(sec, time) + '|' + role; if (!seen[k]) { seen[k] = 1; cols.push({ sec: sec, time: time || '', role: role }); } }
-    (SVA.pl.d.template || []).forEach(function (t) { if (u.secs.indexOf(t.sec) >= 0) t.roles.forEach(function (r) { add(t.sec, t.time, r); }); });
+    (SVA.pl.d.template || []).forEach(function (t) {
+        if (u.secs.indexOf(t.sec) < 0) return;
+        t.roles.forEach(function (r) {
+            var k = svSlotKey(t.sec, t.time) + '|' + r;
+            if (untilKey && start && !has[k] && !(start[k] && start[k] <= untilKey)) return;
+            add(t.sec, t.time, r);
+        });
+    });
     plan.forEach(function (x) { add(x.sec, x.time, x.role); });
     return cols;
 }
@@ -896,7 +908,8 @@ function svaPlanViewHtml(u, plan, umis) {
         + (plan.length ? '<button type="button" class="del" onclick="svaPlanClear()" title="ลบตารางของงานและเวรรายวันของงานนี้ทั้งเดือน (ไฟล์ต้นฉบับไม่ถูกลบ)"><i class="fas fa-eraser"></i> ล้างข้อมูลทั้งเดือน</button>' : '') + '</div>'
         + (Object.keys(nDaily).length ? '<div class="sva-hint"><i class="fas fa-circle-info"></i> ' + Object.keys(nDaily).length + ' วันใช้ข้อมูลจากเวรรายวัน/ที่นำเข้าจากไฟล์ — กด "แก้ไขข้อมูลทั้งเดือน" แล้วบันทึก จะรวมเป็นตารางของงานชุดเดียว</div>' : '');
     if (!plan.length) return '<div class="sva-none">ยังไม่มีตารางของงานนี้ในเดือนนี้ — กด "สร้างตาราง" หรือ "กรอกอัตโนมัติ" จากไฟล์</div>' + btns;
-    var cols = svaPlanCols(u, plan), cell = {}, bad = {};
+    var ymP = SVA.pl.ym.split('-');
+    var cols = svaPlanCols(u, plan, +ymP[0] * 10000 + +ymP[1] * 100 + new Date(+ymP[0], +ymP[1], 0).getDate()), cell = {}, bad = {};
     plan.forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; (cell[k] = cell[k] || []).push(x.name); });
     umis.forEach(function (m) { bad[m.date + '|' + svSlotKey(m.sec, m.time) + '|' + m.role] = m.daily.join(', '); });
     var p = SVA.pl.ym.split('-'), last = new Date(+p[0], +p[1], 0).getDate(), todayK = svKey(new Date());

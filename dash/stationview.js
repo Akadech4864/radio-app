@@ -64,10 +64,25 @@ function svIndex(data) {
     return by;
 }
 
-/** หัวข้อทั้งหมดที่จะแสดง: ตามแม่แบบ + หัวข้อ/หน้าที่อื่นที่มีในข้อมูลจริง (ต่อท้าย) */
-function svSlots(data, dayIdx) {
+/**
+ * หัวข้อทั้งหมดที่จะแสดง: ตามแม่แบบ + หัวข้อ/หน้าที่อื่นที่มีในข้อมูลจริง (ต่อท้าย)
+ * untilKey (yyyymmdd) = วันสุดท้ายที่ดูอยู่ — หน้าที่ในแม่แบบที่ยังไม่เริ่มมีถึงวันนั้นและไม่มีข้อมูลในช่วงที่ดู ไม่แสดง
+ * (เช่น สายตรวจ จยย. เริ่ม พ.ย. 2569 → ใบเวร/ตารางเดือน ต.ค. ไม่มีหัวข้อนี้) · ตั้งแต่วันเริ่มเป็นต้นไปแสดงเสมอแม้ว่าง
+ */
+function svSlots(data, dayIdx, untilKey) {
+    var start = data && data.roleStart, fixed = (data && data.fixed) || {};
+    var has = {};
+    Object.keys(dayIdx || {}).forEach(function (k) {
+        Object.keys(dayIdx[k]).forEach(function (sk) { Object.keys(dayIdx[k][sk]).forEach(function (role) { has[sk + '|' + role] = 1; }); });
+    });
+    var begun = function (t, role) {
+        if (!untilKey || !start || t.auto) return true;
+        var key = svSlotKey(t.sec, t.time) + '|' + role;
+        return has[key] || fixed[key] || (start[key] && start[key] <= untilKey);
+    };
     var tpl = ((data && data.template) || []).map(function (t) {
-        return { sec: t.sec, time: t.time || '', timeLabel: t.timeLabel || '', color: t.color || '#2563eb', auto: !!t.auto, roles: t.roles.slice() };
+        return { sec: t.sec, time: t.time || '', timeLabel: t.timeLabel || '', color: t.color || '#2563eb', auto: !!t.auto,
+            roles: t.roles.filter(function (role) { return begun(t, role); }) };
     });
     var find = function (sk) { return tpl.filter(function (t) { return svSlotKey(t.sec, t.time) === sk; })[0]; };
     Object.keys(dayIdx || {}).forEach(function (k) {
@@ -141,7 +156,8 @@ function svDayHtml(data, date, opts) {
     svInjectCss();
     var idx = svIndex(data), k = svKey(date);
     var day = {}; day[k] = idx[k] || {};
-    var slots = svSlots(data, day);
+    // หน้าที่ที่ยังไม่เริ่มมีในวันนั้น (เช่น สายตรวจ จยย. ก่อน พ.ย. 2569) ไม่แสดงหัวข้อ · ฝ่ายที่ไม่เหลือหน้าที่เลยไม่แสดงหัวฝ่าย
+    var slots = svSlots(data, day, k).filter(function (t) { return t.roles.length; });
     var html = '<div class="sv-sheet sv-day">'
         + svTitle(opts.title || 'ตารางเวรการปฏิบัติหน้าที่ของ สน.ลำหิน', 'ประจำวัน' + SV_DOW_L[date.getDay()] + 'ที่ ' + svThaiLong(date))
         + '<table class="sv-table"><thead><tr><th class="sv-c-role">หน้าที่</th><th>ยศ ชื่อ สกุล</th>'
@@ -241,7 +257,9 @@ function svMonthHtml(data, year, month, secFilter, opts) {
     var days = new Date(year, month + 1, 0).getDate();
     var inMonth = {};
     for (var d = 1; d <= days; d++) { var kk = year * 10000 + (month + 1) * 100 + d; if (idx[kk]) inMonth[kk] = idx[kk]; }
-    var slots = svSlots(data, inMonth).filter(function (t) { return svSecMatch(t, secFilter); });
+    // คอลัมน์ของหน้าที่ที่ยังไม่เริ่มมีภายในเดือนนี้ (เช่น สายตรวจ จยย. ในเดือน ต.ค. 2569) ไม่แสดง
+    var slots = svSlots(data, inMonth, year * 10000 + (month + 1) * 100 + days)
+        .filter(function (t) { return t.roles.length && svSecMatch(t, secFilter); });
     var cols = [];
     slots.forEach(function (t) { t.roles.forEach(function (r) { cols.push({ t: t, role: r }); }); });
     var todayK = svKey(new Date());
