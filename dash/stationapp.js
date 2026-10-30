@@ -813,8 +813,11 @@ function svaPlanAI(id) {
     svaPlanCall('extractStationPlanFromFile', [id], function (res) {
         if (!res.entries.length) { alert('AI อ่านไม่พบรายชื่อเวรของงานนี้ในเดือน' + svaYmText(res.ym) + ' จากไฟล์นี้'); svaPlanPaint(); return; }
         SVA.pl.unit = res.unit;
-        svaPlanEditStart(res.entries, 'AI อ่านจาก "' + f.name + '" ได้ ' + res.entries.length + ' รายการ — ตรวจ/แก้ในตารางแล้วกดบันทึก (ยังไม่ได้บันทึก)');
-    }, 'AI กำลังอ่าน ' + f.name + '… (อาจใช้เวลาราว 30 วินาที)');
+        var short = res.monthDays && res.days < res.monthDays;
+        svaPlanEditStart(res.entries, 'AI อ่านจาก "' + f.name + '" ได้ ' + res.entries.length + ' รายการ ครบ ' + res.days + (res.monthDays ? '/' + res.monthDays : '') + ' วัน'
+            + (short ? ' ⚠️ ยังขาด ' + (res.monthDays - res.days) + ' วัน' + (res.missing && res.missing.length ? ' (' + res.missing.map(function (d) { return +d.slice(0, 2); }).join(', ') + ')' : '') + ' เพิ่มเองในตารางได้' : '')
+            + ' — ตรวจ/แก้ในตารางแล้วกดบันทึก (ยังไม่ได้บันทึก)');
+    }, 'AI กำลังอ่าน ' + f.name + '… (ตารางทั้งเดือนอาจใช้เวลา ๓๐ วินาที – ๒ นาที)');
 }
 
 // ---- ดูตารางของงาน (อ่านอย่างเดียว) ----
