@@ -70,6 +70,35 @@ function svaFindStaff(name) {
     var byFirst = f.length >= 2 ? st.filter(function (s) { return svaFirst(s.name) === f; }) : [];
     return byFirst.length === 1 ? byFirst[0] : null;
 }
+/** ชื่อในทะเบียนที่ใกล้ที่สุด (ต่างกันไม่เกิน ๓ ตัวอักษร ไม่นับยศ/วรรค) — เดาชื่อที่ถูกให้ตอนแก้ชื่อที่ AI อ่านผิด */
+function svaClosestStaff(name) {
+    var hit = svaFindStaff(name); if (hit) return hit;
+    var k = svaKeyName(name), best = null, bd = 4;
+    var st = (SVA.data && SVA.data.staff) || (SVA.pl && SVA.pl.d && SVA.pl.d.staff) || [];
+    st.forEach(function (s) {
+        var t = svaKeyName(s.name);
+        if (Math.abs(t.length - k.length) >= bd) return;
+        var prev = [], cur, i, j;
+        for (j = 0; j <= t.length; j++) prev[j] = j;
+        for (i = 1; i <= k.length; i++) {
+            cur = [i];
+            for (j = 1; j <= t.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (k.charAt(i - 1) === t.charAt(j - 1) ? 0 : 1));
+            prev = cur;
+        }
+        if (prev[t.length] < bd) { bd = prev[t.length]; best = s; }
+    });
+    return best;
+}
+/** ถามชื่อที่ถูกต้อง (เติมชื่อในทะเบียนที่ใกล้เคียงให้) → ชื่อตามทะเบียน หรือ null ถ้ายกเลิก/ไม่เปลี่ยน */
+function svaAskRename(old, where, n) {
+    var sug = svaClosestStaff(old);
+    var v = prompt('แก้ชื่อ "' + old + '" ทุกช่อง' + where + ' (' + n + ' ช่อง)\nพิมพ์ชื่อที่ถูกต้อง'
+        + (sug && sug.name !== old ? '\n(เติมชื่อในทะเบียนที่ใกล้เคียงให้แล้ว: ' + sug.name + ')' : ''), sug ? sug.name : old);
+    if (v == null) return null;
+    v = v.replace(/\s+/g, ' ').trim();
+    var st = svaFindStaff(v); if (st) v = st.name;
+    return v && v !== old ? v : null;
+}
 function svaFirst(name) {
     var s = String(name || '').replace(/\s+/g, ' ').trim();
     var m = s.match(/^((?:ว่าที่\s*)?(?:[฀-๿]{1,4}\.){1,3}(?:\s*หญิง)?)\s*(.*)$/);
@@ -502,7 +531,9 @@ function svaImportRead() {
         };
         google.script.run
             .withSuccessHandler(function (res) {
-                SVA.imp = { list: (res.entries || []).map(function (e) { e.on = true; return e; }) };
+                // ไฟล์ที่อ่านเก็บไว้ส่งตอนบันทึก — ตารางรายเดือนของงานจะเก็บไฟล์ไว้ที่หน้าตารางของงานนั้น
+                SVA.imp = { list: (res.entries || []).map(function (e) { e.on = true; return e; }),
+                            files: payload.files, ym: mv.length === 2 ? mv[0] + '-' + mv[1] : '' };
                 svaImportPaint();
             })
             .withFailureHandler(function (e) {
@@ -534,8 +565,12 @@ function svaImportResHtml() {
         + '<button type="button" class="sva-save" id="sva-imp-save" onclick="svaImportSave()"><i class="fas fa-floppy-disk"></i> <span id="sva-imp-n">บันทึก ' + L.filter(function (e) { return e.on; }).length + ' รายการ</span></button></div>';
 }
 function svaImportName(i, v) {
-    var e = SVA.imp.list[i], st = svaFindStaff(v);
-    e.name = st ? st.name : v; e.pos = st ? st.pos : ''; e.phone = st ? st.phone : ''; e.matched = !!st;
+    // แก้ชื่อแถวหนึ่ง → ทุกแถวที่เป็นชื่อเดิมเดียวกันเปลี่ยนตามทั้งหมด (AI อ่านชื่อผิดแบบเดียวกันทุกวัน)
+    var old = SVA.imp.list[i].name, st = svaFindStaff(v);
+    SVA.imp.list.forEach(function (e) {
+        if (e.name !== old) return;
+        e.name = st ? st.name : v; e.pos = st ? st.pos : ''; e.phone = st ? st.phone : ''; e.matched = !!st;
+    });
     document.getElementById('sva-imp-res').innerHTML = svaImportResHtml();
 }
 function svaImportCount() {
@@ -552,15 +587,20 @@ function svaImportSave() {
             SVA.imp = { list: null }; SVA.mode = '';
             var first = svParse(list[0].date); if (first) SVA.date = first;
             svaLoad(true);
-            setTimeout(function () { alert('นำเข้าแล้ว ' + res.saved + ' รายการ'); }, 50);
+            var lines = (res.plan || []).map(function (p) {
+                return '• ตาราง' + p.name + ' เดือน' + svaYmText(p.ym) + ' ' + p.days + ' วัน (' + p.saved + ' รายการ)';
+            });
+            if (res.daily) lines.push('• เวรรายวัน ' + res.daily + ' รายการ');
+            if (res.files) lines.push('• เก็บไฟล์ต้นฉบับ ' + res.files + ' ไฟล์ ไว้ที่ "ตารางเวรของแต่ละงาน" (เปิดดู/กรอกอัตโนมัติซ้ำได้)');
+            setTimeout(function () { alert('นำเข้าแล้ว ' + res.saved + ' รายการ\n' + lines.join('\n')); }, 50);
         })
         .withFailureHandler(function (e) {
             btn.disabled = false; btn.innerHTML = '<i class="fas fa-floppy-disk"></i> บันทึก';
             alert('บันทึกไม่สำเร็จ: ' + ((e && e.message) || e));
         })
-        .saveStationDutyBulk(list.map(function (e) {
+        .saveStationImport(list.map(function (e) {
             return { date: e.date, sec: e.sec, time: e.time, role: e.role, name: e.name, pos: e.pos, phone: e.phone };
-        }));
+        }), SVA.imp.files || [], SVA.imp.ym || '');
 }
 
 // ==========================================================
@@ -624,11 +664,11 @@ function svaPlanOpen() {
     svaPaint();
     svaPlanLoad();
 }
-function svaPlanLoad() {
+function svaPlanLoad(then) {
     var pl = SVA.pl, ym = pl.ym;
     svaPlanBusy('กำลังโหลดตารางเวรของแต่ละงาน…');
     google.script.run
-        .withSuccessHandler(function (d) { if (SVA.pl.ym !== ym) return; pl.d = d; pl.ed = null; svaPlanPaint(); })
+        .withSuccessHandler(function (d) { if (SVA.pl.ym !== ym) return; pl.d = d; pl.ed = null; svaPlanPaint(); if (then) then(); })
         .withFailureHandler(function (e) { svaPlanBusy('โหลดไม่สำเร็จ: ' + ((e && e.message) || e), true); })
         .getStationPlan(ym);
 }
@@ -660,17 +700,35 @@ function svaPlanCols(u, plan) {
     plan.forEach(function (x) { add(x.sec, x.time, x.role); });
     return cols;
 }
+/**
+ * ตารางที่ใช้จริงของงานทั้งเดือน = ตารางของงาน แล้วช่องที่มีเวรรายวัน (กรอกเอง/นำเข้าจากไฟล์) ใช้ตามรายวัน
+ * เหมือนที่ตารางเวรประจำวันแสดง — ข้อมูลที่นำเข้ามาจึงเห็นและแก้ได้ในหน้านี้ด้วย
+ */
+function svaPlanEff(uid) {
+    var cell = {}, order = [];
+    function put(x, src) {
+        var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role;
+        if (!cell[k]) { cell[k] = { src: src, list: [] }; order.push(k); }
+        else if (cell[k].src !== src) { if (src !== 'daily') return; cell[k] = { src: src, list: [] }; }
+        cell[k].list.push({ date: x.date, sec: x.sec, time: x.time || '', role: x.role, name: x.name, note: x.note || '', src: src });
+    }
+    svaPlanOf(uid).forEach(function (x) { put(x, 'plan'); });
+    ((SVA.pl.d && SVA.pl.d.daily) || []).filter(function (x) { return x.unit === uid; }).forEach(function (x) { put(x, 'daily'); });
+    var out = [];
+    order.forEach(function (k) { out = out.concat(cell[k].list); });
+    return out;
+}
 function svaPlanUnitObj() { return (SVA.pl.d.units || []).filter(function (u) { return u.id === SVA.pl.unit; })[0] || SVA.pl.d.units[0]; }
 function svaPlanOf(uid) { return (SVA.pl.d.plan || []).filter(function (x) { return x.unit === uid; }); }
 
 function svaPlanPaint() {
     var p = document.getElementById('sva-panel'), pl = SVA.pl;
     if (!p || SVA.mode !== 'plan' || !pl || !pl.d) return;
-    var d = pl.d, u = svaPlanUnitObj(), plan = svaPlanOf(u.id);
+    var d = pl.d, u = svaPlanUnitObj(), plan = svaPlanEff(u.id);
     var files = (d.files || []).filter(function (f) { return f.unit === u.id; });
     var mis = d.mismatches || [], umis = mis.filter(function (m) { return m.unit === u.id; });
     var tabs = (d.units || []).map(function (x) {
-        var days = {}; svaPlanOf(x.id).forEach(function (e) { days[e.date] = 1; });
+        var days = {}; svaPlanEff(x.id).forEach(function (e) { days[e.date] = 1; });
         var nd = Object.keys(days).length, nf = (d.files || []).filter(function (f) { return f.unit === x.id; }).length;
         var nm = mis.filter(function (m) { return m.unit === x.id; }).length;
         return '<button type="button" class="' + (x.id === u.id ? 'on' : '') + '" onclick="svaPlanUnit(\'' + x.id + '\')">'
@@ -687,8 +745,8 @@ function svaPlanPaint() {
         + svaPlanPhoneHtml(d.phoneMismatches || [])
         + '<div class="sva-pl-tabs">' + tabs + '</div>'
         // ---- ไฟล์ต้นฉบับ ----
-        + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-paperclip"></i> ไฟล์ตารางเวร' + svEsc(u.name) + ' เดือน' + svaYmText(pl.ym) + '</div>'
-        + (files.length ? files.map(svaPlanFileHtml).join('') : '<div class="sva-none">ยังไม่มีไฟล์ — อัปโหลดคำสั่ง/ตารางเวรของงานนี้ (PDF รูปภาพ หรือ Excel)</div>')
+        + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-paperclip"></i> ไฟล์ต้นฉบับ (แหล่งข้อมูล) ตารางเวร' + svEsc(u.name) + ' เดือน' + svaYmText(pl.ym) + '</div>'
+        + (files.length ? files.map(svaPlanFileHtml).join('') : '<div class="sva-none">ยังไม่มีไฟล์ของเดือนนี้ — อัปโหลดคำสั่ง/ตารางเวรของงานนี้ (PDF รูปภาพ หรือ Excel) แล้วกด "กรอกอัตโนมัติ"</div>')
         + '<div class="sva-imp sva-pl-up"><input type="file" id="sva-pl-file" class="form-control form-control-sm" multiple accept="image/*,.pdf,.xlsx,.xls,.csv">'
         + '<input id="sva-pl-note" class="form-control form-control-sm" placeholder="หมายเหตุไฟล์ (ถ้ามี) เช่น ฉบับแก้ไข">'
         + '<button type="button" class="sva-save" onclick="svaPlanUpload()"><i class="fas fa-upload"></i> อัปโหลด</button></div></div>'
@@ -754,9 +812,16 @@ function svaPlanUpload() {
     if (!files.length) { alert('กรุณาเลือกไฟล์ก่อน'); return; }
     var big = files.filter(function (f) { return f.size > SVA_PL_MAX_MB * 1048576; })[0];
     if (big) { alert('ไฟล์ "' + big.name + '" ใหญ่เกิน ' + SVA_PL_MAX_MB + ' MB'); return; }
-    var note = document.getElementById('sva-pl-note').value.trim(), pl = SVA.pl, i = 0;
-    function next() {
-        if (i >= files.length) { svaPlanReload(); return; }
+    var note = document.getElementById('sva-pl-note').value.trim(), pl = SVA.pl, i = 0, aiId = '';
+    function next(res) {
+        if (res && res.id && /pdf|image/.test(files[i - 1].type || '')) aiId = res.id;
+        if (i >= files.length) {
+            svaLoad(true);
+            svaPlanLoad(function () {
+                if (aiId && confirm('อัปโหลดแล้ว — ให้ AI อ่านไฟล์แล้วกรอกตาราง' + svaPlanUnitObj().name + 'ให้เลยไหม?\n(ตรวจ/แก้ในตารางก่อนกดบันทึก)')) svaPlanAI(aiId);
+            });
+            return;
+        }
         var f = files[i++];
         svaPlanBusy('กำลังอัปโหลด ' + f.name + ' (' + i + '/' + files.length + ')…');
         var r = new FileReader();
@@ -822,24 +887,45 @@ function svaPlanAI(id) {
 
 // ---- ดูตารางของงาน (อ่านอย่างเดียว) ----
 function svaPlanViewHtml(u, plan, umis) {
-    var btns = '<div class="sva-pl-acts"><button type="button" class="sva-save" onclick="svaPlanEditStart()"><i class="fas fa-pen-to-square"></i> ' + (plan.length ? 'แก้ไขตาราง' : 'สร้างตาราง') + '</button>'
-        + (plan.length ? '<button type="button" onclick="svaPlanContinue()" title="สร้างตารางเดือนถัดไปโดยวนรอบเวรเดิม"><i class="fas fa-rotate-right"></i> วนรอบต่อเดือนถัดไป</button>'
-            + '<button type="button" class="del" onclick="svaPlanDelete()"><i class="fas fa-trash-can"></i> ลบตารางเดือนนี้</button>' : '') + '</div>';
-    if (!plan.length) return '<div class="sva-none">ยังไม่มีตารางของงานนี้ในเดือนนี้ — กด "สร้างตาราง" หรือ "อ่านด้วย AI" จากไฟล์ด้านบน</div>' + btns;
+    var aiFile = svaPlanAiFile(u.id), hasPlan = svaPlanOf(u.id).length;
+    var nDaily = {}; plan.forEach(function (x) { if (x.src === 'daily') nDaily[x.date] = 1; });
+    var btns = '<div class="sva-pl-acts"><button type="button" class="sva-save" onclick="svaPlanEditStart()"><i class="fas fa-pen-to-square"></i> ' + (plan.length ? 'แก้ไขข้อมูลทั้งเดือน' : 'สร้างตาราง') + '</button>'
+        + (aiFile ? '<button type="button" onclick="svaPlanAI(\'' + aiFile.id + '\')" title="ให้ AI อ่านไฟล์ล่าสุด (' + svEsc(aiFile.name) + ') แล้วเติมตารางให้ตรวจก่อนบันทึก"><i class="fas fa-robot"></i> กรอกอัตโนมัติจากไฟล์</button>'
+            : '<button type="button" onclick="var f=document.getElementById(\'sva-pl-file\');if(f){f.scrollIntoView({block:\'center\'});f.click();}" title="อัปโหลดไฟล์คำสั่ง/ตารางเวร แล้วให้ AI กรอกให้"><i class="fas fa-robot"></i> อัปโหลดไฟล์แล้วกรอกอัตโนมัติ</button>')
+        + (hasPlan ? '<button type="button" onclick="svaPlanContinue()" title="สร้างตารางเดือนถัดไปโดยวนรอบเวรเดิม"><i class="fas fa-rotate-right"></i> วนรอบต่อเดือนถัดไป</button>' : '')
+        + (plan.length ? '<button type="button" class="del" onclick="svaPlanClear()" title="ลบตารางของงานและเวรรายวันของงานนี้ทั้งเดือน (ไฟล์ต้นฉบับไม่ถูกลบ)"><i class="fas fa-eraser"></i> ล้างข้อมูลทั้งเดือน</button>' : '') + '</div>'
+        + (Object.keys(nDaily).length ? '<div class="sva-hint"><i class="fas fa-circle-info"></i> ' + Object.keys(nDaily).length + ' วันใช้ข้อมูลจากเวรรายวัน/ที่นำเข้าจากไฟล์ — กด "แก้ไขข้อมูลทั้งเดือน" แล้วบันทึก จะรวมเป็นตารางของงานชุดเดียว</div>' : '');
+    if (!plan.length) return '<div class="sva-none">ยังไม่มีตารางของงานนี้ในเดือนนี้ — กด "สร้างตาราง" หรือ "กรอกอัตโนมัติ" จากไฟล์</div>' + btns;
     var cols = svaPlanCols(u, plan), cell = {}, bad = {};
     plan.forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; (cell[k] = cell[k] || []).push(x.name); });
     umis.forEach(function (m) { bad[m.date + '|' + svSlotKey(m.sec, m.time) + '|' + m.role] = m.daily.join(', '); });
     var p = SVA.pl.ym.split('-'), last = new Date(+p[0], +p[1], 0).getDate(), todayK = svKey(new Date());
-    var body = '';
+    var body = '', names = SVA.pl.names = [];
+    var nameHtml = function (x) {
+        var i = names.indexOf(x); if (i < 0) { i = names.length; names.push(x); }
+        return '<span class="sva-nm' + (svaFindStaff(x) ? '' : ' unk') + '" onclick="svaPlanRename(' + i + ')" title="' + svEsc(x) + ' — แตะเพื่อแก้ชื่อนี้ทุกช่องในตาราง">' + svEsc(svShort(x)) + '</span>';
+    };
     for (var dd = 1; dd <= last; dd++) {
         var dt = new Date(+p[0], +p[1] - 1, dd), ds = svDateStr(dt), dow = dt.getDay();
         body += '<tr class="' + (dow === 0 || dow === 6 ? 'we' : '') + (svKey(dt) === todayK ? ' td' : '') + '"><th>' + dd + ' <small>' + SV_DOW_S[dow] + '</small></th>'
             + cols.map(function (c) {
                 var k = ds + '|' + svSlotKey(c.sec, c.time) + '|' + c.role, n = cell[k];
-                return '<td' + (bad[k] ? ' class="sv-mis" title="ตารางรายวัน: ' + svEsc(bad[k]) + '"' : '') + '>' + (n ? n.map(function (x) { return svEsc(svShort(x)); }).join('<br>') : '<span class="sv-dash">—</span>') + '</td>';
+                return '<td' + (bad[k] ? ' class="sv-mis" title="ตารางรายวัน: ' + svEsc(bad[k]) + '"' : '') + '>' + (n ? n.map(nameHtml).join('<br>') : '<span class="sv-dash">—</span>') + '</td>';
             }).join('') + '</tr>';
     }
-    return btns + '<div class="sva-pl-grid"><table><thead><tr><th>วันที่</th>' + cols.map(svaPlanColHead).join('') + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+    var unk = names.filter(function (x) { return !svaFindStaff(x); }).length;
+    return btns + '<div class="sva-hint"><i class="fas fa-hand-pointer"></i> แตะชื่อในตารางเพื่อแก้ชื่อนั้นทุกช่องพร้อมกัน (เช่น AI อ่านการันต์ไม่ขึ้น/สะกดผิด)'
+        + (unk ? ' · <b class="r">ชื่อสีส้ม ' + unk + ' ชื่อ ไม่ตรงทะเบียน</b>' : '') + '</div>'
+        + '<div class="sva-pl-grid"><table><thead><tr><th>วันที่</th>' + cols.map(svaPlanColHead).join('') + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+function svaPlanRename(i) {
+    var old = (SVA.pl.names || [])[i]; if (!old) return;
+    var u = svaPlanUnitObj(), n = svaPlanEff(u.id).filter(function (x) { return x.name === old; }).length;
+    var v = svaAskRename(old, 'ในตาราง' + u.name + ' เดือน' + svaYmText(SVA.pl.ym), n);
+    if (!v) return;
+    svaPlanCall('renameStationName', [u.id, SVA.pl.ym, old, v], function (res) {
+        svaPlanReload('แก้ชื่อเป็น "' + v + '" แล้ว ' + ((res.plan || 0) + (res.daily || 0)) + ' ช่อง');
+    }, 'กำลังแก้ชื่อทุกช่อง…');
 }
 function svaPlanColHead(c) {
     return '<th>' + svEsc(c.role) + (c.time ? '<small>' + svEsc(c.time.replace(' (ของวันรุ่งขึ้น)', '')) + '</small>' : '') + '</th>';
@@ -847,15 +933,15 @@ function svaPlanColHead(c) {
 
 // ---- แก้ตารางของงานทั้งเดือน (ช่อง = ชื่อ คั่นหลายคนด้วย ,) ----
 function svaPlanEditStart(entries, banner) {
-    var u = svaPlanUnitObj(), plan = entries || svaPlanOf(u.id);
-    var cols = svaPlanCols(u, plan.concat(svaPlanOf(u.id))), val = {}, note = {};
+    var u = svaPlanUnitObj(), eff = svaPlanEff(u.id), plan = entries || eff;
+    var cols = svaPlanCols(u, plan.concat(eff)), val = {}, note = {};
     plan.forEach(function (x) {
         var k = svDateStr(svParse(x.date)) + '|' + svSlotKey(x.sec, x.time) + '|' + x.role;
         (val[k] = val[k] || []).push(x.name);
         if (x.note) note[k] = x.note;
     });
     // หมายเหตุเดิม (เช่น ชุด 3 / 05.00-21.00 น.) เก็บไว้ · ช่องใหม่ใช้หมายเหตุที่พบบ่อยของคอลัมน์ (เช่นช่วงเวลา)
-    svaPlanOf(u.id).forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; if (x.note && !note[k]) note[k] = x.note; });
+    eff.forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; if (x.note && !note[k]) note[k] = x.note; });
     SVA.pl.ed = { cols: cols, val: val, note: note, banner: banner || '' };
     svaPlanPaint();
 }
@@ -872,11 +958,30 @@ function svaPlanEdHtml(u) {
                 return '<td><input class="' + (unk ? 'unk' : '') + '" list="' + dl + '" data-k="' + svEsc(k) + '" value="' + svEsc(v) + '" onchange="svaPlanEdSet(this)"></td>';
             }).join('') + '</tr>';
     }
+    var cnt = {};
+    Object.keys(ed.val).forEach(function (k) { ed.val[k].forEach(function (n) { cnt[n] = (cnt[n] || 0) + 1; }); });
+    ed.names = Object.keys(cnt).sort(function (a, b) { return (!!svaFindStaff(a) - !!svaFindStaff(b)) || cnt[b] - cnt[a]; });
+    var chips = ed.names.map(function (n, i) {
+        return '<button type="button" class="sva-nchip' + (svaFindStaff(n) ? '' : ' unk') + '" onclick="svaPlanEdRename(' + i + ')" title="แตะเพื่อแก้ชื่อนี้ทุกช่อง">'
+            + svEsc(n) + ' <small>' + cnt[n] + '</small></button>';
+    }).join('');
     return (ed.banner ? '<div class="sva-pl-ai"><i class="fas fa-robot"></i> ' + svEsc(ed.banner) + '</div>' : '')
+        + (chips ? '<div class="sva-nchips"><div class="sva-nchips-h"><i class="fas fa-user-pen"></i> ชื่อในตาราง — แตะชื่อเพื่อแก้ทุกช่องพร้อมกัน (สีส้ม = ไม่ตรงทะเบียน)</div>' + chips + '</div>' : '')
         + '<div class="sva-hint"><i class="fas fa-keyboard"></i> พิมพ์หรือกดเลือกชื่อ — ตัวเลือกแต่ละช่องเรียงจากคนที่เคยเข้าเวรหน้าที่นั้นบ่อยสุด ตามด้วยคนตำแหน่งเดียวกัน · หลายคนในช่องเดียวคั่นด้วย , · ช่องว่าง = ไม่มีเวร · ช่องสีส้ม = ชื่อไม่มีในทะเบียน</div>'
         + '<div class="sva-pl-grid ed"><table><thead><tr><th>วันที่</th>' + ed.cols.map(svaPlanColHead).join('') + '</tr></thead><tbody>' + body + '</tbody></table></div>'
         + '<div class="sva-foot"><button type="button" onclick="SVA.pl.ed=null;svaPlanPaint()">ยกเลิก</button>'
         + '<button type="button" class="sva-save" onclick="svaPlanSave()"><i class="fas fa-floppy-disk"></i> บันทึกตาราง' + svEsc(u.short) + ' ทั้งเดือน</button></div>';
+}
+function svaPlanEdRename(i) {
+    var ed = SVA.pl.ed, old = ed && ed.names[i]; if (!old) return;
+    var n = 0; Object.keys(ed.val).forEach(function (k) { ed.val[k].forEach(function (x) { if (x === old) n++; }); });
+    var v = svaAskRename(old, 'ในตารางนี้', n);
+    if (!v) return;
+    Object.keys(ed.val).forEach(function (k) {
+        ed.val[k] = ed.val[k].map(function (x) { return x === old ? v : x; })
+            .filter(function (x, j, a) { return a.indexOf(x) === j; });   // แก้แล้วชื่อซ้ำในช่องเดียวกัน = เหลือชื่อเดียว
+    });
+    svaPlanPaint();
 }
 function svaPlanEdSet(inp) {
     var names = inp.value.split(/[,\n]/).map(function (n) { return n.trim(); }).filter(function (n) { return n; }).map(function (n) {
@@ -900,7 +1005,8 @@ function svaPlanSave() {
             entries.push({ date: parts[0], sec: parts[1], time: parts[2], role: parts[3], name: n, note: ed.note[k] || common });
         });
     });
-    svaPlanCall('saveStationPlan', [u.id, SVA.pl.ym, entries], function (res) {
+    // ตารางในหน้านี้รวมเวรรายวันของเดือนนี้ไว้แล้ว → บันทึกเป็นตารางของงานชุดเดียว (ล้างเวรรายวันของงานนี้ในเดือนนี้)
+    svaPlanCall('saveStationPlan', [u.id, SVA.pl.ym, entries, { replaceDaily: true }], function (res) {
         svaPlanReload('บันทึกตาราง' + u.name + ' เดือน' + svaYmText(SVA.pl.ym) + ' แล้ว (' + res.saved + ' รายการ)');
     });
 }
@@ -924,6 +1030,18 @@ function svaPlanContinue() {
             .continueStationPlan(u.id, pl.ym, !!overwrite);
     };
     go(false);
+}
+function svaPlanClear() {
+    var u = svaPlanUnitObj();
+    if (!confirm('ล้างข้อมูลเวร' + u.name + ' เดือน' + svaYmText(SVA.pl.ym) + ' ทั้งหมด?\n\n'
+        + '• ลบตารางของงาน และเวรรายวันของงานนี้ทุกวันในเดือนนี้ (รวมที่นำเข้าจากไฟล์)\n'
+        + '• ไฟล์ต้นฉบับไม่ถูกลบ — กด "กรอกอัตโนมัติจากไฟล์" เพื่อสร้างใหม่ได้')) return;
+    svaPlanCall('clearStationUnitMonth', [u.id, SVA.pl.ym], function (msg) { svaPlanReload(msg); }, 'กำลังล้างข้อมูล…');
+}
+/** ไฟล์ล่าสุดของงานนี้ในเดือนนี้ที่ AI อ่านได้ (PDF/รูป) */
+function svaPlanAiFile(uid) {
+    var fs = ((SVA.pl.d && SVA.pl.d.files) || []).filter(function (f) { return f.unit === uid && /pdf|image/.test(f.type); });
+    return fs[fs.length - 1] || null;
 }
 function svaPlanDelete() {
     var u = svaPlanUnitObj();
@@ -1023,6 +1141,11 @@ var SVA_CSS = ''
     + '.sva-pl-up{margin-top:8px}.sva-pl-acts{margin-bottom:8px}'
     + '.sva-pl-ai{padding:7px 10px;border-radius:10px;background:#eef2ff;color:#3730a3;font-size:.8rem;font-weight:700;margin-bottom:8px}'
     + '.sva-pl-grid{max-height:62vh;overflow:auto;border:1px solid #e2e8f0;border-radius:10px}'
+    + '.sva-nm{cursor:pointer;border-bottom:1px dotted #94a3b8}.sva-nm:hover{background:#eaf2ff}.sva-nm.unk{color:#c2410c;background:#fff7ed;border-bottom-color:#f97316}'
+    + '.sva-nchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px;padding:8px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0}'
+    + '.sva-nchips-h{flex:1 1 100%;font-size:.78rem;font-weight:700;color:#334155}'
+    + '.sva-nchip{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:3px 10px;font-size:.78rem;cursor:pointer;color:#0f172a}'
+    + '.sva-nchip small{color:#64748b;margin-left:2px}.sva-nchip.unk{border-color:#f97316;background:#fff7ed;color:#c2410c}'
     + '.sva-pl-grid table{border-collapse:collapse;font-size:.76rem;min-width:100%}'
     + '.sva-pl-grid th,.sva-pl-grid td{border:1px solid #e2e8f0;padding:3px 6px;text-align:center;white-space:nowrap}'
     + '.sva-pl-grid thead th{position:sticky;top:0;z-index:2;background:#f1f5f9;font-weight:800}.sva-pl-grid thead th small{display:block;font-weight:600;color:#64748b;font-size:.64rem}'
