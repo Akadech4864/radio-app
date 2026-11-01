@@ -547,23 +547,24 @@ function svaFixPaint() {
     svaModal('<i class="fas fa-thumbtack"></i> ชื่อประจำ: ' + svEsc(F.role),
         '<div class="sva-hint"><i class="fas fa-circle-info"></i> แสดงในใบเวรทุกวันอัตโนมัติ (วันที่กรอกชื่ออื่นไว้ใช้ชื่อนั้น) · '
         + 'มีคนใหม่มาดำรงตำแหน่ง = เพิ่มชื่อพร้อมวันที่เริ่ม วันก่อนหน้ายังเป็นคนเดิม · แก้ตำแหน่งได้ เช่น รรท.ผกก. → ผกก.</div>'
-        + '<div class="sva-cm-s">' + (rows || '<div class="sva-none">ยังไม่มีชื่อประจำ</div>') + '</div>'
-        + '<div class="sva-cm-s"><div class="sva-cm-h">เพิ่มคนดำรงตำแหน่ง</div><div class="sva-ask-r">'
-        + '<input id="sva-fx-n" class="form-control form-control-sm" list="sva-staff" placeholder="ยศ ชื่อ สกุล" onchange="var s=svaFindStaff(this.value);if(s){this.value=s.name;document.getElementById(\'sva-fx-p\').placeholder=svPos(s.pos);}">'
-        + '<input id="sva-fx-d" type="date" class="form-control form-control-sm" value="' + dv + '" title="เริ่มดำรงตำแหน่ง">'
-        + '<input id="sva-fx-p" class="form-control form-control-sm" placeholder="ตำแหน่ง เช่น ผกก.สน.ลำหิน">'
-        + '<button type="button" class="sva-save" onclick="svaFixAdd()"><i class="fas fa-plus"></i> เพิ่ม</button></div></div>'
-        + '<label class="sva-ask"><input type="checkbox" id="sva-fx-st" checked> แก้ตำแหน่งในทะเบียนกำลังพลของคนล่าสุดด้วย</label>'
+        + '<div class="sva-cm-s"><div class="sva-cm-h">ผู้ดำรงตำแหน่ง</div>' + (rows || '<div class="sva-none">ยังไม่มีชื่อประจำ</div>')
+        + '<div class="sva-fg">'
+        + '<label class="sva-f s2"><span>ยศ ชื่อ สกุล</span><input id="sva-fx-n" class="form-control" list="sva-staff" placeholder="พิมพ์หรือเลือกชื่อ" onchange="var s=svaFindStaff(this.value);if(s){this.value=s.name;document.getElementById(\'sva-fx-p\').placeholder=svPos(s.pos);}"></label>'
+        + '<label class="sva-f s2"><span>เริ่มดำรงตำแหน่ง</span><input id="sva-fx-d" type="date" class="form-control" value="' + dv + '"></label>'
+        + '<label class="sva-f s4"><span>ตำแหน่งที่แสดง</span><input id="sva-fx-p" class="form-control" placeholder="เช่น ผกก.สน.ลำหิน"></label></div>'
+        + '<div class="sva-fr"><label class="sva-chk"><input type="checkbox" id="sva-fx-st" checked> แก้ตำแหน่งในทะเบียนกำลังพลด้วย</label>'
+        + '<button type="button" class="sva-btn-add" onclick="svaFixAdd()"><i class="fas fa-plus"></i> เพิ่มผู้ดำรงตำแหน่ง</button></div></div>'
         // รักษาราชการแทนชั่วคราว (ลา / ไปราชการ) — ช่วงวันที่ ไม่แก้ทะเบียน
-        + '<div class="sva-cm-s"><div class="sva-cm-h">รักษาราชการแทน (รรท.) ชั่วคราว <small>ช่วงที่ลา/ไปราชการ ใบเวรขึ้นชื่อคนนี้เอง พ้นช่วงกลับเป็นคนเดิม</small></div>'
+        + '<div class="sva-cm-s"><div class="sva-cm-h">รักษาราชการแทน (รรท.) ชั่วคราว <small>พ้นช่วงแล้วกลับเป็นผู้ดำรงตำแหน่งเอง</small></div>'
         + (acts || '<div class="sva-none">ยังไม่มี</div>')
-        + '<div class="sva-ask-r">'
-        + '<input id="sva-fa-n" class="form-control form-control-sm" list="sva-staff" placeholder="ผู้รักษาราชการแทน" onchange="svaFixActPos()">'
-        + '<input id="sva-fa-f" type="date" class="form-control form-control-sm" value="' + dv + '" title="ตั้งแต่วันที่" onchange="if(!document.getElementById(\'sva-fa-t\').value||document.getElementById(\'sva-fa-t\').value<this.value)document.getElementById(\'sva-fa-t\').value=this.value;svaFixActPos()">'
-        + '<input id="sva-fa-t" type="date" class="form-control form-control-sm" value="' + dv + '" title="ถึงวันที่">'
-        + '<input id="sva-fa-w" class="form-control form-control-sm" list="sva-fa-why" placeholder="เหตุ เช่น ลาพักผ่อน"><datalist id="sva-fa-why"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักผ่อน</option><option>ไปราชการ</option><option>อบรม/สัมมนา</option></datalist>'
-        + '<input id="sva-fa-p" class="form-control form-control-sm" placeholder="ตำแหน่ง เช่น รอง ผกก.สส.ฯ รรท.ผกก.สน.ลำหิน" title="สร้างให้อัตโนมัติ แก้คำได้">'
-        + '<button type="button" class="sva-save" onclick="svaFixActAdd()"><i class="fas fa-plus"></i> เพิ่ม</button></div></div>',
+        + '<div class="sva-fg">'
+        + '<label class="sva-f s2"><span>ผู้รักษาราชการแทน</span><input id="sva-fa-n" class="form-control" list="sva-staff" placeholder="พิมพ์หรือเลือกชื่อ" onchange="svaFixActPos()"></label>'
+        + '<label class="sva-f"><span>ตั้งแต่</span><input id="sva-fa-f" type="date" class="form-control" value="' + dv + '" onchange="if(!document.getElementById(\'sva-fa-t\').value||document.getElementById(\'sva-fa-t\').value<this.value)document.getElementById(\'sva-fa-t\').value=this.value;svaFixActPos()"></label>'
+        + '<label class="sva-f"><span>ถึง</span><input id="sva-fa-t" type="date" class="form-control" value="' + dv + '"></label>'
+        + '<label class="sva-f"><span>เหตุ</span><input id="sva-fa-w" class="form-control" list="sva-fa-why" placeholder="เช่น ลาพักผ่อน"></label>'
+        + '<datalist id="sva-fa-why"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักผ่อน</option><option>ไปราชการ</option><option>อบรม/สัมมนา</option></datalist>'
+        + '<label class="sva-f s3"><span>ตำแหน่งที่แสดง <small>(สร้างให้อัตโนมัติ แก้ได้)</small></span><input id="sva-fa-p" class="form-control" placeholder="เช่น รอง ผกก.ป.ฯ รรท.ผกก.สน.ลำหิน"></label></div>'
+        + '<div class="sva-fr"><button type="button" class="sva-btn-add" onclick="svaFixActAdd()"><i class="fas fa-plus"></i> เพิ่มผู้รักษาราชการแทน</button></div></div>',
         '<button type="button" onclick="svaModalClose()">ยกเลิก</button>'
         + '<button type="button" class="sva-save" id="sva-fx-ok" onclick="svaFixSave()"><i class="fas fa-floppy-disk"></i> บันทึก</button>');
 }
@@ -1504,7 +1505,7 @@ function svaColsPaint() {
             + ' placeholder="' + svEsc(t.time ? (SV_TIME_LABEL[t.time] || t.time) : 'ไม่แสดง') + '"'
             + ' onchange="SVA.cm.tpl[' + si + '].timeLabel=this.value.trim()"></label></div>' + rows
             + '<div class="sva-cm-add"><input id="sva-cm-new' + si + '" class="form-control form-control-sm" placeholder="ชื่อหน้าที่ใหม่" onkeydown="if(event.key===\'Enter\')svaColsAdd(' + si + ')">'
-            + '<button type="button" onclick="svaColsAdd(' + si + ')"><i class="fas fa-plus"></i> เพิ่มคอลัมน์</button></div></div>';
+            + '<button type="button" class="sva-btn-add" onclick="svaColsAdd(' + si + ')"><i class="fas fa-plus"></i> เพิ่มคอลัมน์</button></div></div>';
     }).join('');
     // หน้าที่ที่มีในข้อมูลแต่ไม่อยู่ในรายการคอลัมน์ (เคยบันทึกด้วยชื่ออื่น)
     var extra = Object.keys(svaColsStart()).filter(function (k) {
@@ -1706,7 +1707,7 @@ var SVA_CSS = ''
     + '.sva-none{padding:12px;text-align:center;color:#64748b}'
     // ---- ตารางเวรของแต่ละงาน ----
     + '.sva-plbtn{position:relative}.sva-bar .sva-plbtn.on{background:#0f766e;color:#fff;border-color:#0f766e}'
-    + '.sva-pl-bad{display:inline-block;min-width:18px;padding:0 5px;border-radius:999px;background:#ea580c;color:#fff;font-size:.7rem;font-weight:800;line-height:18px;text-align:center;animation:svMisBlink 1.2s ease-in-out infinite}'
+    + '.sva-pl-bad{display:inline-block;min-width:18px;padding:0 5px;border-radius:999px;background:#ea580c;color:#fff;font-size:.7rem;font-weight:800;line-height:18px;text-align:center;animation:svaBadgePulse 1.4s ease-in-out infinite}@keyframes svaBadgePulse{0%,100%{box-shadow:0 0 0 0 rgba(234,88,12,.55)}50%{box-shadow:0 0 0 5px rgba(234,88,12,0)}}'
     + '.sva-pl-nav{display:flex;align-items:center;gap:6px;margin-left:12px;font-size:.92rem}'
     + '.sva-pl-nav button{border:1px solid #dbe3ee;background:#f8fafc;border-radius:8px;width:28px;height:28px;cursor:pointer}'
     + '.sva-pl-ok{padding:8px 12px;border-radius:10px;background:#ecfdf5;color:#047857;font-weight:700;font-size:.84rem;margin-bottom:10px}'
@@ -1744,6 +1745,28 @@ var SVA_CSS = ''
     + '.sva-pl-grid tr.we td{background:#fff7ed}.sva-pl-grid tr.td th,.sva-pl-grid tr.td td{background:#dcfce7}'
     + '.sva-pl-grid.ed td{padding:2px}.sva-pl-grid.ed input{width:100%;min-width:150px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;font:inherit;font-size:.78rem}'
     + '.sva-pl-grid.ed input.unk{border-color:#f59e0b;background:#fffbeb}'
+    // ---- ธีมเดียวกันทุกจุดแก้ไข (แผงแก้ไข / ตารางของงาน / หน้าต่าง): ปุ่ม · ช่องกรอก · กล่อง · ป้ายกำกับ ----
+    + '.sva-modal-box{border-radius:16px;padding:16px 18px;color:#0f172a}.sva-modal-box>.sva-card-h{font-size:1.05rem;margin-bottom:6px}'
+    + '.sva-card .form-control,.sva-card .form-select,.sva-modal .form-control,.sva-modal .form-select{height:34px;border:1px solid #dbe3ee;border-radius:10px;font-size:.85rem;padding:4px 10px;color:#0f172a;background-color:#fff;box-shadow:none}'
+    + '.sva-card .form-control:focus,.sva-card .form-select:focus,.sva-modal .form-control:focus,.sva-modal .form-select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.15);outline:0}'
+    + '.sva-foot button,.sva-imp button,.sva-cm-b button,.sva-cm-add button,.sva-pl-fb button,.sva-pl-acts button,.sva-pl-mb button,.sva-pl-up button,.sva-fr button,.sva-btn-add{'
+    + 'display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;min-width:34px;padding:0 12px;border-radius:10px;font:inherit;font-size:.82rem;font-weight:700;line-height:1;cursor:pointer;white-space:nowrap}'
+    + '.sva-cm-b button,.sva-pl-fb button{padding:0 10px}'
+    + '.sva-btn-add{border:1px solid #bfdbfe!important;background:#eff6ff!important;color:#1d4ed8!important}.sva-btn-add:hover{background:#dbeafe!important}'
+    + '.sva-card button.del,.sva-modal button.del{color:#b91c1c;border-color:#fecaca;background:#fef2f2}'
+    + '.sva-cm-s{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;margin:10px 0}'
+    + '.sva-cm-h{font-size:.92rem;font-weight:800;border-left:3px solid #1d4ed8;padding-left:8px;margin-bottom:8px;color:#0f172a}'
+    + '.sva-cm-h small{font-size:.74rem;font-weight:500;color:#64748b;margin-left:6px}'
+    + '.sva-cm-s .sva-none{padding:2px 0 6px;text-align:left;font-size:.8rem}.sva-cm-n{font-size:.88rem}'
+    + '.sva-fg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;margin-top:8px}'
+    + '.sva-f{display:flex;flex-direction:column;gap:3px;margin:0;min-width:0}.sva-f>span{font-size:.74rem;font-weight:700;color:#475569}.sva-f>span small{font-weight:500;color:#94a3b8}'
+    + '.sva-f.s2{grid-column:span 2}.sva-f.s3{grid-column:span 3}.sva-f.s4{grid-column:1/-1}'
+    + '.sva-fr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}'
+    + '.sva-chk{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:#334155;margin:0 auto 0 0;cursor:pointer}'
+    + '.sva-chk input,label.sva-ask input{width:16px;height:16px;accent-color:#1d4ed8;flex:0 0 auto}'
+    + '.sva-xl-rb button{width:26px;height:26px;padding:0;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem}'
+    + '.sva-xl-addcol{height:24px;border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:8px;font-size:.72rem}'
+    + '@media (max-width:560px){.sva-fg{grid-template-columns:repeat(2,minmax(0,1fr))}.sva-f.s3{grid-column:1/-1}.sva-modal-box{padding:14px}.sva-cm-r .sva-cm-tm{flex:1 1 120px;width:auto!important}.sva-cm-n{flex-basis:100%}}'
     + '@media (max-width:640px){.sva-act{margin-left:0}}';
 
 function svaInjectCss() {
