@@ -81,7 +81,7 @@ function svSlots(data, dayIdx, untilKey) {
         return has[key] || fixed[key] || (start[key] && start[key] <= untilKey);
     };
     var tpl = ((data && data.template) || []).map(function (t) {
-        return { sec: t.sec, time: t.time || '', timeLabel: t.timeLabel || '', color: t.color || '#2563eb', auto: !!t.auto,
+        return { sec: t.sec, time: t.time || '', timeLabel: t.timeLabel || '', roleTimes: t.roleTimes || null, color: t.color || '#2563eb', auto: !!t.auto,
             roles: t.roles.filter(function (role) { return begun(t, role); }) };
     });
     var find = function (sk) { return tpl.filter(function (t) { return svSlotKey(t.sec, t.time) === sk; })[0]; };
@@ -127,8 +127,10 @@ var SV_NO_HEAD = { 'ผู้บังคับบัญชา': 1 };
 var SV_ROLE_LABEL = {};
 // ฝ่ายที่แสดงเวลาเข้าเวรที่หัวฝ่ายแทนหลังชื่อ
 var SV_HEAD_TIME = { 'ฝ่ายสืบสวน': 1 };
-// เวลาหลังชื่อของหน้าที่ที่ไม่ได้บันทึกเวลาไว้
+// เวลาหลังชื่อของหน้าที่ที่ไม่ได้บันทึกเวลาไว้ = เวลาประจำหน้าที่ในแม่แบบ (roleTimes แก้ได้ที่ "จัดการคอลัมน์")
+// SV_ROLE_NOTE ใช้เมื่อแม่แบบยังไม่มี roleTimes ของหัวข้อนั้น
 var SV_ROLE_NOTE = { 'เวรอำนวยการ': '08.01-08.00 น.' };
+function svRoleTime(t, role) { return t && t.roleTimes ? (t.roleTimes[role] || '') : (SV_ROLE_NOTE[role] || ''); }
 // ข้อความเวลาที่แสดง (กุญแจในชีตคงเดิม) — ป. ผลัดกลางคืนลงเวรก่อนผลัดเช้ารับ 1 นาที
 var SV_TIME_LABEL = { '20.01-08.00 น. (ของวันรุ่งขึ้น)': '20.01-07.59 น. (ของวันรุ่งขึ้น)' };
 function svTimeText(t) { return SV_TIME_LABEL[t] || t || ''; }
@@ -186,9 +188,9 @@ function svDayHtml(data, date, opts) {
             list.forEach(function (r, i) {
                 var tel = String(r[6] || '').replace(/[^0-9+]/g, '');
                 // หลังชื่อแสดงเฉพาะเวลา (รหัสวิทยุ/ชุด เช่น "ลำหิน 22" "ชุด 1" ไม่แสดง) · มือถือย้ายเวลาไปไว้ใต้ตำแหน่ง
-                var note = SV_HEAD_TIME[t.sec] ? '' : svNoteTime(r[7] || SV_ROLE_NOTE[role] || (head ? '' : t.timeLabel) || '');
+                var note = SV_HEAD_TIME[t.sec] ? '' : svNoteTime(r[7] || svRoleTime(t, role) || (head ? '' : t.timeLabel) || '');
                 // คนที่ไม่ได้อยู่เวรตอนนี้ (ออกเวรแล้ว / ผลัดที่ยังไม่ถึงเวลา) ทำตัวจาง — เฉพาะบนจอ ไม่ใช่ภาพ/PDF
-                var off = opts.plain ? '' : svShiftState(date, svNoteTime(r[7]) || SV_ROLE_NOTE[role] || svTimeText(t.time) || t.timeLabel || headTime);
+                var off = opts.plain ? '' : svShiftState(date, svNoteTime(r[7]) || svRoleTime(t, role) || svTimeText(t.time) || t.timeLabel || headTime);
                 off = SV_OFF_TEXT[off] ? off : '';
                 var av = opts.plain ? '' : (r[12] || '');
                 // data-ck = กุญแจของแถว (หน้า GitHub ใช้เช็คชื่อ)
