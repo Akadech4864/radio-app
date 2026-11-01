@@ -82,7 +82,7 @@ function svSlots(data, dayIdx, untilKey) {
         return has[key] || fixed[key] || (start[key] && start[key] <= untilKey);
     };
     var tpl = ((data && data.template) || []).map(function (t) {
-        return { sec: t.sec, time: t.time || '', timeLabel: t.timeLabel || '', roleTimes: t.roleTimes || null, color: t.color || '#2563eb', auto: !!t.auto,
+        return { sec: t.sec, label: t.label || '', time: t.time || '', timeLabel: t.timeLabel || '', roleTimes: t.roleTimes || null, color: t.color || '#2563eb', auto: !!t.auto,
             roles: t.roles.filter(function (role) { return begun(t, role); }) };
     });
     var find = function (sk) { return tpl.filter(function (t) { return svSlotKey(t.sec, t.time) === sk; })[0]; };
@@ -187,7 +187,7 @@ function svDayHtml(data, date, opts) {
         var headKey = svHeadTime(headTime);
         if (head) {
             html += '<tr class="sv-sec"><td colspan="4" style="background:' + svTint(t.color, 0.24) + ';border-left:5px solid ' + t.color + '">'
-                + svEsc(t.sec) + (headTime ? ' <span class="sv-note sv-head-tm">' + svEsc(headKey) + '</span>' : '') + '</td></tr>';
+                + svEsc(t.label || t.sec) + (headTime ? ' <span class="sv-note sv-head-tm">' + svEsc(headKey) + '</span>' : '') + '</td></tr>';
         }
         var roleBg = 'background:' + svTint(t.color, 0.12);   // ไฮไลท์จางตามสีของงาน
         t.roles.forEach(function (role) {
@@ -282,7 +282,7 @@ function svMonthHtml(data, year, month, secFilter, opts) {
 
     var h1 = '<tr><th rowspan="2" class="sv-m-date">วันที่</th>' + slots.map(function (t) {
         return t.roles.length ? '<th colspan="' + t.roles.length + '" class="sv-m-sec" style="background:' + svTint(t.color, 0.26) + ';border-top:4px solid ' + t.color + '">'
-            + svEsc(t.sec) + ((t.time || t.timeLabel) ? '<small>' + svEsc(svHeadTime(svTimeText(t.time) || t.timeLabel)) + '</small>' : '') + '</th>' : '';
+            + svEsc(t.label || t.sec) + ((t.time || t.timeLabel) ? '<small>' + svEsc(svHeadTime(svTimeText(t.time) || t.timeLabel)) + '</small>' : '') + '</th>' : '';
     }).join('') + '</tr>';
     var h2 = '<tr>' + cols.map(function (c) { return '<th class="sv-m-role">' + svEsc(c.role) + '</th>'; }).join('') + '</tr>';
     var body = '', d0 = (opts && opts.from) || 1, d1 = Math.min(days, (opts && opts.to) || days);
