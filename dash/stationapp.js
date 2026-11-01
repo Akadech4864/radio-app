@@ -1113,7 +1113,7 @@ function svaPlanUpload() {
 // เปิดดูไฟล์: เปิดหน้าต่างก่อน (หลังรอโหลดเบราว์เซอร์จะบล็อก) แล้วใส่ไฟล์ตามมา
 function svaPlanFileView(id) {
     var f = svaPlanFileOf(id); if (!f) return;
-    var w = window.open('', '_blank');
+    var w = svOpenWin();   // เว็บแอปบนหน้าจอโฮม iPhone = หน้าต่างซ้อนมีปุ่มกลับ
     if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — กรุณาอนุญาตป๊อปอัป'); return; }
     w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><title>' + svEsc(f.name) + '</title>'
         + '<p style="font-family:sans-serif;padding:24px;color:#334155">กำลังเปิด ' + svEsc(f.name) + '…</p>');

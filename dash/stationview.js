@@ -499,7 +499,7 @@ function svExportPdf(title, sheetHtml, landscape, opts) {
     var a4 = !!(opts && opts.a4);
     // ใบเวรประจำวัน: ใช้ภาพ A4 แบบปุ่ม "ภาพ" (มือถือจัดหน้าพิมพ์ต่างจากจอ ทำให้ล้นเป็น 2 หน้า)
     if (a4 && !landscape) return svExportImage(title, sheetHtml, false, { a4: true, pdf: true });
-    var w = window.open('', '_blank');
+    var w = svOpenWin();
     if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
     var pw = landscape ? 281 : 194, ph = landscape ? 194 : 281;   // พื้นที่พิมพ์ได้ของ A4 (ขอบ 8 มม.)
     w.document.open();
@@ -592,7 +592,7 @@ function svExportMonth(kind, title, data, year, month, sec) {
 }
 function svExportPdfPages(title, pages, plan) {
     var L = SV_LAND;
-    var w = window.open('', '_blank');
+    var w = svOpenWin();
     if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
     var colHtml = '<colgroup>' + plan.cols.map(function (x) { return '<col style="width:' + x + 'px">'; }).join('') + '</colgroup>';
     w.document.open();
@@ -650,7 +650,7 @@ function svExportImagePages(w, title, pages, plan) {
 // มือถือ: เปิดแท็บใหม่ตอนกด (หลังรอสร้างภาพเบราว์เซอร์จะบล็อก) · คอมพิวเตอร์: ดาวน์โหลดตรง (null)
 function svImageTab() {
     var touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-    var w = touch ? window.open('', '_blank') : null;
+    var w = touch ? svOpenWin() : null;
     if (w) w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#334155">กำลังสร้างภาพ…</p>');
     return w;
 }
@@ -658,14 +658,7 @@ function svShowImages(w, title, urls) {
     var base = String(title).replace(/[\\/:*?"<>|]/g, ' ').trim();
     if (w) {
         w.document.open();
-        w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            + '<title>' + svEsc(title) + '</title></head><body style="margin:0;background:#0f172a;text-align:center;font-family:sans-serif">'
-            + '<div style="color:#e2e8f0;padding:12px;font-size:15px">กดค้างที่รูป แล้วเลือก "บันทึกรูปภาพ" / "เพิ่มไปยังรูปภาพ"'
-            + (urls.length > 1 ? ' (มี ' + urls.length + ' หน้า บันทึกทีละรูป)' : '') + '</div>'
-            + urls.map(function (u, i) {
-                return (urls.length > 1 ? '<div style="color:#94a3b8;padding:10px 0 6px;font-size:14px">หน้า ' + (i + 1) + '/' + urls.length + '</div>' : '')
-                    + '<img src="' + u + '" alt="' + svEsc(title) + '" style="width:100%;max-width:1000px;display:block;margin:0 auto 10px">';
-            }).join('') + '</body></html>');
+        w.document.write(svImgPageHtml(title, urls));
         w.document.close();
         return;
     }
@@ -687,7 +680,7 @@ function svExportImage(title, sheetHtml, landscape, opts) {
     var W = landscape ? 1240 : (a4 ? 1000 : 860);
     var pdf = !!(opts && opts.pdf) && a4;   // PDF ใบเวรประจำวัน = พิมพ์ภาพ A4 ชุดเดียวกับปุ่ม "ภาพ" (ทุกเครื่องได้ 1 หน้าเหมือนกัน)
     var touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-    var w = (touch || pdf) ? window.open('', '_blank') : null;   // เปิดตอนกด (หลังรอสร้างภาพเบราว์เซอร์จะบล็อก)
+    var w = (touch || pdf) ? svOpenWin() : null;   // เปิดตอนกด (หลังรอสร้างภาพเบราว์เซอร์จะบล็อก)
     if ((touch || pdf) && !w) { alert('เบราว์เซอร์บล็อกหน้าต่างใหม่ — กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง'); return; }
     if (w) w.document.write('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#334155">กำลังสร้าง' + (pdf ? ' PDF' : 'ภาพ') + '…</p>');
     svLoadH2C(function (err) {
@@ -739,10 +732,7 @@ function svExportImage(title, sheetHtml, landscape, opts) {
                 w.document.close();
             } else if (w) {
                 w.document.open();
-                w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-                    + '<title>' + svEsc(title) + '</title></head><body style="margin:0;background:#0f172a;text-align:center;font-family:sans-serif">'
-                    + '<div style="color:#e2e8f0;padding:12px;font-size:15px">กดค้างที่รูป แล้วเลือก "บันทึกรูปภาพ" / "เพิ่มไปยังรูปภาพ"</div>'
-                    + '<img src="' + url + '" alt="' + svEsc(title) + '" style="width:100%;max-width:1000px;display:block;margin:0 auto"></body></html>');
+                w.document.write(svImgPageHtml(title, [url]));
                 w.document.close();
             } else {
                 var a = document.createElement('a');
@@ -756,6 +746,61 @@ function svExportImage(title, sheetHtml, landscape, opts) {
             alert('สร้างภาพไม่สำเร็จ: ' + e);
         });
     });
+}
+/**
+ * หน้าต่างแสดงภาพ / PDF / ไฟล์
+ * เว็บแอปที่ "เพิ่มไปยังหน้าจอโฮม" บน iPhone (เปิดแบบแอป) ไม่มีแท็บและปุ่มย้อนกลับ — window.open ทับหน้าแอปจนกลับไม่ได้
+ * → เปิดเป็นหน้าต่างซ้อนในแอป (iframe) มีปุ่ม "กลับ" · เบราว์เซอร์ปกติใช้แท็บใหม่เหมือนเดิม
+ * คืนค่าเป็น window ของหน้าต่างนั้น (ใช้ w.document.write / w.close() ได้เหมือนแท็บใหม่)
+ */
+function svStandalone() {
+    return window.navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function svOpenWin() {
+    if (!svStandalone()) return window.open('', '_blank');
+    svInjectCss();
+    svCloseWin();
+    var ov = document.createElement('div');
+    ov.id = 'sv-win'; ov.className = 'sv-win';
+    ov.innerHTML = '<div class="sv-win-bar"><button type="button" onclick="svCloseWin()"><i class="fas fa-chevron-left"></i> กลับ</button><span></span></div>'
+        + '<iframe class="sv-win-f" allow="web-share"></iframe>';
+    document.body.appendChild(ov);
+    document.documentElement.classList.add('sv-win-on');
+    var f = ov.querySelector('iframe'), w = f.contentWindow;
+    try { w.close = svCloseWin; } catch (e) { }
+    // ชื่อหน้าต่างที่แถบบน · พิมพ์ (PDF): ยืดกรอบให้สูงเท่าเนื้อหา เผื่อเครื่องพิมพ์ทั้งหน้าแอป
+    f.addEventListener('load', function () {
+        try { ov.querySelector('.sv-win-bar span').textContent = f.contentDocument.title || ''; } catch (e) { }
+    });
+    w.addEventListener('beforeprint', function () { try { f.style.height = f.contentDocument.documentElement.scrollHeight + 'px'; } catch (e) { } });
+    w.addEventListener('afterprint', function () { f.style.height = ''; });
+    return w;
+}
+function svCloseWin() {
+    var o = document.getElementById('sv-win');
+    if (o) o.parentNode.removeChild(o);
+    document.documentElement.classList.remove('sv-win-on');
+}
+/** หน้าแสดงภาพให้บันทึก: กดค้างที่รูป · เครื่องที่แชร์ไฟล์ได้ (iPhone) มีปุ่ม "บันทึก/แชร์รูป" */
+function svImgPageHtml(title, urls) {
+    var base = String(title).replace(/[\\/:*?"<>|]/g, ' ').trim();
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        + '<title>' + svEsc(title) + '</title><style>body{margin:0;background:#0f172a;text-align:center;font-family:sans-serif}'
+        + '.t{color:#e2e8f0;padding:12px;font-size:15px}.p{color:#94a3b8;padding:10px 0 6px;font-size:14px}'
+        + 'img{width:100%;max-width:1000px;display:block;margin:0 auto 10px}'
+        + '.s{display:none;border:0;border-radius:10px;padding:9px 16px;margin:0 auto 10px;font:inherit;font-weight:700;font-size:15px;color:#fff;background:#059669}</style></head><body>'
+        + '<div class="t">กดค้างที่รูป แล้วเลือก "บันทึกรูปภาพ" / "เพิ่มไปยังรูปภาพ"' + (urls.length > 1 ? ' (มี ' + urls.length + ' หน้า บันทึกทีละรูป)' : '') + '</div>'
+        + urls.map(function (u, i) {
+            return (urls.length > 1 ? '<div class="p">หน้า ' + (i + 1) + '/' + urls.length + '</div>' : '')
+                + '<button class="s" onclick="shr(' + i + ')">บันทึก / แชร์รูป' + (urls.length > 1 ? ' หน้า ' + (i + 1) : '') + '</button>'
+                + '<img src="' + u + '" alt="' + svEsc(title) + '">';
+        }).join('')
+        + '<script>var N=' + JSON.stringify(base) + ',M=' + urls.length + ';'
+        + 'function fl(i,b){return new File([b],N+(M>1?" (หน้า "+(i+1)+")":"")+".png",{type:"image/png"});}'
+        + 'function shr(i){fetch(document.images[i].src).then(function(r){return r.blob();}).then(function(b){var f=fl(i,b);'
+        + 'if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:N});alert("กดค้างที่รูป แล้วเลือก บันทึกรูปภาพ");}).catch(function(){});}'
+        + 'try{if(navigator.canShare&&navigator.canShare({files:[new File(["x"],"x.png",{type:"image/png"})]}))[].forEach.call(document.querySelectorAll(".s"),function(b){b.style.display="block";});}catch(e){}'
+        + '<\/script></body></html>';
 }
 function svLoadH2C(cb) {
     if (window.html2canvas) { cb(); return; }
@@ -775,6 +820,12 @@ function svExportButtons(onPdf, onImg) {
 
 // ---------- สไตล์ (ฉีดครั้งเดียว) ----------
 var SV_CSS = ''
+    + '.sv-win{position:fixed;inset:0;z-index:5000;display:flex;flex-direction:column;background:#0f172a}'
+    + '.sv-win-bar{display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:#0f172a;color:#e2e8f0;font-family:Sarabun,system-ui,sans-serif}'
+    + '.sv-win-bar button{border:0;border-radius:10px;padding:8px 14px;font:inherit;font-weight:800;font-size:.95rem;color:#fff;background:#1d4ed8;cursor:pointer}'
+    + '.sv-win-bar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.85rem;color:#94a3b8}'
+    + '.sv-win-f{flex:1;width:100%;border:0;background:#fff}html.sv-win-on,html.sv-win-on body{overflow:hidden}'
+    + '@media print{html.sv-win-on body>*:not(#sv-win){display:none!important}html.sv-win-on .sv-win{position:static;display:block}html.sv-win-on .sv-win-bar{display:none}html.sv-win-on,html.sv-win-on body{overflow:visible}}'
     + '.sv-sheet{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.05),0 8px 24px rgba(15,23,42,.08);color:#0f172a;font-family:Sarabun,system-ui,sans-serif}'
     + '.sv-title{display:flex;align-items:center;gap:12px;padding:12px 16px;color:#fff;background:linear-gradient(118deg,#0a2463,#1d4ed8 62%,#38bdf8)}'
     + '.sv-badge{flex-shrink:0;line-height:0}.sv-badge img{height:46px;width:auto;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}'
