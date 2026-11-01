@@ -71,6 +71,7 @@ function svIndex(data) {
  */
 function svSlots(data, dayIdx, untilKey) {
     var start = data && data.roleStart, fixed = (data && data.fixed) || {};
+    svTimeSync(data && data.template);
     var has = {};
     Object.keys(dayIdx || {}).forEach(function (k) {
         Object.keys(dayIdx[k]).forEach(function (sk) { Object.keys(dayIdx[k][sk]).forEach(function (role) { has[sk + '|' + role] = 1; }); });
@@ -125,15 +126,23 @@ function svNoteTime(n) {
 // เวร ศปก. มีหัวฝ่ายของตัวเอง (เวลา 08.01-08.00 น.) แยกจากฝ่ายจราจร
 var SV_NO_HEAD = { 'ผู้บังคับบัญชา': 1 };
 var SV_ROLE_LABEL = {};
-// ฝ่ายที่แสดงเวลาเข้าเวรที่หัวฝ่ายแทนหลังชื่อ
-var SV_HEAD_TIME = { 'ฝ่ายสืบสวน': 1 };
 // เวลาหลังชื่อของหน้าที่ที่ไม่ได้บันทึกเวลาไว้ = เวลาประจำหน้าที่ในแม่แบบ (roleTimes แก้ได้ที่ "จัดการคอลัมน์")
 // SV_ROLE_NOTE ใช้เมื่อแม่แบบยังไม่มี roleTimes ของหัวข้อนั้น
 var SV_ROLE_NOTE = { 'เวรอำนวยการ': '08.01-08.00 น.' };
 function svRoleTime(t, role) { return t && t.roleTimes ? (t.roleTimes[role] || '') : (SV_ROLE_NOTE[role] || ''); }
 // ข้อความเวลาที่แสดง (กุญแจในชีตคงเดิม) — ป. ผลัดกลางคืนลงเวรก่อนผลัดเช้ารับ 1 นาที
 var SV_TIME_LABEL = { '20.01-08.00 น. (ของวันรุ่งขึ้น)': '20.01-07.59 น. (ของวันรุ่งขึ้น)' };
-function svTimeText(t) { return SV_TIME_LABEL[t] || t || ''; }
+// เวลาที่หัวข้อที่แก้ไว้ (แม่แบบ timeLabel ของฝ่ายที่แบ่งผลัด) — ตามตารางเวรล่าสุด
+var SV_TIME_DYN = {};
+function svTimeSync(tpl) {
+    SV_TIME_DYN = {};
+    (tpl || []).forEach(function (t) { if (t.time && t.timeLabel) SV_TIME_DYN[t.time] = t.timeLabel; });
+}
+function svTimeText(t) { return SV_TIME_DYN[t] || SV_TIME_LABEL[t] || t || ''; }
+/** เวลาที่หัวข้อ: ป้ายส้มแบบเดียวกับเวลาหลังชื่อ ไม่ต้องมี "(ของวันรุ่งขึ้น)" (เวลาสิ้นสุดน้อยกว่าเวลาเริ่มก็รู้ว่าข้ามวัน) */
+function svHeadTime(t) { return String(t || '').replace(/\s*\(ของวันรุ่งขึ้น\)/, '').trim(); }
+/** ตำแหน่ง: เว้นวรรคหลังวงเล็บ — "รอง สว.(สอบสวน)สน.ลำหิน" → "รอง สว.(สอบสวน) สน.ลำหิน" */
+function svPos(p) { return String(p || '').replace(/\)(?=[^\s)\],.])/g, ') '); }
 /**
  * สถานะตอนนี้ของคนในใบเวรวันที่ date ตามช่วงเวลา "08.01-17.00" ('on' | 'post' ออกเวรแล้ว | 'pre' ยังไม่ถึงเวลา | '' ไม่ทราบ)
  * เวลาสิ้นสุดไม่เกินเวลาเริ่ม = สิ้นสุดวันรุ่งขึ้น (08.01-08.00, 20.01-07.59, 05.00-05.00)
@@ -168,13 +177,17 @@ function svDayHtml(data, date, opts) {
     slots.forEach(function (t) {
         var got = day[k][svSlotKey(t.sec, t.time)] || {};
         var head = !SV_NO_HEAD[t.sec];   // ผู้บังคับบัญชา ไม่มีแถวหัวฝ่าย
-        var headTime = '';
-        if (SV_HEAD_TIME[t.sec]) t.roles.forEach(function (role) {
-            (got[role] || []).forEach(function (r) { headTime = headTime || svNoteTime(r[7]); });
-        });
+        // เวลาของแต่ละคน (ตามใบเวร / เวลาประจำหน้าที่)
+        var own = function (role, r) { return svNoteTime(r[7] || svRoleTime(t, role) || (head ? '' : t.timeLabel) || ''); };
+        var times = [];
+        t.roles.forEach(function (role) { (got[role] || []).forEach(function (r) { times.push(own(role, r)); }); });
+        // ทุกคนในฝ่ายเข้าเวรเวลาเดียวกัน → แสดงเวลาครั้งเดียวที่หัวข้อฝ่าย · เวลาไม่เท่ากันรายคน → แสดงหลังชื่อ
+        var same = times.length && times[0] && times.every(function (x) { return x === times[0]; }) ? times[0] : '';
+        var headTime = head ? (svTimeText(t.time) || t.timeLabel || same) : '';
+        var headKey = svHeadTime(headTime);
         if (head) {
             html += '<tr class="sv-sec"><td colspan="4" style="background:' + svTint(t.color, 0.24) + ';border-left:5px solid ' + t.color + '">'
-                + svEsc(t.sec) + ((t.time || t.timeLabel || headTime) ? ' <small>เวลา ' + svEsc(svTimeText(t.time) || t.timeLabel || headTime) + '</small>' : '') + '</td></tr>';
+                + svEsc(t.sec) + (headTime ? ' <span class="sv-note sv-head-tm">' + svEsc(headKey) + '</span>' : '') + '</td></tr>';
         }
         var roleBg = 'background:' + svTint(t.color, 0.12);   // ไฮไลท์จางตามสีของงาน
         t.roles.forEach(function (role) {
@@ -188,7 +201,8 @@ function svDayHtml(data, date, opts) {
             list.forEach(function (r, i) {
                 var tel = String(r[6] || '').replace(/[^0-9+]/g, '');
                 // หลังชื่อแสดงเฉพาะเวลา (รหัสวิทยุ/ชุด เช่น "ลำหิน 22" "ชุด 1" ไม่แสดง) · มือถือย้ายเวลาไปไว้ใต้ตำแหน่ง
-                var note = SV_HEAD_TIME[t.sec] ? '' : svNoteTime(r[7] || svRoleTime(t, role) || (head ? '' : t.timeLabel) || '');
+                var note = own(role, r);
+                if (note && svHeadTime(note) === headKey) note = '';   // เวลาเดียวกับหัวข้อ ไม่ต้องซ้ำหลังชื่อ
                 // คนที่ไม่ได้อยู่เวรตอนนี้ (ออกเวรแล้ว / ผลัดที่ยังไม่ถึงเวลา) ทำตัวจาง — เฉพาะบนจอ ไม่ใช่ภาพ/PDF
                 var off = opts.plain ? '' : svShiftState(date, svNoteTime(r[7]) || svRoleTime(t, role) || svTimeText(t.time) || t.timeLabel || headTime);
                 off = SV_OFF_TEXT[off] ? off : '';
@@ -202,9 +216,9 @@ function svDayHtml(data, date, opts) {
                     + '<span class="sv-nm">' + svEsc(r[4]) + '</span>' + (note ? ' <span class="sv-note sv-note-in">' + svEsc(note) + '</span>' : '')
                     + (r[10] ? '<div class="sv-mis-tag"><i class="fas fa-triangle-exclamation"></i> ไม่ตรงตารางเวร: ' + svEsc(r[10]) + '</div>' : '')
                     + (off ? '<span class="sv-off-tag">' + SV_OFF_TEXT[off] + '</span>' : '')
-                    + '<div class="sv-name-pos">' + svEsc(r[5] || '') + '</div>'
+                    + '<div class="sv-name-pos">' + svEsc(svPos(r[5])) + '</div>'
                     + (note ? '<div class="sv-note-row"><span class="sv-note">' + svEsc(note) + '</span></div>' : '') + (av ? '</div></div>' : '') + '</td>'
-                    + '<td class="sv-c-pos">' + svEsc(r[5] || '') + '</td>'
+                    + '<td class="sv-c-pos">' + svEsc(svPos(r[5])) + '</td>'
                     + '<td class="sv-c-tel' + (r[11] ? ' sv-mis' : '') + '">' + (tel && !opts.plain ? '<a href="tel:' + tel + '">' + svEsc(r[6]) + '</a>' : svEsc(r[6] || ''))
                     + (r[11] ? '<div class="sv-mis-tag sv-tel-db" title="เบอร์ในฐานข้อมูลกำลังพล"><i class="fas fa-database"></i> ' + svEsc(r[11]) + '</div>' : '') + '</td>'
                     + '</tr>';
@@ -268,7 +282,7 @@ function svMonthHtml(data, year, month, secFilter, opts) {
 
     var h1 = '<tr><th rowspan="2" class="sv-m-date">วันที่</th>' + slots.map(function (t) {
         return t.roles.length ? '<th colspan="' + t.roles.length + '" class="sv-m-sec" style="background:' + svTint(t.color, 0.26) + ';border-top:4px solid ' + t.color + '">'
-            + svEsc(t.sec) + ((t.time || t.timeLabel) ? '<small>' + svEsc(svTimeText(t.time) || t.timeLabel) + '</small>' : '') + '</th>' : '';
+            + svEsc(t.sec) + ((t.time || t.timeLabel) ? '<small>' + svEsc(svHeadTime(svTimeText(t.time) || t.timeLabel)) + '</small>' : '') + '</th>' : '';
     }).join('') + '</tr>';
     var h2 = '<tr>' + cols.map(function (c) { return '<th class="sv-m-role">' + svEsc(c.role) + '</th>'; }).join('') + '</tr>';
     var body = '', d0 = (opts && opts.from) || 1, d1 = Math.min(days, (opts && opts.to) || days);
@@ -755,8 +769,8 @@ function svLoadH2C(cb) {
 /** ปุ่มส่งออกคู่ (PDF + ภาพ) — onPdf/onImg เป็นชื่อฟังก์ชันที่จะเรียก */
 function svExportButtons(onPdf, onImg) {
     return '<div class="sv-xbtns">'
-        + '<button type="button" class="sv-x-pdf" onclick="' + onPdf + '"><i class="fas fa-file-pdf"></i> PDF</button>'
-        + '<button type="button" class="sv-x-img" onclick="' + onImg + '"><i class="fas fa-image"></i> ภาพ</button></div>';
+        + '<button type="button" class="sv-x-pdf" onclick="' + onPdf + '" title="บันทึกเป็น PDF"><i class="fas fa-file-pdf"></i> PDF</button>'
+        + '<button type="button" class="sv-x-img" onclick="' + onImg + '" title="บันทึกเป็นภาพ"><i class="fas fa-image"></i><span class="sva-tx"> ภาพ</span></button></div>';
 }
 
 // ---------- สไตล์ (ฉีดครั้งเดียว) ----------
@@ -777,6 +791,7 @@ var SV_CSS = ''
     + '.sv-shot .sv-off>td,.sv-print .sv-off>td{opacity:1}.sv-shot .sv-off-tag,.sv-print .sv-off-tag{display:none}'
     + '.sv-note-row .sv-note{margin-left:0}.sv-name-pos{display:none;font-size:.74rem;font-weight:500;color:#64748b}'
     + '.sv-note{display:inline-block;font-size:.68rem;font-weight:800;color:#92400e;background:#fef3c7;border-radius:999px;padding:0 7px;margin-left:4px}'
+    + '.sv-sec .sv-head-tm{margin-left:8px;vertical-align:middle}'
     + '.sv-sec td{text-align:left;font-weight:800;color:#0f172a;padding:7px 10px}'
     + '.sv-day thead th{color:#0f172a;font-weight:800;background:#e2e8f0}'   // หัวคอลัมน์ใบเวรรายวัน: หนา เข้ม ขนาดเท่าแถวฝ่ายงาน
     + '.sv-sec small{font-weight:700;margin-left:6px;color:#334155}'

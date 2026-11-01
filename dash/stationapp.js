@@ -127,7 +127,7 @@ function renderStationDuty() {
 })();
 
 // โหลดครั้งละ 3 เดือน (เดือนก่อน–เดือนถัดไป) พอสำหรับเลื่อนดูและคัดลอกจากวันก่อน
-function svaLoad(force) {
+function svaLoad(force, then) {
     var root = document.getElementById('sv-root'); if (!root) return;
     var y = SVA.date.getFullYear(), m = SVA.date.getMonth();
     var from = new Date(y, m - 1, 1), to = new Date(y, m + 2, 0);
@@ -135,7 +135,7 @@ function svaLoad(force) {
     if (!force && SVA.data && SVA.range === key) { svaPaint(); return; }
     if (!SVA.data) root.innerHTML = '<div class="sva-wait"><i class="fas fa-circle-notch fa-spin"></i> กำลังโหลดตารางเวรทุกสายงาน…</div>';
     google.script.run
-        .withSuccessHandler(function (d) { SVA.data = d; SVA.range = key; svaPaint(); })
+        .withSuccessHandler(function (d) { SVA.data = d; SVA.range = key; if (then) then(); svaPaint(); })
         .withFailureHandler(function (e) {
             root.innerHTML = '<div class="sva-wait sva-err">โหลดไม่สำเร็จ: ' + svEsc((e && e.message) || e) + '</div>';
         })
@@ -154,8 +154,8 @@ function svaPaint() {
         + '<div class="sva-head"><i class="fas fa-building-shield"></i><span>ตารางเวรทุกสายงาน สน.ลำหิน</span></div>'
         + '<div class="sva-bar">'
         + '  <div class="sva-seg">'
-        + '    <button type="button" class="' + (SVA.view === 'day' ? 'on' : '') + '" onclick="svaSetView(\'day\')"><i class="fas fa-calendar-day"></i> รายวัน</button>'
-        + '    <button type="button" class="' + (SVA.view === 'month' ? 'on' : '') + '" onclick="svaSetView(\'month\')"><i class="fas fa-table"></i> ทั้งเดือน</button>'
+        + '    <button type="button" class="' + (SVA.view === 'day' ? 'on' : '') + '" onclick="svaSetView(\'day\')"><i class="fas fa-calendar-day"></i> วัน</button>'
+        + '    <button type="button" class="' + (SVA.view === 'month' ? 'on' : '') + '" onclick="svaSetView(\'month\')"><i class="fas fa-table"></i> เดือน</button>'
         + '  </div>'
         + '  <div class="sva-nav">'
         + '    <button type="button" onclick="svaStep(-1)" title="ก่อนหน้า"><i class="fas fa-chevron-left"></i></button>'
@@ -167,21 +167,21 @@ function svaPaint() {
         + '  </div>'
         + (SVA.view === 'month' ? '<div class="sva-secs">' + svSecChips(SVA.data, SVA.sec, 'svaSecSet') + '</div>' : '')
         + '  <div class="sva-act">'
-        + '    <button type="button" onclick="svaEditOpen()"><i class="fas fa-pen-to-square"></i> เพิ่ม/แก้ไขเวร</button>'
-        + '    <button type="button" class="sva-plbtn' + (SVA.mode === 'plan' ? ' on' : '') + '" onclick="svaPlanOpen()" title="ไฟล์และตารางเวรของ ป. / จร. / สส. / ศปก. / อำนวยการ แยกรายเดือน">'
-        + '<i class="fas fa-folder-open"></i> ตารางเวรแต่ละงาน' + (nMis ? ' <span class="sva-pl-bad" title="ตารางรายวันไม่ตรงกับตารางเวร">' + nMis + '</span>' : '') + '</button>'
-        + '    <button type="button" onclick="svaImportOpen()"><i class="fas fa-wand-magic-sparkles"></i> นำเข้าจากรูป/ไฟล์</button>'
-        + '    <button type="button" onclick="svaStaffOpen()"><i class="fas fa-address-book"></i> ทะเบียน</button>'
+        + '    <button type="button" onclick="svaEditOpen()" title="เพิ่ม/แก้ไขเวรรายวัน" aria-label="แก้ไขเวร"><i class="fas fa-pen-to-square"></i><span class="sva-tx"> แก้ไข</span></button>'
+        + '    <button type="button" class="sva-plbtn' + (SVA.mode === 'plan' ? ' on' : '') + '" onclick="svaPlanOpen()" title="ตารางเวรของแต่ละงาน (ป. / จร. / สส. / ศปก. / อำนวยการ) + ไฟล์ต้นฉบับ" aria-label="ตารางเวรแต่ละงาน">'
+        + '<i class="fas fa-folder-open"></i><span class="sva-tx"> ตารางงาน</span>' + (nMis ? ' <span class="sva-pl-bad" title="ตารางรายวันไม่ตรงกับตารางเวร">' + nMis + '</span>' : '') + '</button>'
+        + '    <button type="button" onclick="svaImportOpen()" title="นำเข้าตารางเวรจากรูป/PDF/Excel ด้วย AI (ไม่ต้องเลือกงาน)" aria-label="นำเข้าจากไฟล์"><i class="fas fa-wand-magic-sparkles"></i><span class="sva-tx"> นำเข้า</span></button>'
+        + '    <button type="button" onclick="svaStaffOpen()" title="ทะเบียนเจ้าหน้าที่" aria-label="ทะเบียน"><i class="fas fa-address-book"></i><span class="sva-tx"> ทะเบียน</span></button>'
         // เว็บแอป: ตั้งรหัสให้ธุรการใช้กรอกเวรบนหน้า GitHub · หน้า GitHub: ปุ่มออกจากโหมดแก้ไข
         + (window.SVA_REMOTE
-            ? '    <button type="button" class="sva-exit" onclick="if(window.stEditClose)stEditClose()"><i class="fas fa-right-from-bracket"></i> ออกจากโหมดแก้ไข</button>'
-            : '    <button type="button" onclick="svaSetPin()" title="รหัสสำหรับงานธุรการ ใช้กรอกเวรบนหน้า GitHub"><i class="fas fa-key"></i> รหัสธุรการ</button>')
+            ? '    <button type="button" class="sva-exit" onclick="if(window.stEditClose)stEditClose()" title="ออกจากโหมดแก้ไข" aria-label="ออกจากโหมดแก้ไข"><i class="fas fa-right-from-bracket"></i><span class="sva-tx"> ออก</span></button>'
+            : '    <button type="button" onclick="svaSetPin()" title="รหัสธุรการ (ใช้กรอกเวรบนหน้า GitHub)" aria-label="รหัสธุรการ"><i class="fas fa-key"></i><span class="sva-tx"> รหัส</span></button>')
         + svExportButtons("svaExport('pdf')", "svaExport('img')")
         + '  </div>'
         + '</div>'
         + '<div id="sva-panel"></div>'
         + '<div id="sva-view">' + (SVA.view === 'day'
-            ? svDayHtml(SVA.data, d, { emptyHint: 'กด "เพิ่ม/แก้ไขเวร" หรือ "นำเข้าจากรูป/ไฟล์"' })
+            ? svDayHtml(SVA.data, d, { emptyHint: 'กด "แก้ไข" หรือ "นำเข้า"' })
             : svMonthHtml(SVA.data, d.getFullYear(), d.getMonth(), SVA.sec)) + '</div>'
         + '<datalist id="sva-staff">' + (SVA.data.staff || []).map(function (s) {
             return '<option value="' + svEsc(s.name) + '">' + svEsc(s.pos) + '</option>';
@@ -302,7 +302,7 @@ function svaEditPaint() {
                     + '<input class="form-control form-control-sm sva-in" list="' + svaDl(s.sec, s.time, r.role) + '" data-s="' + si + '" data-r="' + ri + '" data-n="' + ni + '"'
                     + ' value="' + svEsc(n) + '" placeholder="พิมพ์ชื่อ หรือกด เลือก" onchange="svaEditSync();svaEditPaint()">'
                     + '<button type="button" onclick="svaEditDel(' + si + ',' + ri + ',' + ni + ')" title="ลบ"><i class="fas fa-xmark"></i></button>'
-                    + (st ? '<small class="sva-tel"><i class="fas fa-phone"></i> ' + svEsc(st.phone || '-') + ' · ' + svEsc(st.pos) + '</small>' : '')
+                    + (st ? '<small class="sva-tel"><i class="fas fa-phone"></i> ' + svEsc(st.phone || '-') + ' · ' + svEsc(svPos(st.pos)) + '</small>' : '')
                     + (known ? '' : '<span>ไม่มีในทะเบียน</span>') + '</div>';
             });
             var open = SVA.pick && SVA.pick.si === si && SVA.pick.ri === ri;
@@ -312,27 +312,21 @@ function svaEditPaint() {
             html += (fixedName ? '<div class="sva-fixed"><i class="fas fa-thumbtack"></i> ชื่อประจำ: <b>' + svEsc(fixedName)
                     + '</b> — แสดงทุกวันอัตโนมัติ กรอกชื่ออื่นเฉพาะวันที่เปลี่ยนตัว</div>' : '')
                 + '<div class="sva-ed-btns">'
-                + '<button type="button" class="sva-pickbtn' + (open ? ' on' : '') + '" onclick="svaPickOpen(' + si + ',' + ri + ')"><i class="fas fa-list-check"></i> เลือกจากรายชื่อ</button>'
-                + '<button type="button" class="sva-add" onclick="svaEditAdd(' + si + ',' + ri + ')"><i class="fas fa-plus"></i> ช่องพิมพ์</button>'
-                + (canFix ? '<button type="button" class="sva-fixbtn" onclick="svaSetFixed(' + si + ',' + ri + ')" title="ใช้ชื่อในช่องนี้ทุกวัน"><i class="fas fa-thumbtack"></i> ตั้งเป็นชื่อประจำ</button>' : '')
+                + '<button type="button" class="sva-pickbtn' + (open ? ' on' : '') + '" onclick="svaPickOpen(' + si + ',' + ri + ')" title="เลือกจากรายชื่อ"><i class="fas fa-list-check"></i> เลือก</button>'
+                + '<button type="button" class="sva-add" onclick="svaEditAdd(' + si + ',' + ri + ')" title="เพิ่มอีกคน" aria-label="เพิ่มอีกคน"><i class="fas fa-user-plus"></i></button>'
+                + (canFix ? '<button type="button" class="sva-fixbtn" onclick="svaSetFixed(' + si + ',' + ri + ')" title="ตั้งเป็นชื่อประจำ (ใช้ชื่อในช่องนี้ทุกวัน)" aria-label="ชื่อประจำ"><i class="fas fa-thumbtack"></i></button>' : '')
                 + '</div>'
                 + '</div></div>'
                 + (open ? svaPickHtml(s, r) : '');
         });
         html += '</div>';
     });
+    // หน้าที่ใหม่ = เพิ่มคอลัมน์ที่ "คอลัมน์" (ใช้ทุกวัน/ทุกตาราง ไม่ใช่หน้าที่เฉพาะวัน)
     html += '</div>'
-        + '<div class="sva-ed-more">'
-        + '  <select id="sva-new-sec" class="form-select form-select-sm">' + SVA.ed.map(function (s, i) {
-            return '<option value="' + i + '">' + svEsc(s.sec + (s.time ? ' ' + svTimeText(s.time) : '')) + '</option>';
-        }).join('') + '</select>'
-        + '  <input id="sva-new-role" class="form-control form-control-sm" placeholder="หน้าที่อื่น เช่น สายตรวจ 191">'
-        + '  <button type="button" onclick="svaEditAddRole()"><i class="fas fa-plus"></i> เพิ่มหน้าที่</button>'
-        + '</div>'
         + '<div class="sva-foot">'
-        + '  <button type="button" onclick="svaEditCopyPrev()"><i class="fas fa-copy"></i> คัดลอกจากวันก่อน</button>'
-        + '  <button type="button" onclick="svaClose()">ยกเลิก</button>'
-        + '  <button type="button" class="sva-save" id="sva-save" onclick="svaEditSave()"><i class="fas fa-floppy-disk"></i> บันทึกเวรวันนี้</button>'
+        + '  <button type="button" onclick="svaColsOpen()" title="เพิ่ม/ลบ/เปลี่ยนชื่อหน้าที่ และเวลาเข้าเวร"><i class="fas fa-table-columns"></i> คอลัมน์</button>'
+        + '  <button type="button" onclick="svaEditCopyPrev()" title="คัดลอกรายชื่อจากวันก่อน"><i class="fas fa-copy"></i> คัดลอกวันก่อน</button>'
+        + '  <button type="button" class="sva-save" id="sva-save" onclick="svaEditSave()"><i class="fas fa-floppy-disk"></i> บันทึก</button>'
         + '</div></div>';
     p.innerHTML = html;
 }
@@ -429,13 +423,6 @@ function svaEditDel(si, ri, ni) {
     var r = SVA.ed[si].roles[ri]; r.names.splice(ni, 1); if (!r.names.length) r.names.push('');
     svaEditPaint();
 }
-function svaEditAddRole() {
-    svaEditSync();
-    var si = +document.getElementById('sva-new-sec').value, role = document.getElementById('sva-new-role').value.trim();
-    if (!role) return;
-    SVA.ed[si].roles.push({ role: role, names: [''] });
-    svaEditPaint();
-}
 function svaEditCopyPrev() {
     var prev = new Date(SVA.date.getFullYear(), SVA.date.getMonth(), SVA.date.getDate() - 1);
     svaEditStart(prev);
@@ -479,15 +466,15 @@ function svaImportPaint() {
     (SVA.data.template || []).forEach(function (t) { if (!t.auto && secs.indexOf(t.sec) < 0) secs.push(t.sec); });
     var html = '<div class="sva-card"><div class="sva-card-h"><i class="fas fa-wand-magic-sparkles"></i> นำเข้าตารางเวรจากรูป / PDF / Excel'
         + '<button type="button" class="sva-x" onclick="svaClose()" title="ปิด"><i class="fas fa-xmark"></i></button></div>'
-        + '<div class="sva-hint"><i class="fas fa-circle-info"></i> แนบรูปถ่ายตารางเวร ใบเวรประจำวัน หรือไฟล์ Excel/CSV ของฝ่ายใดก็ได้ (หลายไฟล์ได้) '
-        + 'AI จะอ่านแล้วแตกเป็นรายวันให้ตรวจก่อนบันทึก</div>'
+        + '<div class="sva-hint"><i class="fas fa-circle-info"></i> รูปถ่ายตารางเวร ใบเวรประจำวัน หรือ Excel ของงานใดก็ได้ (หลายไฟล์ได้) — AI อ่านให้ตรวจก่อนบันทึก '
+        + '· ไฟล์ต้นฉบับเก็บเข้าถังของงานที่อยู่ในไฟล์ให้เอง</div>'
         + '<div class="sva-imp">'
-        + '  <input type="file" id="sva-file" class="form-control form-control-sm" multiple accept="image/*,.pdf,.xlsx,.xls,.csv">'
-        + '  <select id="sva-hint" class="form-select form-select-sm"><option value="">ไม่ระบุฝ่าย (ให้ AI ดูเอง)</option>'
+        + '  <input type="file" id="sva-file" hidden multiple accept="image/*,.pdf,.xlsx,.xls,.csv" onchange="svaImportRead()">'
+        + '  <select id="sva-hint" class="form-select form-select-sm" title="ตารางของงานไหน (ไม่ระบุก็ได้)"><option value="">ทุกงาน (AI ดูเอง)</option>'
         + '<option value="ใบเวรประจำวันทั้ง สน.">ใบเวรประจำวันทั้ง สน.</option>'
         + secs.map(function (s) { return '<option>' + svEsc(s) + '</option>'; }).join('') + '</select>'
         + '  <input type="month" id="sva-month" class="form-control form-control-sm" value="' + d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '" title="เดือนของตาราง">'
-        + '  <button type="button" class="sva-save" id="sva-read" onclick="svaImportRead()"><i class="fas fa-robot"></i> อ่านด้วย AI</button>'
+        + '  <button type="button" class="sva-save" id="sva-read" onclick="document.getElementById(\'sva-file\').click()" title="เลือกรูป/PDF/Excel แล้ว AI อ่านทันที"><i class="fas fa-file-arrow-up"></i> เลือกไฟล์ให้ AI อ่าน</button>'
         + '</div><div id="sva-imp-res">' + svaImportResHtml() + '</div></div>';
     p.innerHTML = html;
 }
@@ -512,7 +499,7 @@ function svaReadFile(f) {
 function svaImportRead() {
     var inp = document.getElementById('sva-file');
     var files = inp && inp.files ? [].slice.call(inp.files) : [];
-    if (!files.length) { alert('กรุณาเลือกไฟล์ตารางเวรก่อน'); return; }
+    if (!files.length) return;
     var btn = document.getElementById('sva-read');
     btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังอ่าน…';
     var hint = document.getElementById('sva-hint').value;
@@ -537,7 +524,7 @@ function svaImportRead() {
                     SVA.imp = { list: list.map(function (e) { e.on = true; return e; }),
                                 files: payload.files, ym: mv.length === 2 ? mv[0] + '-' + mv[1] : '' };
                     svaImportPaint();
-                });
+                }, res.timeHints);
             })
             .withFailureHandler(function (e) {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-robot"></i> อ่านด้วย AI';
@@ -548,6 +535,7 @@ function svaImportRead() {
         btn.disabled = false; btn.innerHTML = '<i class="fas fa-robot"></i> อ่านด้วย AI';
         alert('อ่านไฟล์ไม่สำเร็จ: ' + e);
     });
+    inp.value = '';   // เลือกไฟล์เดิมซ้ำได้
 }
 function svaImportResHtml() {
     var L = SVA.imp && SVA.imp.list;
@@ -614,7 +602,7 @@ function svaStaffPaint() {
     var p = document.getElementById('sva-panel'); if (!p) return;
     var depts = ['บริหาร', 'ป้องกันปราบปราม', 'สอบสวน', 'สืบสวน', 'จราจร', 'อำนวยการ', 'อื่น ๆ'];
     var rows = (SVA.data.staff || []).map(function (s) {
-        return '<tr onclick="svaStaffFill(\'' + svEsc(s.name).replace(/'/g, '&#39;') + '\')"><td>' + svEsc(s.name) + '</td><td>' + svEsc(s.pos)
+        return '<tr onclick="svaStaffFill(\'' + svEsc(s.name).replace(/'/g, '&#39;') + '\')"><td>' + svEsc(s.name) + '</td><td>' + svEsc(svPos(s.pos))
             + '</td><td>' + svEsc(s.dept) + '</td><td>' + svEsc(s.phone) + '</td></tr>';
     }).join('');
     p.innerHTML = '<div class="sva-card"><div class="sva-card-h"><i class="fas fa-address-book"></i> ทะเบียนเจ้าหน้าที่ทุกสายงาน ('
@@ -761,10 +749,10 @@ function svaPlanPaint() {
         + '<div class="sva-pl-tabs">' + tabs + '</div>'
         // ---- ไฟล์ต้นฉบับ ----
         + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-paperclip"></i> ไฟล์ต้นฉบับ (แหล่งข้อมูล) ตารางเวร' + svEsc(u.name) + ' เดือน' + svaYmText(pl.ym) + '</div>'
-        + (files.length ? files.map(svaPlanFileHtml).join('') : '<div class="sva-none">ยังไม่มีไฟล์ของเดือนนี้ — อัปโหลดคำสั่ง/ตารางเวรของงานนี้ (PDF รูปภาพ หรือ Excel) แล้วกด "กรอกอัตโนมัติ"</div>')
-        + '<div class="sva-imp sva-pl-up"><input type="file" id="sva-pl-file" class="form-control form-control-sm" multiple accept="image/*,.pdf,.xlsx,.xls,.csv">'
-        + '<input id="sva-pl-note" class="form-control form-control-sm" placeholder="หมายเหตุไฟล์ (ถ้ามี) เช่น ฉบับแก้ไข">'
-        + '<button type="button" class="sva-save" onclick="svaPlanUpload()"><i class="fas fa-upload"></i> อัปโหลด</button></div></div>'
+        + (files.length ? files.map(svaPlanFileHtml).join('') : '<div class="sva-none">ยังไม่มีไฟล์ของเดือนนี้</div>')
+        + '<div class="sva-pl-up"><input type="file" id="sva-pl-file" hidden multiple accept="image/*,.pdf,.xlsx,.xls,.csv" onchange="svaPlanUpload()">'
+        + '<button type="button" class="sva-save" onclick="document.getElementById(\'sva-pl-file\').click()" title="เลือกคำสั่ง/ตารางเวร (PDF รูป Excel) — อัปโหลดแล้ว AI กรอกตารางให้ตรวจทันที">'
+        + '<i class="fas fa-file-arrow-up"></i> อัปโหลด/กรอกอัตโนมัติ</button></div></div>'
         // ---- ตารางเวรของงาน ----
         + '<div class="sva-pl-sec"><div class="sva-pl-sh"><i class="fas fa-table-list"></i> ตารางเวร' + svEsc(u.name)
         + (plan.length ? ' <small>(' + Object.keys(plan.reduce(function (a, e) { a[e.date] = 1; return a; }, {})).length + ' วัน)</small>' : '') + '</div>'
@@ -779,9 +767,9 @@ function svaPlanMisHtml(mis) {
             return '<div class="sva-pl-mi"><div class="sva-pl-mt"><b>' + svEsc(svaDayText(m.date)) + '</b> · ' + svEsc(m.unit) + ' ' + svEsc(m.role)
                 + (m.time ? ' <small>' + svEsc(svTimeText(m.time)) + '</small>' : '') + '</div>'
                 + '<div class="sva-pl-mv"><span>ตารางรายวัน: <b>' + svEsc(m.daily.join(', ')) + '</b></span><span>ตารางเวร: <b>' + svEsc(m.plan.join(', ')) + '</b></span></div>'
-                + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanFix(' + i + ',\'plan\')" title="ใช้ชื่อตามตารางเวรของงาน (ลบชื่อที่กรอกในตารางรายวันของวันนั้น)"><i class="fas fa-table-list"></i> ตามตารางเวร</button>'
-                + '<button type="button" onclick="svaPlanFix(' + i + ',\'daily\')" title="ใช้ชื่อตามตารางรายวัน (แก้ตารางเวรของงานให้ตรง เช่น มีการแลกเวร)"><i class="fas fa-calendar-day"></i> ตามตารางรายวัน</button>'
-                + '<button type="button" onclick="svaPlanGoDay(' + i + ')" title="เปิดเวรรายวันวันนั้น">เปิดวันนั้น</button></div></div>';
+                + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanFix(' + i + ',\'plan\')" title="ใช้ชื่อตามตารางเวรของงาน (ลบชื่อที่กรอกในตารางรายวันของวันนั้น)"><i class="fas fa-table-list"></i> ใช้ตารางงาน</button>'
+                + '<button type="button" onclick="svaPlanFix(' + i + ',\'daily\')" title="ใช้ชื่อตามตารางรายวัน (แก้ตารางเวรของงานให้ตรง เช่น มีการแลกเวร)"><i class="fas fa-calendar-day"></i> ใช้รายวัน</button>'
+                + '<button type="button" onclick="svaPlanGoDay(' + i + ')" title="เปิดเวรรายวันวันนั้น" aria-label="เปิดวันนั้น"><i class="fas fa-arrow-up-right-from-square"></i></button></div></div>';
         }).join('') + '</div>';
 }
 // เบอร์โทรตามใบเวรไม่ตรงฐานข้อมูลกำลังพล: เลือกแก้ฐานข้อมูลตามใบเวร หรือใช้เบอร์ในฐานข้อมูลต่อ
@@ -791,8 +779,8 @@ function svaPlanPhoneHtml(list) {
         + list.map(function (m, i) {
             return '<div class="sva-pl-mi"><div class="sva-pl-mt"><b>' + svEsc(m.name) + '</b> <small>(' + m.dates.map(function (ds) { return svaDayText(ds); }).join(', ') + ')</small></div>'
                 + '<div class="sva-pl-mv"><span>ใบเวร: <b>' + svEsc(m.sheet) + '</b></span><span>ฐานข้อมูล: <b>' + svEsc(m.db) + '</b></span></div>'
-                + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanPhone(' + i + ',\x27db\x27)" title="แก้เบอร์ในฐานข้อมูลกำลังพลเป็นเบอร์ตามใบเวร (ใช้ทุกวันต่อจากนี้)"><i class="fas fa-address-book"></i> แก้ฐานข้อมูลตามใบเวร</button>'
-                + '<button type="button" onclick="svaPlanPhone(' + i + ',\x27sheet\x27)" title="ใช้เบอร์ในฐานข้อมูลต่อ (ไม่แก้)"><i class="fas fa-xmark"></i> ใช้เบอร์ในฐานข้อมูล</button></div></div>';
+                + '<div class="sva-pl-mb"><button type="button" onclick="svaPlanPhone(' + i + ',\x27db\x27)" title="แก้เบอร์ในฐานข้อมูลกำลังพลเป็นเบอร์ตามใบเวร (ใช้ทุกวันต่อจากนี้)"><i class="fas fa-address-book"></i> ใช้เบอร์ใบเวร</button>'
+                + '<button type="button" onclick="svaPlanPhone(' + i + ',\x27sheet\x27)" title="ใช้เบอร์ในฐานข้อมูลต่อ (ไม่แก้)"><i class="fas fa-xmark"></i> ใช้เบอร์เดิม</button></div></div>';
         }).join('') + '</div>';
 }
 function svaPlanPhone(i, mode) {
@@ -815,10 +803,10 @@ function svaPlanFileHtml(f) {
     var canAi = /pdf|image/.test(f.type);
     return '<div class="sva-pl-f"><i class="fas ' + ic + '"></i><div class="sva-pl-fn"><b>' + svEsc(f.name) + '</b>'
         + '<small>' + kb + ' · ' + svEsc(f.at) + (f.note ? ' · ' + svEsc(f.note) : '') + '</small></div>'
-        + '<div class="sva-pl-fb"><button type="button" onclick="svaPlanFileView(\'' + f.id + '\')"><i class="fas fa-eye"></i> ดู</button>'
-        + (canAi ? '<button type="button" onclick="svaPlanAI(\'' + f.id + '\')" title="ให้ AI อ่านไฟล์นี้เป็นตารางเวรของงาน แล้วตรวจก่อนบันทึก"><i class="fas fa-robot"></i> อ่านด้วย AI</button>' : '')
-        + '<button type="button" onclick="svaPlanFileEdit(\'' + f.id + '\')"><i class="fas fa-pen"></i> แก้ไข</button>'
-        + '<button type="button" class="del" onclick="svaPlanFileDel(\'' + f.id + '\')"><i class="fas fa-trash-can"></i> ลบ</button></div></div>';
+        + '<div class="sva-pl-fb"><button type="button" onclick="svaPlanFileView(\'' + f.id + '\')" title="ดูไฟล์" aria-label="ดูไฟล์"><i class="fas fa-eye"></i></button>'
+        + (canAi ? '<button type="button" onclick="svaPlanAI(\'' + f.id + '\')" title="กรอกตารางอัตโนมัติจากไฟล์นี้ (AI)" aria-label="กรอกอัตโนมัติ"><i class="fas fa-robot"></i></button>' : '')
+        + '<button type="button" onclick="svaPlanFileEdit(\'' + f.id + '\')" title="แก้ชื่อไฟล์/หมายเหตุ" aria-label="แก้ไข"><i class="fas fa-pen"></i></button>'
+        + '<button type="button" class="del" onclick="svaPlanFileDel(\'' + f.id + '\')" title="ลบไฟล์" aria-label="ลบไฟล์"><i class="fas fa-trash-can"></i></button></div></div>';
 }
 function svaPlanFileOf(id) { return (SVA.pl.d.files || []).filter(function (f) { return f.id === id; })[0]; }
 function svaPlanUpload() {
@@ -827,13 +815,14 @@ function svaPlanUpload() {
     if (!files.length) { alert('กรุณาเลือกไฟล์ก่อน'); return; }
     var big = files.filter(function (f) { return f.size > SVA_PL_MAX_MB * 1048576; })[0];
     if (big) { alert('ไฟล์ "' + big.name + '" ใหญ่เกิน ' + SVA_PL_MAX_MB + ' MB'); return; }
-    var note = document.getElementById('sva-pl-note').value.trim(), pl = SVA.pl, i = 0, aiId = '';
+    var note = '', pl = SVA.pl, i = 0, aiId = '';
+    inp.value = '';
     function next(res) {
         if (res && res.id && /pdf|image/.test(files[i - 1].type || '')) aiId = res.id;
         if (i >= files.length) {
             svaLoad(true);
             svaPlanLoad(function () {
-                if (aiId && confirm('อัปโหลดแล้ว — ให้ AI อ่านไฟล์แล้วกรอกตาราง' + svaPlanUnitObj().name + 'ให้เลยไหม?\n(ตรวจ/แก้ในตารางก่อนกดบันทึก)')) svaPlanAI(aiId);
+                if (aiId) svaPlanAI(aiId);   // PDF/รูป: AI กรอกตารางให้ตรวจทันที (Excel เก็บเป็นไฟล์ต้นฉบับ)
             });
             return;
         }
@@ -899,22 +888,21 @@ function svaPlanAI(id) {
             svaPlanEditStart(list, 'AI อ่านจาก "' + f.name + '" ได้ ' + list.length + ' รายการ ครบ ' + res.days + (res.monthDays ? '/' + res.monthDays : '') + ' วัน'
                 + (short ? ' ⚠️ ยังขาด ' + (res.monthDays - res.days) + ' วัน' + (res.missing && res.missing.length ? ' (' + res.missing.map(function (d) { return +d.slice(0, 2); }).join(', ') + ')' : '') + ' เพิ่มเองในตารางได้' : '')
                 + ' — ตรวจ/แก้ในตารางแล้วกดบันทึก (ยังไม่ได้บันทึก)');
-        });
+        }, res.timeHints);
     }, 'AI กำลังอ่าน ' + f.name + '… (ตารางทั้งเดือนอาจใช้เวลา ๓๐ วินาที – ๒ นาที)');
 }
 
 // ---- ดูตารางของงาน (อ่านอย่างเดียว) ----
 function svaPlanViewHtml(u, plan, umis) {
-    var aiFile = svaPlanAiFile(u.id), hasPlan = svaPlanOf(u.id).length;
+    var hasPlan = svaPlanOf(u.id).length;
     var nDaily = {}; plan.forEach(function (x) { if (x.src === 'daily') nDaily[x.date] = 1; });
-    var btns = '<div class="sva-pl-acts"><button type="button" class="sva-save" onclick="svaPlanEditStart()"><i class="fas fa-pen-to-square"></i> ' + (plan.length ? 'แก้ไขข้อมูลทั้งเดือน' : 'สร้างตาราง') + '</button>'
-        + (aiFile ? '<button type="button" onclick="svaPlanAI(\'' + aiFile.id + '\')" title="ให้ AI อ่านไฟล์ล่าสุด (' + svEsc(aiFile.name) + ') แล้วเติมตารางให้ตรวจก่อนบันทึก"><i class="fas fa-robot"></i> กรอกอัตโนมัติจากไฟล์</button>'
-            : '<button type="button" onclick="var f=document.getElementById(\'sva-pl-file\');if(f){f.scrollIntoView({block:\'center\'});f.click();}" title="อัปโหลดไฟล์คำสั่ง/ตารางเวร แล้วให้ AI กรอกให้"><i class="fas fa-robot"></i> อัปโหลดไฟล์แล้วกรอกอัตโนมัติ</button>')
-        + (hasPlan ? '<button type="button" onclick="svaPlanContinue()" title="สร้างตารางเดือนถัดไปโดยวนรอบเวรเดิม"><i class="fas fa-rotate-right"></i> วนรอบต่อเดือนถัดไป</button>' : '')
-        + '<button type="button" onclick="svaColsOpen()" title="เพิ่ม/ลบ/เปลี่ยนชื่อ/เรียงคอลัมน์ (หน้าที่) ของงานนี้"><i class="fas fa-table-columns"></i> จัดการคอลัมน์</button>'
-        + (plan.length ? '<button type="button" class="del" onclick="svaPlanClear()" title="ลบตารางของงานและเวรรายวันของงานนี้ทั้งเดือน (ไฟล์ต้นฉบับไม่ถูกลบ)"><i class="fas fa-eraser"></i> ล้างข้อมูลทั้งเดือน</button>' : '') + '</div>'
-        + (Object.keys(nDaily).length ? '<div class="sva-hint"><i class="fas fa-circle-info"></i> ' + Object.keys(nDaily).length + ' วันใช้ข้อมูลจากเวรรายวัน/ที่นำเข้าจากไฟล์ — กด "แก้ไขข้อมูลทั้งเดือน" แล้วบันทึก จะรวมเป็นตารางของงานชุดเดียว</div>' : '');
-    if (!plan.length) return '<div class="sva-none">ยังไม่มีตารางของงานนี้ในเดือนนี้ — กด "สร้างตาราง" หรือ "กรอกอัตโนมัติ" จากไฟล์</div>' + btns;
+    // กรอกอัตโนมัติจากไฟล์ = ปุ่มอัปโหลดด้านบน / ไอคอน AI ที่ไฟล์ (ไม่มีปุ่มซ้ำตรงนี้)
+    var btns = '<div class="sva-pl-acts"><button type="button" class="sva-save" onclick="svaPlanEditStart()" title="แก้ไขตารางทั้งเดือน (ชื่อ / เวลา)"><i class="fas fa-pen-to-square"></i> ' + (plan.length ? 'แก้ไขทั้งเดือน' : 'สร้างตาราง') + '</button>'
+        + (hasPlan ? '<button type="button" onclick="svaPlanContinue()" title="สร้างตารางเดือนถัดไปโดยวนรอบเวรเดิม"><i class="fas fa-rotate-right"></i> วนรอบเดือนหน้า</button>' : '')
+        + '<button type="button" onclick="svaColsOpen()" title="เพิ่ม/ลบ/เปลี่ยนชื่อ/เรียงคอลัมน์ (หน้าที่) และเวลาเข้าเวร"><i class="fas fa-table-columns"></i> คอลัมน์</button>'
+        + (plan.length ? '<button type="button" class="del" onclick="svaPlanClear()" title="ล้างตารางของงานและเวรรายวันของงานนี้ทั้งเดือน (ไฟล์ต้นฉบับไม่ถูกลบ)" aria-label="ล้างข้อมูลทั้งเดือน"><i class="fas fa-eraser"></i><span class="sva-tx"> ล้างเดือนนี้</span></button>' : '') + '</div>'
+        + (Object.keys(nDaily).length ? '<div class="sva-hint"><i class="fas fa-circle-info"></i> ' + Object.keys(nDaily).length + ' วันใช้ข้อมูลจากเวรรายวัน/ที่นำเข้าจากไฟล์ — กด "แก้ไขทั้งเดือน" แล้วบันทึก จะรวมเป็นตารางของงานชุดเดียว</div>' : '');
+    if (!plan.length) return '<div class="sva-none">ยังไม่มีตารางของงานนี้ในเดือนนี้ — กด "อัปโหลด/กรอกอัตโนมัติ" หรือ "สร้างตาราง"</div>' + btns;
     var ymP = SVA.pl.ym.split('-');
     var cols = svaPlanCols(u, plan, +ymP[0] * 10000 + +ymP[1] * 100 + new Date(+ymP[0], +ymP[1], 0).getDate()), cell = {}, bad = {};
     plan.forEach(function (x) { var k = x.date + '|' + svSlotKey(x.sec, x.time) + '|' + x.role; (cell[k] = cell[k] || []).push(x.name); });
@@ -948,7 +936,7 @@ function svaPlanRename(i) {
     }, 'กำลังแก้ชื่อทุกช่อง…');
 }
 function svaPlanColHead(c) {
-    return '<th>' + svEsc(c.role) + (c.time ? '<small>' + svEsc(c.time.replace(' (ของวันรุ่งขึ้น)', '')) + '</small>' : '') + '</th>';
+    return '<th>' + svEsc(c.role) + (c.time ? '<small>' + svEsc(svTimeText(c.time).replace(' (ของวันรุ่งขึ้น)', '')) + '</small>' : '') + '</th>';
 }
 
 // ---- แก้ตารางของงานทั้งเดือน (ช่อง = ชื่อ คั่นหลายคนด้วย ,) ----
@@ -1078,11 +1066,6 @@ function svaPlanClear() {
         + '• ไฟล์ต้นฉบับไม่ถูกลบ — กด "กรอกอัตโนมัติจากไฟล์" เพื่อสร้างใหม่ได้')) return;
     svaPlanCall('clearStationUnitMonth', [u.id, SVA.pl.ym], function (msg) { svaPlanReload(msg); }, 'กำลังล้างข้อมูล…');
 }
-/** ไฟล์ล่าสุดของงานนี้ในเดือนนี้ที่ AI อ่านได้ (PDF/รูป) */
-function svaPlanAiFile(uid) {
-    var fs = ((SVA.pl.d && SVA.pl.d.files) || []).filter(function (f) { return f.unit === uid && /pdf|image/.test(f.type); });
-    return fs[fs.length - 1] || null;
-}
 function svaPlanDelete() {
     var u = svaPlanUnitObj();
     if (!confirm('ลบตาราง' + u.name + ' เดือน' + svaYmText(SVA.pl.ym) + ' ทั้งเดือน?\n(ไฟล์ต้นฉบับไม่ถูกลบ · เวรรายวันที่กรอกเองไม่ถูกลบ)')) return;
@@ -1107,9 +1090,10 @@ function svaModal(title, body, foot) {
 function svaModalClose() { var m = document.getElementById('sva-modal'); if (m) m.parentNode.removeChild(m); }
 function svaColLabel(sec, time) { return sec + (time ? ' ' + svTimeText(time) : ''); }
 
-function svaColAsk(unknown, entries, done) {
-    if (!unknown || !unknown.length) { done(entries); return; }
-    SVA.ask = { unk: unknown, entries: entries, done: done };
+function svaColAsk(unknown, entries, done, hints) {
+    unknown = unknown || []; hints = hints || [];
+    if (!unknown.length && !hints.length) { done(entries); return; }
+    SVA.ask = { unk: unknown, entries: entries, done: done, hints: hints };
     var tpl = svaTpl();
     var rows = unknown.map(function (u, i) {
         var slots = tpl.filter(function (t) { return !t.auto && t.sec === u.sec; });
@@ -1128,9 +1112,15 @@ function svaColAsk(unknown, entries, done) {
             + '<option value="skip">✖ ไม่นำเข้ารายการนี้</option></select>'
             + '<input id="sva-ask-n' + i + '" class="form-control form-control-sm" value="' + svEsc(u.role) + '" placeholder="ชื่อคอลัมน์ใหม่"' + (sg ? ' hidden' : '') + '></div></div>';
     }).join('');
-    svaModal('<i class="fas fa-table-columns"></i> หน้าที่ที่ไม่ตรงกับคอลัมน์เดิม ' + unknown.length + ' แบบ',
-        '<div class="sva-hint"><i class="fas fa-circle-info"></i> ระบบเลือกคอลัมน์ที่ใกล้เคียงที่สุดไว้ให้แล้ว — ตรวจก่อนกดตกลง '
-        + '(เลือก "เพิ่มเป็นคอลัมน์ใหม่" เมื่อเป็นหน้าที่ใหม่จริง เช่น งานเพิ่มหน้าที่ใหม่ · เพิ่มแล้วใช้ได้ทุกเดือน แก้ภายหลังได้ที่ "จัดการคอลัมน์")</div>' + rows,
+    // เวลาเข้าเวรในไฟล์ไม่ตรงกับเวลาที่หัวข้อ (เช่น ป. เปลี่ยนเวลาผลัด) → ติ๊กเพื่อปรับหัวข้อตามไฟล์
+    var tm = hints.map(function (h, i) {
+        return '<label class="sva-ask"><input type="checkbox" id="sva-ask-t' + i + '" checked> ปรับเวลาหัวข้อ <b>' + svEsc(h.sec) + '</b>'
+            + ' จาก <s>' + svEsc(h.label) + '</s> เป็น <b>' + svEsc(h.doc) + '</b> <small>ตามไฟล์ ' + h.count + ' รายการ</small></label>';
+    }).join('');
+    svaModal('<i class="fas fa-table-columns"></i> ตรวจก่อนนำเข้า',
+        (rows ? '<div class="sva-hint"><i class="fas fa-circle-info"></i> หน้าที่ที่ไม่ตรงกับคอลัมน์เดิม — ระบบเลือกคอลัมน์ที่ใกล้ที่สุดไว้ให้ '
+            + '(เลือก "เพิ่มเป็นคอลัมน์ใหม่" เมื่อเป็นหน้าที่ใหม่จริง · แก้ภายหลังได้ที่ "คอลัมน์")</div>' + rows : '')
+        + (tm ? '<div class="sva-hint"><i class="fas fa-clock"></i> เวลาเข้าเวรในไฟล์ไม่ตรงกับเวลาที่หัวข้อ</div>' + tm : ''),
         '<button type="button" class="sva-save" id="sva-ask-ok" onclick="svaColAskOk()"><i class="fas fa-check"></i> ตกลง</button>');
 }
 function svaColAskSel(i) {
@@ -1141,6 +1131,11 @@ function svaColAskSel(i) {
 function svaColAskOk() {
     var A = SVA.ask; if (!A) return;
     var tpl = JSON.parse(JSON.stringify(svaTpl())), added = 0, map = {};
+    A.hints.forEach(function (h, i) {
+        if (!document.getElementById('sva-ask-t' + i).checked) return;
+        var t = tpl.filter(function (x) { return x.sec === h.sec && (x.time || '') === (h.time || ''); })[0];
+        if (t) { t.timeLabel = h.doc; added++; }
+    });
     A.unk.forEach(function (u, i) {
         var v = document.getElementById('sva-ask-' + i).value, k = [u.sec, u.time || '', u.role].join('|');
         if (v === 'skip') { map[k] = null; return; }
@@ -1167,12 +1162,12 @@ function svaColAskOk() {
     var fin = function () { SVA.ask = null; svaModalClose(); A.done(list); };
     if (!added) { fin(); return; }
     var b = document.getElementById('sva-ask-ok');
-    b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังเพิ่มคอลัมน์…';
+    b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก…';
     google.script.run
-        .withSuccessHandler(function (res) { svaTplSet(res.template); fin(); })
+        .withSuccessHandler(function (res) { svaTplSet(res.template); svTimeSync(res.template); fin(); })
         .withFailureHandler(function (e) {
             b.disabled = false; b.innerHTML = '<i class="fas fa-check"></i> ตกลง';
-            alert('เพิ่มคอลัมน์ไม่สำเร็จ: ' + ((e && e.message) || e));
+            alert('บันทึกคอลัมน์/เวลาไม่สำเร็จ: ' + ((e && e.message) || e));
         })
         .saveStationTemplate(tpl, []);
 }
@@ -1186,7 +1181,10 @@ function svaColsHas(sec, time, role) {
     return !!svaColsStart()[k];
 }
 function svaColsOpen() {
-    SVA.cm = { unit: svaPlanUnitObj(), tpl: JSON.parse(JSON.stringify(svaTpl())), moves: [], del: null, done: {} };
+    var tpl = JSON.parse(JSON.stringify(svaTpl()));
+    var unit = SVA.mode === 'plan' && SVA.pl && SVA.pl.d ? svaPlanUnitObj()
+        : { name: 'ทุกงาน', secs: tpl.filter(function (t) { return !t.auto; }).map(function (t) { return t.sec; }) };
+    SVA.cm = { unit: unit, tpl: tpl, moves: [], del: null, done: {} };
     svaColsPaint();
 }
 function svaColsTargets(sec, skipTime, skipRole) {
@@ -1224,9 +1222,11 @@ function svaColsPaint() {
                 + '<button type="button" class="del" onclick="svaColsDel(' + si + ',' + ri + ')" title="ลบคอลัมน์"><i class="fas fa-trash-can"></i></button></span></div>';
         }).join('');
         return '<div class="sva-cm-s"><div class="sva-cm-h" style="border-color:' + svEsc(t.color || '#64748b') + '">' + svEsc(t.sec)
-            + (t.time ? ' <small>' + svEsc(svTimeText(t.time)) + '</small>'
-                : '<label class="sva-cm-hl">เวลาที่หัวข้อ <input class="form-control form-control-sm" value="' + svEsc(t.timeLabel || '') + '" placeholder="ไม่แสดง"'
-                + ' onchange="SVA.cm.tpl[' + si + '].timeLabel=this.value.trim()"></label>') + '</div>' + rows
+            + (t.time ? ' <small>ผลัด ' + svEsc(t.time.slice(0, 5)) + '</small>' : '')
+            // ฝ่ายที่แบ่งผลัด: แก้เวลาที่แสดงได้ (กุญแจผลัดเดิมคงไว้ ข้อมูลเดิมไม่ต้องย้าย)
+            + '<label class="sva-cm-hl">เวลาที่หัวข้อ <input class="form-control form-control-sm" value="' + svEsc(t.timeLabel || '') + '"'
+            + ' placeholder="' + svEsc(t.time ? (SV_TIME_LABEL[t.time] || t.time) : 'ไม่แสดง') + '"'
+            + ' onchange="SVA.cm.tpl[' + si + '].timeLabel=this.value.trim()"></label></div>' + rows
             + '<div class="sva-cm-add"><input id="sva-cm-new' + si + '" class="form-control form-control-sm" placeholder="ชื่อหน้าที่ใหม่" onkeydown="if(event.key===\'Enter\')svaColsAdd(' + si + ')">'
             + '<button type="button" onclick="svaColsAdd(' + si + ')"><i class="fas fa-plus"></i> เพิ่มคอลัมน์</button></div></div>';
     }).join('');
@@ -1331,12 +1331,25 @@ function svaColsSave() {
     var nDel = cm.moves.filter(function (m) { return !m.toRole; }).length;
     if (nDel && !confirm('ข้อมูลเวรของ ' + nDel + ' คอลัมน์ที่เลือก "ลบข้อมูล" จะถูกลบทุกเดือน (กู้คืนไม่ได้) — ยืนยัน?')) return;
     svaModalClose();
-    svaPlanCall('saveStationTemplate', [cm.tpl, cm.moves], function (res) {
-        svaTplSet(res.template);
-        SVA.cm = null;
-        svaPlanReload('บันทึกคอลัมน์ของ' + u.name + 'แล้ว'
-            + (res.moved ? '\n• ย้ายข้อมูลเดิม ' + res.moved + ' รายการ' : '') + (res.deleted ? '\n• ลบข้อมูล ' + res.deleted + ' รายการ' : ''));
-    }, 'กำลังบันทึกคอลัมน์…');
+    var msg = function (res) {
+        return 'บันทึกคอลัมน์ของ' + u.name + 'แล้ว'
+            + (res.moved ? '\n• ย้ายข้อมูลเดิม ' + res.moved + ' รายการ' : '') + (res.deleted ? '\n• ลบข้อมูล ' + res.deleted + ' รายการ' : '');
+    };
+    if (SVA.mode === 'plan') {
+        svaPlanCall('saveStationTemplate', [cm.tpl, cm.moves], function (res) {
+            svaTplSet(res.template); SVA.cm = null; svaPlanReload(msg(res));
+        }, 'กำลังบันทึกคอลัมน์…');
+        return;
+    }
+    // หน้าแก้ไขเวรรายวัน: โหลดใหม่แล้วสร้างช่องกรอกตามคอลัมน์ใหม่ (ชื่อที่พิมพ์ค้างไว้ในหน้านี้ยังไม่บันทึก)
+    google.script.run
+        .withSuccessHandler(function (res) {
+            SVA.cm = null;
+            svaLoad(true, function () { if (SVA.mode === 'edit') svaEditStart(); });
+            setTimeout(function () { alert(msg(res)); }, 60);
+        })
+        .withFailureHandler(function (e) { alert('บันทึกคอลัมน์ไม่สำเร็จ: ' + ((e && e.message) || e)); })
+        .saveStationTemplate(cm.tpl, cm.moves);
 }
 
 // ---------- สไตล์ของเมนูนี้ (ฉีดครั้งเดียว) ----------
@@ -1359,6 +1372,9 @@ var SVA_CSS = ''
     + '.sva-cm-tm{width:150px!important;flex:0 1 150px}.sva-cm-hl{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font-weight:400;font-size:.8rem;color:#475569}.sva-cm-hl input{width:140px}'
     + '.sva-pl-grid thead tr.sva-pl-tm th{position:static;background:#f8fafc}.sva-pl-tm input{width:100%;min-width:90px;border:1px solid #dbe3ee;border-radius:6px;padding:2px 5px;font-size:.75rem;font-weight:400}'
     + '.sva-imp-t td small{display:block;color:#64748b}'
+    + 'label.sva-ask{display:block;cursor:pointer;font-weight:400}label.sva-ask input{margin-right:6px}label.sva-ask small{color:#64748b;margin-left:4px}'
+    + '.sva-pl-fb button{min-width:34px}'
+    + '@media (max-width:640px){.sva-tx{display:none}.sva-act button,.sv-xbtns button{min-width:38px}}'
     // เว็บแอป: กรอบแท็บตัดขอบ (overflow:hidden) ทำให้หัวตารางรายเดือนตรึงกับหน้าไม่ได้ — เปิดเฉพาะตอนอยู่เมนูนี้
     + 'body.sva-on #pills-tabContent,#pills-tabContent:has(>#content-station.active){overflow:visible!important}'
     + '.sva{display:flex;flex-direction:column;gap:12px;font-family:Sarabun,system-ui,sans-serif}'
