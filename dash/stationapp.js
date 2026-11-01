@@ -491,10 +491,28 @@ function svaBusy(on) {
 // ---------- ชื่อประจำ (เช่น หัวหน้าสถานี) + ประวัติการดำรงตำแหน่ง ----------
 // แต่ละคน: ตั้งแต่วันที่ + ตำแหน่งที่แสดงในใบเวร (เช่น รรท.ผกก. → ผกก.คนใหม่ตั้งแต่ 1 ธ.ค.) · แต่ละวันใช้คนที่ดำรงตำแหน่งวันนั้น
 function svaFixHist() { return (SVA.pl && SVA.pl.d && SVA.pl.d.fixedHist) || (SVA.data && SVA.data.fixedHist) || {}; }
+/** คนในหน้าที่วันนั้น: รักษาราชการแทนที่ครอบวันนั้นก่อน ไม่มี = คนที่ดำรงตำแหน่ง */
 function svaFixAt(k, dayKey) {
-    var hit = null;
-    (svaFixHist()[k] || []).forEach(function (x) { if ((+x.from || 0) <= dayKey) hit = x; });
-    return hit;
+    var hit = null, act = null;
+    (svaFixHist()[k] || []).forEach(function (x) {
+        if (x.acting) { if (x.from <= dayKey && dayKey <= x.to) act = x; }
+        else if ((+x.from || 0) <= dayKey) hit = x;
+    });
+    return act || hit;
+}
+function svaFixDay(n) { n = +n || 0; return (n % 100) + ' ' + SVA_MON_S[Math.floor(n / 100) % 100 - 1] + ' ' + (Math.floor(n / 10000) + 543); }
+function svaFixKey(id) { var v = (document.getElementById(id).value || '').split('-'); return v.length === 3 ? +v[0] * 10000 + +v[1] * 100 + +v[2] : 0; }
+/**
+ * ตำแหน่งตอนรักษาราชการแทน = ตำแหน่งจริง (ตัด "สน.ลำหิน" ท้ายเป็น ฯ) + " รรท." + ตำแหน่งของคนที่ดำรงตำแหน่งวันนั้น
+ * เช่น รอง ผกก.สส.สน.ลำหิน → "รอง ผกก.สส.ฯ รรท.ผกก.สน.ลำหิน"
+ */
+function svaActingPos(name, dayKey) {
+    var st = svaFindStaff(name), own = svPos(st ? st.pos : '').replace(/\s*สน\.ลำหิน\s*$/, 'ฯ');
+    var chief = null;
+    SVA.fx.list.forEach(function (x) { if (!x.acting && (+x.from || 0) <= (dayKey || 99999999)) chief = x; });
+    var cs = chief && svaFindStaff(chief.name);
+    var cpos = ((chief && chief.pos) || (cs && cs.pos) || 'ผกก.สน.ลำหิน').replace(/^\s*รรท\.\s*/, '');
+    return (own ? own + ' ' : '') + 'รรท.' + cpos;
 }
 function svaFixDate(n) {
     n = +n || 0;
@@ -508,8 +526,17 @@ function svaFixOpen(k) {
 function svaFixPaint() {
     var F = SVA.fx, today = svKey(svaToday()), cur = null;
     F.list.sort(function (a, b) { return (+a.from || 0) - (+b.from || 0); });
-    F.list.forEach(function (x) { if ((+x.from || 0) <= today) cur = x; });
+    F.list.forEach(function (x) { if (!x.acting && (+x.from || 0) <= today) cur = x; });
+    var acts = F.list.map(function (x, i) {
+        if (!x.acting) return '';
+        var now = x.from <= today && today <= x.to;
+        return '<div class="sva-cm-r"><span class="sva-cm-n">' + svEsc(x.name) + '<small>' + svaFixDay(x.from) + (x.to !== x.from ? ' – ' + svaFixDay(x.to) : '')
+            + (x.why ? ' · ' + svEsc(x.why) : '') + (now ? ' · วันนี้' : (x.to < today ? ' · ผ่านแล้ว' : '')) + '</small></span>'
+            + '<input class="sva-cm-tm sva-fx-ap form-control form-control-sm" value="' + svEsc(x.pos || '') + '" title="ตำแหน่งที่แสดงในใบเวรช่วงนี้" onchange="SVA.fx.list[' + i + '].pos=this.value.trim()">'
+            + '<span class="sva-cm-b"><button type="button" class="del" onclick="SVA.fx.list.splice(' + i + ',1);svaFixPaint()" title="ลบ" aria-label="ลบ"><i class="fas fa-trash-can"></i></button></span></div>';
+    }).join('');
     var rows = F.list.map(function (x, i) {
+        if (x.acting) return '';
         var st = svaFindStaff(x.name);
         return '<div class="sva-cm-r"><span class="sva-cm-n">' + svEsc(x.name) + '<small>' + svaFixDate(x.from) + (x === cur ? ' · ปัจจุบัน' : '') + '</small></span>'
             + '<input class="sva-cm-tm form-control form-control-sm" value="' + svEsc(x.pos || '') + '" placeholder="' + svEsc(svPos(st ? st.pos : 'ตำแหน่ง')) + '"'
@@ -526,16 +553,47 @@ function svaFixPaint() {
         + '<input id="sva-fx-d" type="date" class="form-control form-control-sm" value="' + dv + '" title="เริ่มดำรงตำแหน่ง">'
         + '<input id="sva-fx-p" class="form-control form-control-sm" placeholder="ตำแหน่ง เช่น ผกก.สน.ลำหิน">'
         + '<button type="button" class="sva-save" onclick="svaFixAdd()"><i class="fas fa-plus"></i> เพิ่ม</button></div></div>'
-        + '<label class="sva-ask"><input type="checkbox" id="sva-fx-st" checked> แก้ตำแหน่งในทะเบียนกำลังพลของคนล่าสุดด้วย</label>',
+        + '<label class="sva-ask"><input type="checkbox" id="sva-fx-st" checked> แก้ตำแหน่งในทะเบียนกำลังพลของคนล่าสุดด้วย</label>'
+        // รักษาราชการแทนชั่วคราว (ลา / ไปราชการ) — ช่วงวันที่ ไม่แก้ทะเบียน
+        + '<div class="sva-cm-s"><div class="sva-cm-h">รักษาราชการแทน (รรท.) ชั่วคราว <small>ช่วงที่ลา/ไปราชการ ใบเวรขึ้นชื่อคนนี้เอง พ้นช่วงกลับเป็นคนเดิม</small></div>'
+        + (acts || '<div class="sva-none">ยังไม่มี</div>')
+        + '<div class="sva-ask-r">'
+        + '<input id="sva-fa-n" class="form-control form-control-sm" list="sva-staff" placeholder="ผู้รักษาราชการแทน" onchange="svaFixActPos()">'
+        + '<input id="sva-fa-f" type="date" class="form-control form-control-sm" value="' + dv + '" title="ตั้งแต่วันที่" onchange="if(!document.getElementById(\'sva-fa-t\').value||document.getElementById(\'sva-fa-t\').value<this.value)document.getElementById(\'sva-fa-t\').value=this.value;svaFixActPos()">'
+        + '<input id="sva-fa-t" type="date" class="form-control form-control-sm" value="' + dv + '" title="ถึงวันที่">'
+        + '<input id="sva-fa-w" class="form-control form-control-sm" list="sva-fa-why" placeholder="เหตุ เช่น ลาพักผ่อน"><datalist id="sva-fa-why"><option>ลาป่วย</option><option>ลากิจ</option><option>ลาพักผ่อน</option><option>ไปราชการ</option><option>อบรม/สัมมนา</option></datalist>'
+        + '<input id="sva-fa-p" class="form-control form-control-sm" placeholder="ตำแหน่ง เช่น รอง ผกก.สส.ฯ รรท.ผกก.สน.ลำหิน" title="สร้างให้อัตโนมัติ แก้คำได้">'
+        + '<button type="button" class="sva-save" onclick="svaFixActAdd()"><i class="fas fa-plus"></i> เพิ่ม</button></div></div>',
         '<button type="button" onclick="svaModalClose()">ยกเลิก</button>'
         + '<button type="button" class="sva-save" id="sva-fx-ok" onclick="svaFixSave()"><i class="fas fa-floppy-disk"></i> บันทึก</button>');
+}
+/** ชื่อ/วันที่เปลี่ยน → สร้างตำแหน่ง รรท. ให้ (ถ้ายังไม่ได้พิมพ์เอง) */
+function svaFixActPos() {
+    var n = document.getElementById('sva-fa-n'), p = document.getElementById('sva-fa-p');
+    var st = svaFindStaff(n.value); if (st) n.value = st.name;
+    if (!n.value.trim() || (p.value && p.dataset.auto !== p.value)) return;
+    p.value = p.dataset.auto = svaActingPos(n.value, svaFixKey('sva-fa-f'));
+}
+function svaFixActAdd() {
+    var F = SVA.fx, n = document.getElementById('sva-fa-n').value.trim();
+    if (!n) { document.getElementById('sva-fa-n').focus(); return; }
+    var st = svaFindStaff(n), from = svaFixKey('sva-fa-f'), to = svaFixKey('sva-fa-t') || from;
+    if (!from) { alert('กรุณาเลือกวันที่เริ่ม'); return; }
+    if (to < from) { alert('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม'); return; }
+    var clash = F.list.filter(function (x) { return x.acting && x.from <= to && from <= x.to; })[0];
+    if (clash && !confirm('ช่วงนี้ทับกับ ' + clash.name + ' (' + svaFixDay(clash.from) + ' – ' + svaFixDay(clash.to) + ') — แทนที่?')) return;
+    if (clash) F.list = F.list.filter(function (x) { return !(x.acting && x.from <= to && from <= x.to); });
+    var name = st ? st.name : n;
+    F.list.push({ name: name, from: from, to: to, acting: true, why: document.getElementById('sva-fa-w').value.trim(),
+                  pos: document.getElementById('sva-fa-p').value.trim() || svaActingPos(name, from) });
+    svaFixPaint();
 }
 function svaFixAdd() {
     var F = SVA.fx, n = document.getElementById('sva-fx-n').value.trim();
     if (!n) { document.getElementById('sva-fx-n').focus(); return; }
     var st = svaFindStaff(n), dv = (document.getElementById('sva-fx-d').value || '').split('-');
     var from = dv.length === 3 ? +dv[0] * 10000 + +dv[1] * 100 + +dv[2] : 0;
-    F.list = F.list.filter(function (x) { return (+x.from || 0) !== from; });   // วันเดียวกันได้คนเดียว
+    F.list = F.list.filter(function (x) { return x.acting || (+x.from || 0) !== from; });   // วันเดียวกันได้คนเดียว
     F.list.push({ name: st ? st.name : n, from: from, pos: document.getElementById('sva-fx-p').value.trim() });
     svaFixPaint();
 }
@@ -1594,7 +1652,8 @@ var SVA_CSS = ''
     + '.sva-xl-del{border:0;background:transparent;color:#94a3b8;cursor:pointer;padding:0 4px}.sva-xl-del:hover{color:#b91c1c}'
     + '.sva-xl-fix{display:block;color:#64748b;font-size:.7rem}.sva-xl-fix.r{color:#c2410c}.sva-xl .sv-note-in,.sva-xl .sv-note-row{display:none}'
     + '.sva-xl-pick td{background:#f8fafc}'
-    + '.sva-fx{color:#0f766e;font-weight:700}.sva-fx i{font-size:.7em}'
+    + '.sva-fx{color:#0f766e;font-weight:700}.sva-fx i{font-size:.7em}.sva-fx-ap{width:260px!important;flex-basis:260px}'
+    + '#sva-fa-p{flex-basis:100%}'
     + '.sva-fxbtn{border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;border-radius:6px;font-size:.66rem;padding:0 5px;cursor:pointer;vertical-align:middle}'
     + 'label.sva-ask{display:block;cursor:pointer;font-weight:400}label.sva-ask input{margin-right:6px}label.sva-ask small{color:#64748b;margin-left:4px}'
     + '.sva-pl-fb button{min-width:34px}'
