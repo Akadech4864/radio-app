@@ -151,7 +151,8 @@ function svaPaint() {
     var pv = document.querySelector('#sva-view .sv-vscroll'), keepLeft = pv ? pv.scrollLeft : 0;
     var nMis = (SVA.data.rows || []).filter(function (r) { return (r[10] || r[11]) && String(r[0]).slice(3) === monthVal.slice(5, 7) + '/' + monthVal.slice(0, 4); }).length;
     root.innerHTML = '<div class="sva">'
-        + '<div class="sva-head"><i class="fas fa-building-shield"></i><span>ตารางเวรทุกสายงาน สน.ลำหิน</span></div>'
+        // หน้า GitHub มีหัวของหน้าอยู่แล้ว — ไม่ต้องซ้ำ
+        + (window.SVA_REMOTE ? '' : '<div class="sva-head"><i class="fas fa-building-shield"></i><span>ตารางเวรทุกสายงาน สน.ลำหิน</span></div>')
         + '<div class="sva-bar">'
         + '  <div class="sva-seg">'
         + '    <button type="button" class="' + (SVA.view === 'day' ? 'on' : '') + '" onclick="svaSetView(\'day\')"><i class="fas fa-calendar-day"></i> วัน</button>'
@@ -323,7 +324,7 @@ function svaSheetHtml() {
         }
         var roleBg = 'background:' + svTint(s.color, 0.12);
         s.roles.forEach(function (r, ri) {
-            var fk = s.sec + '|' + (s.time || '') + '|' + r.role, fixedName = (SVA.data.fixed || {})[fk];
+            var fk = s.sec + '|' + (s.time || '') + '|' + r.role, fx = svaFixAt(fk, svKey(SVA.date)), fixedName = fx && fx.name;
             var canFix = !s.auto && (fixedName || r.role === 'หัวหน้าสถานี');
             var open = SVA.pick && SVA.pick.si === si && SVA.pick.ri === ri;
             var def = svRoleTime(s, r.role);
@@ -336,7 +337,7 @@ function svaSheetHtml() {
                         + (s.auto ? svEsc(r.role) : '<span class="sva-xl-k" onclick="svaXlRole(' + si + ',' + ri + ')" title="เปลี่ยนชื่อหน้าที่ (ทุกวัน)">' + svEsc(r.role) + '</span>'
                             + '<span class="sva-xl-rb"><button type="button" onclick="svaEditAdd(' + si + ',' + ri + ')" title="เพิ่มคน (เฉพาะวันนี้)" aria-label="เพิ่มคน"><i class="fas fa-plus"></i></button>'
                             + '<button type="button" class="' + (open ? 'on' : '') + '" onclick="svaPickOpen(' + si + ',' + ri + ')" title="เลือกจากรายชื่อ" aria-label="เลือกจากรายชื่อ"><i class="fas fa-list-check"></i></button>'
-                            + (canFix ? '<button type="button" onclick="svaSetFixed(' + si + ',' + ri + ')" title="ตั้งเป็นชื่อประจำ (แสดงทุกวัน)" aria-label="ชื่อประจำ"><i class="fas fa-thumbtack"></i></button>' : '')
+                            + (canFix ? '<button type="button" data-k="' + svEsc(fk) + '" onclick="svaFixOpen(this.dataset.k)" title="ชื่อประจำ (แสดงทุกวัน) · เปลี่ยนคนใหม่ตั้งแต่วันที่ / ตำแหน่ง" aria-label="ชื่อประจำ"><i class="fas fa-thumbtack"></i></button>' : '')
                             + '</span>')
                         + '</td>';
                 }
@@ -438,12 +439,7 @@ function svaXlRole(si, ri) {
 }
 /** บันทึกคอลัมน์จากหน้าแก้ไขเวรรายวัน แล้วโหลดใหม่โดยคงชื่อที่แก้ค้างไว้ (หน้าที่ที่เปลี่ยนชื่อตามไปด้วย) */
 function svaTplSave(tpl, moves, msg) {
-    svaEditSync();
-    var keep = {};
-    (SVA.ed || []).forEach(function (s) {
-        if (s.auto) return;
-        s.roles.forEach(function (r) { keep[svSlotKey(s.sec, s.time) + '|' + r.role] = { names: r.names.slice(), notes: r.notes.slice() }; });
-    });
+    var keep = svaEditKeep();
     (moves || []).forEach(function (m) {
         var a = svSlotKey(m.sec, m.time) + '|' + m.role, b = svSlotKey(m.toSec || m.sec, m.toTime == null ? m.time : m.toTime) + '|' + m.toRole;
         if (!keep[a] || !m.toRole) { delete keep[a]; return; }
@@ -459,19 +455,32 @@ function svaTplSave(tpl, moves, msg) {
                 svaBusy(false);
                 if (SVA.mode !== 'edit') return;
                 svaEditStart();
-                SVA.ed.forEach(function (s) {
-                    s.roles.forEach(function (r) {
-                        var x = keep[svSlotKey(s.sec, s.time) + '|' + r.role]; if (!x) return;
-                        var names = [], notes = [];
-                        x.names.forEach(function (n, i) { if (n || !names.length) { names.push(n); notes.push(x.notes[i] || ''); } });
-                        r.names = names.filter(function (n, i) { return n || i === 0; }); r.notes = notes.slice(0, r.names.length);
-                    });
-                });
+                svaEditRestore(keep);
             });
             if (msg) setTimeout(function () { alert(msg + (res.moved ? ' (ย้ายข้อมูลเดิม ' + res.moved + ' รายการ)' : '')); }, 60);
         })
         .withFailureHandler(function (e) { svaBusy(false); alert('บันทึกไม่สำเร็จ: ' + ((e && e.message) || e)); })
         .saveStationTemplate(tpl, moves || []);
+}
+/** ชื่อ/เวลาที่แก้ค้างบนใบเวร (ยังไม่บันทึก) { 'ฝ่าย|ช่วงเวลา|หน้าที่': {names, notes} } */
+function svaEditKeep() {
+    svaEditSync();
+    var keep = {};
+    (SVA.ed || []).forEach(function (s) {
+        if (s.auto) return;
+        s.roles.forEach(function (r) { keep[svSlotKey(s.sec, s.time) + '|' + r.role] = { names: r.names.slice(), notes: r.notes.slice() }; });
+    });
+    return keep;
+}
+function svaEditRestore(keep) {
+    SVA.ed.forEach(function (s) {
+        s.roles.forEach(function (r) {
+            var x = keep[svSlotKey(s.sec, s.time) + '|' + r.role]; if (!x) return;
+            var names = [], notes = [];
+            x.names.forEach(function (n, i) { if (n || !names.length) { names.push(n); notes.push(x.notes[i] || ''); } });
+            r.names = names; r.notes = notes;
+        });
+    });
 }
 function svaBusy(on) {
     var b = document.getElementById('sva-save');
@@ -479,20 +488,74 @@ function svaBusy(on) {
 }
 
 // ตั้งชื่อในช่องเป็น "ชื่อประจำ" ของหน้าที่นั้น (เช่น เปลี่ยน ผกก. → หัวหน้าสถานีคนใหม่) — มีผลทุกวันที่ไม่ได้กรอกชื่ออื่น
-function svaSetFixed(si, ri) {
-    svaEditSync();
-    var s = SVA.ed[si], r = s.roles[ri];
-    var name = (r.names.filter(function (n) { return String(n || '').trim(); })[0] || '').trim();
-    var st = name ? svaFindStaff(name) : null;
-    if (!name) { alert('พิมพ์หรือเลือกชื่อในช่อง "' + r.role + '" ก่อน แล้วค่อยกดตั้งเป็นชื่อประจำ'); return; }
-    if (!confirm('ตั้ง "' + (st ? st.name : name) + '" เป็นชื่อประจำของ "' + r.role + '"\nแสดงทุกวันอัตโนมัติ (วันที่กรอกชื่ออื่นไว้จะยังเป็นชื่อนั้น)')) return;
+// ---------- ชื่อประจำ (เช่น หัวหน้าสถานี) + ประวัติการดำรงตำแหน่ง ----------
+// แต่ละคน: ตั้งแต่วันที่ + ตำแหน่งที่แสดงในใบเวร (เช่น รรท.ผกก. → ผกก.คนใหม่ตั้งแต่ 1 ธ.ค.) · แต่ละวันใช้คนที่ดำรงตำแหน่งวันนั้น
+function svaFixHist() { return (SVA.pl && SVA.pl.d && SVA.pl.d.fixedHist) || (SVA.data && SVA.data.fixedHist) || {}; }
+function svaFixAt(k, dayKey) {
+    var hit = null;
+    (svaFixHist()[k] || []).forEach(function (x) { if ((+x.from || 0) <= dayKey) hit = x; });
+    return hit;
+}
+function svaFixDate(n) {
+    n = +n || 0;
+    return n ? 'ตั้งแต่ ' + (n % 100) + ' ' + SVA_MON_S[Math.floor(n / 100) % 100 - 1] + ' ' + (Math.floor(n / 10000) + 543) : 'ตั้งแต่ต้น';
+}
+function svaFixOpen(k) {
+    var p = k.split('|');
+    SVA.fx = { k: k, sec: p[0], time: p[1], role: p.slice(2).join('|'), list: JSON.parse(JSON.stringify(svaFixHist()[k] || [])) };
+    svaFixPaint();
+}
+function svaFixPaint() {
+    var F = SVA.fx, today = svKey(svaToday()), cur = null;
+    F.list.sort(function (a, b) { return (+a.from || 0) - (+b.from || 0); });
+    F.list.forEach(function (x) { if ((+x.from || 0) <= today) cur = x; });
+    var rows = F.list.map(function (x, i) {
+        var st = svaFindStaff(x.name);
+        return '<div class="sva-cm-r"><span class="sva-cm-n">' + svEsc(x.name) + '<small>' + svaFixDate(x.from) + (x === cur ? ' · ปัจจุบัน' : '') + '</small></span>'
+            + '<input class="sva-cm-tm form-control form-control-sm" value="' + svEsc(x.pos || '') + '" placeholder="' + svEsc(svPos(st ? st.pos : 'ตำแหน่ง')) + '"'
+            + ' title="ตำแหน่งที่แสดงในใบเวร (เว้นว่าง = ตามทะเบียน)" onchange="SVA.fx.list[' + i + '].pos=this.value.trim()">'
+            + '<span class="sva-cm-b"><button type="button" class="del" onclick="SVA.fx.list.splice(' + i + ',1);svaFixPaint()" title="ลบ" aria-label="ลบ"><i class="fas fa-trash-can"></i></button></span></div>';
+    }).join('');
+    var d = svaToday(), dv = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    svaModal('<i class="fas fa-thumbtack"></i> ชื่อประจำ: ' + svEsc(F.role),
+        '<div class="sva-hint"><i class="fas fa-circle-info"></i> แสดงในใบเวรทุกวันอัตโนมัติ (วันที่กรอกชื่ออื่นไว้ใช้ชื่อนั้น) · '
+        + 'มีคนใหม่มาดำรงตำแหน่ง = เพิ่มชื่อพร้อมวันที่เริ่ม วันก่อนหน้ายังเป็นคนเดิม · แก้ตำแหน่งได้ เช่น รรท.ผกก. → ผกก.</div>'
+        + '<div class="sva-cm-s">' + (rows || '<div class="sva-none">ยังไม่มีชื่อประจำ</div>') + '</div>'
+        + '<div class="sva-cm-s"><div class="sva-cm-h">เพิ่มคนดำรงตำแหน่ง</div><div class="sva-ask-r">'
+        + '<input id="sva-fx-n" class="form-control form-control-sm" list="sva-staff" placeholder="ยศ ชื่อ สกุล" onchange="var s=svaFindStaff(this.value);if(s){this.value=s.name;document.getElementById(\'sva-fx-p\').placeholder=svPos(s.pos);}">'
+        + '<input id="sva-fx-d" type="date" class="form-control form-control-sm" value="' + dv + '" title="เริ่มดำรงตำแหน่ง">'
+        + '<input id="sva-fx-p" class="form-control form-control-sm" placeholder="ตำแหน่ง เช่น ผกก.สน.ลำหิน">'
+        + '<button type="button" class="sva-save" onclick="svaFixAdd()"><i class="fas fa-plus"></i> เพิ่ม</button></div></div>'
+        + '<label class="sva-ask"><input type="checkbox" id="sva-fx-st" checked> แก้ตำแหน่งในทะเบียนกำลังพลของคนล่าสุดด้วย</label>',
+        '<button type="button" onclick="svaModalClose()">ยกเลิก</button>'
+        + '<button type="button" class="sva-save" id="sva-fx-ok" onclick="svaFixSave()"><i class="fas fa-floppy-disk"></i> บันทึก</button>');
+}
+function svaFixAdd() {
+    var F = SVA.fx, n = document.getElementById('sva-fx-n').value.trim();
+    if (!n) { document.getElementById('sva-fx-n').focus(); return; }
+    var st = svaFindStaff(n), dv = (document.getElementById('sva-fx-d').value || '').split('-');
+    var from = dv.length === 3 ? +dv[0] * 10000 + +dv[1] * 100 + +dv[2] : 0;
+    F.list = F.list.filter(function (x) { return (+x.from || 0) !== from; });   // วันเดียวกันได้คนเดียว
+    F.list.push({ name: st ? st.name : n, from: from, pos: document.getElementById('sva-fx-p').value.trim() });
+    svaFixPaint();
+}
+function svaFixSave() {
+    var F = SVA.fx, up = document.getElementById('sva-fx-st').checked, b = document.getElementById('sva-fx-ok');
+    b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก…';
+    var keep = SVA.mode === 'edit' ? svaEditKeep() : null;
+    if (keep) delete keep[F.k];   // ช่องนี้ใช้ชื่อประจำใหม่
     google.script.run
-        .withSuccessHandler(function (map) {
-            SVA.data.fixed = map;
-            svaLoad(true);   // โหลดใหม่ให้ทุกวันแสดงชื่อประจำใหม่ (หน้าจอกรอกยังคงค่าที่กรอกค้างไว้)
+        .withSuccessHandler(function (res) {
+            svaModalClose();
+            if (SVA.data) { SVA.data.fixed = res.fixed; SVA.data.fixedHist = res.fixedHist; }
+            if (SVA.mode === 'plan') { svaPlanReload(); return; }
+            svaLoad(true, function () { if (keep && SVA.mode === 'edit') { svaEditStart(); svaEditRestore(keep); } });
         })
-        .withFailureHandler(function (e) { alert('ตั้งชื่อประจำไม่สำเร็จ: ' + ((e && e.message) || e)); })
-        .setStationFixed(s.sec, s.time, r.role, st ? st.name : name);
+        .withFailureHandler(function (e) {
+            b.disabled = false; b.innerHTML = '<i class="fas fa-floppy-disk"></i> บันทึก';
+            alert('บันทึกชื่อประจำไม่สำเร็จ: ' + ((e && e.message) || e));
+        })
+        .saveStationFixedHist(F.sec, F.time, F.role, F.list, up);
 }
 
 // ---------- เลือกชื่อจากทะเบียน: เปิดที่ "งานของหัวข้อนั้น" ก่อน เลือกข้ามงานได้อิสระ ----------
@@ -843,7 +906,8 @@ function svaPlanCols(u, plan, untilKey) {
         if (u.secs.indexOf(t.sec) < 0) return;
         t.roles.forEach(function (r) {
             var k = svSlotKey(t.sec, t.time) + '|' + r;
-            if (untilKey && start && !has[k] && !(start[k] && start[k] <= untilKey)) return;
+            // ยังไม่เริ่มมี = ไม่แสดง (ยกเว้นหน้าที่ที่มีชื่อประจำ เช่น หัวหน้าสถานี)
+            if (untilKey && start && !has[k] && !(start[k] && start[k] <= untilKey) && !svaFixHist()[k]) return;
             add(t.sec, t.time, r);
         });
     });
@@ -1065,7 +1129,9 @@ function svaPlanViewHtml(u, plan, umis) {
         body += '<tr class="' + (dow === 0 || dow === 6 ? 'we' : '') + (svKey(dt) === todayK ? ' td' : '') + '"><th>' + dd + ' <small>' + SV_DOW_S[dow] + '</small></th>'
             + cols.map(function (c) {
                 var k = ds + '|' + svSlotKey(c.sec, c.time) + '|' + c.role, n = cell[k];
-                return '<td' + (bad[k] ? ' class="sv-mis" title="ตารางรายวัน: ' + svEsc(bad[k]) + '"' : '') + '>' + (n ? n.map(nameHtml).join('<br>') : '<span class="sv-dash">—</span>') + '</td>';
+                var fx = !n && svaFixAt(svSlotKey(c.sec, c.time) + '|' + c.role, svKey(dt));
+                return '<td' + (bad[k] ? ' class="sv-mis" title="ตารางรายวัน: ' + svEsc(bad[k]) + '"' : '') + '>'
+                    + (n ? n.map(nameHtml).join('<br>') : fx ? '<span class="sva-fx" title="ชื่อประจำ ' + svEsc(fx.name) + '"><i class="fas fa-thumbtack"></i> ' + svEsc(svShort(fx.name)) + '</span>' : '<span class="sv-dash">—</span>') + '</td>';
             }).join('') + '</tr>';
     }
     var unk = names.filter(function (x) { return !svaFindStaff(x); }).length;
@@ -1083,7 +1149,10 @@ function svaPlanRename(i) {
     }, 'กำลังแก้ชื่อทุกช่อง…');
 }
 function svaPlanColHead(c) {
-    return '<th>' + svEsc(c.role) + (c.time ? '<small>' + svEsc(svTimeText(c.time).replace(' (ของวันรุ่งขึ้น)', '')) + '</small>' : '') + '</th>';
+    var k = svSlotKey(c.sec, c.time) + '|' + c.role, pin = svaFixHist()[k] || c.role === 'หัวหน้าสถานี';
+    return '<th>' + svEsc(c.role)
+        + (pin ? ' <button type="button" class="sva-fxbtn" data-k="' + svEsc(k) + '" onclick="svaFixOpen(this.dataset.k)" title="ชื่อประจำ / เปลี่ยนคนใหม่ตั้งแต่วันที่ / ตำแหน่ง" aria-label="ชื่อประจำ"><i class="fas fa-thumbtack"></i></button>' : '')
+        + (c.time ? '<small>' + svEsc(svTimeText(c.time).replace(' (ของวันรุ่งขึ้น)', '')) + '</small>' : '') + '</th>';
 }
 
 // ---- แก้ตารางของงานทั้งเดือน (ช่อง = ชื่อ คั่นหลายคนด้วย ,) ----
@@ -1110,7 +1179,9 @@ function svaPlanEdHtml(u) {
                 var dl = dls[ci] || (dls[ci] = svaDl(c.sec, c.time, c.role));
                 var k = ds + '|' + svSlotKey(c.sec, c.time) + '|' + c.role, v = (ed.val[k] || []).join(', ');
                 var unk = v && v.split(',').some(function (n) { return n.trim() && !svaFindStaff(n.trim()); });
-                return '<td><input class="' + (unk ? 'unk' : '') + '" list="' + dl + '" data-k="' + svEsc(k) + '" value="' + svEsc(v) + '" onchange="svaPlanEdSet(this)"></td>';
+                var fx = svaFixAt(svSlotKey(c.sec, c.time) + '|' + c.role, svKey(dt));   // ว่าง = ชื่อประจำ
+                return '<td><input class="' + (unk ? 'unk' : '') + '" list="' + dl + '" data-k="' + svEsc(k) + '" value="' + svEsc(v) + '"'
+                    + (fx ? ' placeholder="📌 ' + svEsc(svShort(fx.name)) + '"' : '') + ' onchange="svaPlanEdSet(this)"></td>';
             }).join('') + '</tr>';
     }
     var cnt = {};
@@ -1523,6 +1594,8 @@ var SVA_CSS = ''
     + '.sva-xl-del{border:0;background:transparent;color:#94a3b8;cursor:pointer;padding:0 4px}.sva-xl-del:hover{color:#b91c1c}'
     + '.sva-xl-fix{display:block;color:#64748b;font-size:.7rem}.sva-xl-fix.r{color:#c2410c}.sva-xl .sv-note-in,.sva-xl .sv-note-row{display:none}'
     + '.sva-xl-pick td{background:#f8fafc}'
+    + '.sva-fx{color:#0f766e;font-weight:700}.sva-fx i{font-size:.7em}'
+    + '.sva-fxbtn{border:1px solid #99f6e4;background:#f0fdfa;color:#0f766e;border-radius:6px;font-size:.66rem;padding:0 5px;cursor:pointer;vertical-align:middle}'
     + 'label.sva-ask{display:block;cursor:pointer;font-weight:400}label.sva-ask input{margin-right:6px}label.sva-ask small{color:#64748b;margin-left:4px}'
     + '.sva-pl-fb button{min-width:34px}'
     + '@media (max-width:640px){.sva-tx{display:none}.sva-act button,.sv-xbtns button{min-width:38px}}'
