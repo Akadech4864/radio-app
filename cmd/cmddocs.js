@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '8';
+    const VER = '9';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';

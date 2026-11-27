@@ -53,6 +53,8 @@
             organizer: 'นายภูเบศ โพธิ์โซ๊ะ อายุ 65 ปี (ตัวแทนชุมชนลำเจดีย์) เลขประจำตัวประชาชน 3-1003-xxxxx-xx-4 · ที่อยู่ 63/2636 ซอยราษฎร์พัฒนา 5 แขวงราษฎร์พัฒนา เขตสะพานสูง กรุงเทพฯ · โทร. 086-983-6599',
             coordinators: '1) นายสมาน มาลี โทร. 084-002-0480 · 2) นายสิทธิศักดิ์ โห้วตู โทร. 086-071-5943',
             ref: 'หนังสือแจ้ง 26 พ.ย. 69 เวลา 14.00 น. · ปจว.ข้อ 3 ลง 26 พ.ย. 69 เวลา 14.44 น. · เลขรับ EV60026256900637SJ',
+            // ข้อเท็จจริงเพิ่มเติมที่ได้รับแจ้งก่อนวันชุมนุม (แสดงในรายละเอียดการชุมนุม · แผงข้อมูลบนแผนที่เต็มจอ · สรุปส่ง LINE)
+            intel: '27 พ.ย. 69 ช่วงเย็น เจ้าของที่ดินแนวเสาไฟฟ้าใหม่แจ้งความไว้เป็นข้อมูลที่ สน.ลำหิน — เป็นผู้แจ้ง กฟน. ให้เปลี่ยนแนวเสาใหม่ · เพิ่งซื้อที่ดินจากการขายทอดตลาด ถือครองตามคำสั่งศาล · อ้างว่าสำนักงานเขตหนองจอกปักเสาไฟฟ้าเกินเข้าไปในเขตที่ดินตั้งแต่ต้น · นัดนำชี้แนวเขตกับสำนักงานเขตหนองจอก 21 ธ.ค. 69 · เกรงผู้ชุมนุมกีดขวาง/ทำร้ายเจ้าหน้าที่ กฟน.',
             court: 'ศาลแพ่งมีนบุรี (ม.21–22) · ศาลอาญามีนบุรี (คดีอาญา/หมายจับ)',
             level: 'green',
             levelLog: [],
@@ -73,6 +75,12 @@
                     id: 'al-m31-2', tone: 'red', icon: 'fa-bolt', law: 'ม.31 ว.2 (บทหนัก)',
                     title: 'ห้ามทำให้ไฟฟ้า/สาธารณูปโภคใช้การไม่ได้',
                     detail: 'ฝ่าฝืน ม.15 (4)–(7) / ม.16 (3)–(8) จนใช้การไม่ได้ · จำคุกไม่เกิน 10 ปี หรือปรับไม่เกิน 200,000 บาท',
+                    kind: 'static', due: '', from: '', to: '', done: false, doneAt: ''
+                },
+                {
+                    id: 'al-mea-guard', tone: 'red', icon: 'fa-user-shield', law: 'ม.16 (5)(6) · ป.อ. ม.309',
+                    title: 'คุ้มครองเจ้าหน้าที่ กฟน. — ห้ามกีดขวาง/ทำร้าย',
+                    detail: 'เจ้าของที่ดินแจ้งความไว้ 27 พ.ย. 69 เกรงผู้ชุมนุมกีดขวางและทำร้ายเจ้าหน้าที่ กฟน. · ข้อพิพาทแนวเขตยังไม่ยุติ (นำชี้แนวเขตกับสำนักงานเขตหนองจอก 21 ธ.ค. 69) — วางตัวเป็นกลาง ไม่ชี้ขาดสิทธิที่ดิน · บันทึกภาพตั้งแต่ก่อนทีมช่างเข้าพื้นที่',
                     kind: 'static', due: '', from: '', to: '', done: false, doneAt: ''
                 }
             ],
@@ -134,6 +142,16 @@
                 const o = OLD_AL[a.id], n = seed.alerts.find((x) => x.id === a.id);
                 if (o && n) ['law', 'title', 'detail'].forEach((f, i) => { if (a[f] === o[i]) a[f] = n[f]; });
             });
+            // ข้อกฎหมายที่เพิ่มในข้อมูลตั้งต้นรุ่นหลัง → เติมให้เครื่องที่บันทึกไว้แล้วครั้งเดียว (ผู้ใช้ลบเองแล้วไม่เติมซ้ำ)
+            const ADDED_AL = ['al-mea-guard'];
+            e.alerts = Array.isArray(e.alerts) ? e.alerts : [];
+            e.seedAdded = Array.isArray(e.seedAdded) ? e.seedAdded : [];
+            ADDED_AL.forEach((id) => {
+                if (e.seedAdded.indexOf(id) !== -1) return;
+                const n = seed.alerts.find((x) => x.id === id);
+                if (n && !e.alerts.some((a) => a.id === id)) e.alerts.push(Object.assign({}, n));
+                e.seedAdded.push(id);
+            });
             const OLD_ROLE = { 'ct-co1': 'ผู้ประสานงาน ลำดับ 1', 'ct-co2': 'ผู้ประสานงาน ลำดับ 2', 'ct-court': 'ยื่นคำร้องขอคำสั่งเลิกการชุมนุม' };
             Object.keys(seed).forEach((k) => { if (typeof seed[k] === 'string' && !String(e[k] || '').trim()) e[k] = seed[k]; });
             (e.contacts || []).forEach((c) => {
@@ -156,7 +174,7 @@
     function normalize(e) {
         const ev = Object.assign({
             id: uid('ev'), category: 'อื่นๆ', title: 'เหตุการณ์ใหม่', date: '', muster: '', musterLabel: 'รวมพล/ปล่อยแถว', start: '', end: '',
-            place: '', distance: '', mapQuery: '', latlng: '', crowd: '', organizer: '', coordinators: '', ref: '', court: '', level: 'green',
+            place: '', distance: '', mapQuery: '', latlng: '', crowd: '', organizer: '', coordinators: '', ref: '', intel: '', court: '', level: 'green',
             levelLog: [], alerts: [], contacts: [], createdAt: new Date().toISOString()
         }, e || {});
         if (!LEVELS[ev.level]) ev.level = 'green';
@@ -468,6 +486,7 @@
         if (orgName || coNames.length) rows.push('<li><i class="fa-solid fa-user-tie"></i><span>' +
             (orgName ? '<b>ผู้จัด</b> ' + esc(orgName) + (orgTel ? ' <span class="cmd-mute">' + esc(orgTel) + '</span>' : '') : '') +
             (coNames.length ? (orgName ? '<br>' : '') + '<b>ผู้ประสาน</b> ' + esc(coNames.join(', ')) : '') + '</span></li>');
+        if (String(ev.intel || '').trim()) rows.push('<li class="cmd-intel"><i class="fa-solid fa-circle-exclamation"></i><span><b>ข้อมูลเพิ่มเติม</b> ' + esc(ev.intel) + '</span></li>');
         return rows;
     }
     function heroHtml(ev) {
@@ -619,6 +638,7 @@
         L.push('🗓 ' + (s ? thDateLong(s) : 'ยังไม่กำหนดวัน') + ' เวลา ' + hmStr(ev.start) + '–' + hmStr(ev.end) + (ev.muster ? ' (' + (ev.musterLabel || 'รวมพล') + ' ' + hmStr(ev.muster) + ')' : ''));
         if (ev.place) L.push('📍 ' + ev.place + (ev.distance ? ' · ' + ev.distance : ''));
         if (ev.crowd) L.push('👥 ' + ev.crowd);
+        if (String(ev.intel || '').trim()) L.push('📌 ข้อมูลเพิ่มเติม: ' + ev.intel);
         L.push('🚦 ระดับสถานการณ์: ' + lv.emoji + ' ' + lv.name + ' — ' + lv.desc + (last ? ' (ปรับเมื่อ ' + hmTh(Date.parse(last.at)) + ')' : ''));
         if (ph.mode === 'pre') L.push('⏱ อีก ' + human(ph.target - now) + ' ถึง' + (ph.key === 'pre' ? (ev.musterLabel || 'เวลารวมพล') + ' ' + hmStr(ev.muster) : 'เวลาเริ่ม ' + hmStr(ev.start)));
         else if (ph.mode === 'live') L.push('⏱ กำลังดำเนินการ' + (ph.key === 'live' ? ' · เหลือ ' + human(ph.target - now) + ' ถึงเวลาสิ้นสุด ' + hmStr(ev.end) : ''));
@@ -748,6 +768,7 @@
             field('ผู้จัด / ผู้รับผิดชอบเหตุการณ์', 'organizer', draft.organizer, 'textarea', { cls: 'full' }) +
             field('ผู้ประสานงาน', 'coordinators', draft.coordinators, 'textarea', { cls: 'full' }) +
             field('หลักฐานรับแจ้ง/อ้างอิง', 'ref', draft.ref, 'textarea', { cls: 'full' }) +
+            field('ข้อมูลเพิ่มเติม / ข้อเท็จจริงที่ได้รับแจ้ง', 'intel', draft.intel, 'textarea', { cls: 'full', ph: 'เช่น ผู้เกี่ยวข้องมาแจ้งความไว้เป็นข้อมูล · กำหนดการที่เกี่ยวข้อง' }) +
             field('เขตอำนาจศาล', 'court', draft.court, 'text', { cls: 'full' }) +
             '<div class="cmd-sec-h"><i class="fa-solid fa-thumbtack"></i> แถบแจ้งเตือนข้อกฎหมาย</div>' +
             '<div class="cmd-mini" data-al-list>' + alertRows() + '</div>' +
@@ -771,7 +792,7 @@
         } });
         actions.push({ label: 'ยกเลิก', run: (close) => close() });
         actions.push({ label: isNew ? '<i class="fa-solid fa-plus"></i> สร้างเหตุการณ์' : '<i class="fa-solid fa-floppy-disk"></i> บันทึก', cls: 'gold', run: (close, box) => {
-            ['title', 'category', 'date', 'musterLabel', 'muster', 'start', 'end', 'place', 'distance', 'mapQuery', 'latlng', 'crowd', 'organizer', 'coordinators', 'ref', 'court'].forEach((k) => { draft[k] = formVal(box, k); });
+            ['title', 'category', 'date', 'musterLabel', 'muster', 'start', 'end', 'place', 'distance', 'mapQuery', 'latlng', 'crowd', 'organizer', 'coordinators', 'ref', 'intel', 'court'].forEach((k) => { draft[k] = formVal(box, k); });
             if (!draft.title) { toast('กรุณากรอกชื่อเหตุการณ์'); return; }
             if (!draft.date || !draft.start) { toast('กรุณากรอกวันที่และเวลาเริ่ม'); return; }
             if (isNew) { state.events.push(draft); state.activeId = draft.id; }

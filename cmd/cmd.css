@@ -197,6 +197,8 @@
 .cmd-meta li { display: flex; gap: 8px; align-items: flex-start; font-size: 0.86rem; color: #C9D6EA; line-height: 1.45; }
 .cmd-meta li i { flex: 0 0 18px; text-align: center; color: var(--cmd-neon); margin-top: 3px; font-size: 0.85rem; }
 .cmd-meta li b { color: var(--cmd-ink); font-weight: 700; }
+.cmd-meta li.cmd-intel { grid-column: 1 / -1; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); }
+.cmd-meta li.cmd-intel i { color: #F59E0B; }
 .cmd-lvpill {
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
     padding: 8px 10px; border-radius: 16px; min-width: 76px;
