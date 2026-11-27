@@ -15,7 +15,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const BUILD = '9';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
+    const BUILD = '10';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
     const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.' + BUILD;
 
     const LAT = 13.883804945497769, LON = 100.80997853378307;
@@ -51,6 +51,7 @@
     let renderer, scene, camera, sun, hemi, skyTex, skyCanvas;
     const cam = { az: 0.32, pol: 0.86, dist: 600, tx: 0, tz: 0 };
     const want = { az: 0.32, pol: 0.86, dist: 600, tx: 0, tz: 0 };
+    let panLock = false;   // ปุ่มมือ: ลากนิ้วเดียว = เลื่อนแผนที่ (แทนหมุน)
     let idleAt = Date.now(), autoRot = true, labelsOn = true, crowdOn = true, crowdN = 100, timeMode = 'day', lowPower = false;
     let curLevel = 'green';
     const labels = [];
@@ -68,7 +69,7 @@
         el.innerHTML =
             '<section class="cmd-card m3-card">' +
                 '<div class="cmd-card-h"><i class="fa-solid fa-cube"></i><h4>แผนที่ 3 มิติ · รัศมี 300 ม.</h4>' +
-                '<small class="m3-hint">ลากหมุน · จีบซูม · สองนิ้วเลื่อน</small></div>' +
+                '<small class="m3-hint">ลากหมุน · ล้อเมาส์/จีบนิ้วซูมตรงจุดที่ชี้ · คลิกขวา/สองนิ้วเลื่อน · ดับเบิลคลิกซูมเข้าจุดนั้น</small></div>' +
                 '<div class="m3-bar">' +
                     '<div class="m3-seg" data-m3="time">' +
                         '<button type="button" data-time="dawn"><i class="fa-solid fa-moon"></i> 05.00</button>' +
@@ -91,6 +92,13 @@
                     '</div>' +
                     '<div class="m3-compass" data-m3="compass" title="แตะเพื่อหันทิศเหนือขึ้น"><div class="m3-needle"><b>N</b></div></div>' +
                     '<button type="button" class="m3-max-btn" data-m3="max" title="เต็มจอ"><i class="fa-solid fa-expand"></i></button>' +
+                    // ปุ่มกล้อง (มือถือใช้สะดวก): ซูม · มุมบน/เอียง · ลากเลื่อน
+                    '<div class="m3-ctl" role="group" aria-label="ควบคุมกล้อง">' +
+                        '<button type="button" data-m3="zin" title="ซูมเข้า" aria-label="ซูมเข้า"><i class="fa-solid fa-plus"></i></button>' +
+                        '<button type="button" data-m3="zout" title="ซูมออก" aria-label="ซูมออก"><i class="fa-solid fa-minus"></i></button>' +
+                        '<button type="button" data-m3="tilt" title="สลับมุมมองจากด้านบน (2D) / มุมเอียง (3D)" aria-label="สลับมุมมอง"><b>2D</b></button>' +
+                        '<button type="button" data-m3="pan" title="ลากนิ้วเดียว = เลื่อนแผนที่" aria-label="โหมดลากเลื่อนแผนที่" aria-pressed="false"><i class="fa-solid fa-hand"></i></button>' +
+                    '</div>' +
                     '<div class="m3-legend">' +
                         '<span><i style="background:#D4AF37"></i>จุดชุมนุม</span>' +
                         '<span><i style="background:#F59E0B"></i>แนวเสาใหม่ (พิพาท)</span>' +
@@ -141,6 +149,10 @@
         else if (k === 'rotate') { autoRot = !autoRot; t.classList.toggle('on', autoRot); idleAt = Date.now(); }
         else if (k === 'compass') { want.az = 0; idleAt = Date.now(); }
         else if (k === 'max') toggleMax();
+        else if (k === 'zin') { zoomAt(0.65); stopAuto(); }
+        else if (k === 'zout') { zoomAt(1 / 0.65); stopAuto(); }
+        else if (k === 'tilt') { want.pol = want.pol > 0.35 ? 0.06 : 0.95; clampWant(); stopAuto(); idleAt = Date.now(); }
+        else if (k === 'pan') { panLock = !panLock; t.classList.toggle('on', panLock); t.setAttribute('aria-pressed', String(panLock)); }
         else if (k === 'copyll') api.copyText(LAT + ', ' + LON);
         else if (k === 'infoToggle') { infoOpen = !infoOpen; paintInfo(); }
     }
@@ -1068,6 +1080,8 @@
         });
         // เข็มทิศ + มาตราส่วน
         ui.needle.style.transform = 'rotate(' + (cam.az * 180 / Math.PI).toFixed(1) + 'deg)';
+        const tl = ui.tilt && ui.tilt.firstChild, tv = want.pol > 0.35 ? '2D' : '3D';
+        if (tl && tl.textContent !== tv) tl.textContent = tv;
         const right = new THREE.Vector3(Math.cos(cam.az), 0, -Math.sin(cam.az));
         const a = new THREE.Vector3(cam.tx, 0, cam.tz).project(camera), b = new THREE.Vector3(cam.tx + right.x * 50, 0, cam.tz + right.z * 50).project(camera);
         const pxPer50 = Math.abs(b.x - a.x) / 2 * w;
@@ -1098,9 +1112,40 @@
         idleAt = Date.now();
     }
     function clampWant() {
-        want.pol = Math.max(0.12, Math.min(1.38, want.pol));
-        const fd = fitDist(); want.dist = Math.max(28, Math.min(fd * 1.8, want.dist));
-        const r = Math.hypot(want.tx, want.tz); if (r > 320) { want.tx *= 320 / r; want.tz *= 320 / r; }
+        want.pol = Math.max(0.05, Math.min(1.48, want.pol));
+        const fd = fitDist(); want.dist = Math.max(12, Math.min(fd * 2.2, want.dist));
+        const r = Math.hypot(want.tx, want.tz); if (r > 360) { want.tx *= 360 / r; want.tz *= 360 / r; }
+    }
+    // ผู้ใช้คุมกล้องเอง → หยุดหมุนอัตโนมัติ (กดชิป "หมุนเอง" เพื่อเปิดใหม่)
+    function stopAuto() { if (!autoRot) return; autoRot = false; if (ui.rotate) ui.rotate.classList.remove('on'); }
+    // จุดบนพื้นใต้ตำแหน่งจอ (ใช้มุมกล้องเป้าหมาย want ให้ซูมต่อเนื่องไม่ไหล)
+    const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
+    function groundAt(cx, cy) {
+        if (!camera || !ui.stage) return null;
+        const r = ui.stage.getBoundingClientRect(); if (!r.width || !r.height) return null;
+        const sp = Math.sin(want.pol), cp = Math.cos(want.pol);
+        camera.position.set(want.tx + want.dist * sp * Math.sin(want.az), want.dist * cp + 1, want.tz + want.dist * sp * Math.cos(want.az));
+        camera.lookAt(want.tx, 0, want.tz); camera.updateMatrixWorld();
+        _ndc.set((cx - r.left) / r.width * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+        _ray.setFromCamera(_ndc, camera);
+        const hit = _ray.ray.intersectPlane(_plane, _hit);
+        applyCamera();
+        return hit ? { x: hit.x, z: hit.z } : null;
+    }
+    // ซูมเข้า/ออกโดยให้จุดที่ชี้อยู่กับที่ (ไม่ระบุตำแหน่ง = กลางจอ)
+    function zoomAt(f, cx, cy) {
+        const before = want.dist, g = cx == null ? null : groundAt(cx, cy);
+        want.dist *= f; clampWant();
+        const ff = want.dist / before;
+        if (g && ff !== 1) { want.tx = g.x + (want.tx - g.x) * ff; want.tz = g.z + (want.tz - g.z) * ff; clampWant(); }
+        idleAt = Date.now();
+    }
+    // ดับเบิลคลิก/แตะสองครั้ง → บินไปจุดนั้นและซูมเข้า
+    let lastFly = 0;
+    function flyTo(cx, cy) {
+        const g = groundAt(cx, cy); if (!g) return;
+        want.tx = g.x; want.tz = g.z; want.dist = Math.max(25, Math.min(want.dist * 0.5, 140)); clampWant();
+        stopAuto(); idleAt = Date.now(); lastFly = Date.now();
     }
     function applyCamera() {
         const sp = Math.sin(cam.pol), cp = Math.cos(cam.pol);
@@ -1109,7 +1154,7 @@
     }
     function bindControls(el) {
         const pts = new Map();
-        let last = null, pinch = 0, mid = null, panMode = false;
+        let last = null, pinch = 0, mid = null, panMode = false, down = null, moved = 0, lastTap = null;
         const pan = (dx, dy) => {
             const k = want.dist * 0.0016;
             const rx = Math.cos(want.az), rz = -Math.sin(want.az), fx = -Math.sin(want.az), fz = -Math.cos(want.az);
@@ -1119,8 +1164,9 @@
         el.addEventListener('pointerdown', (e) => {
             el.setPointerCapture && el.setPointerCapture(e.pointerId);
             pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-            panMode = e.button === 2 || e.shiftKey;
+            panMode = e.button === 2 || e.shiftKey || panLock;
             last = { x: e.clientX, y: e.clientY }; idleAt = Date.now();
+            if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, t: Date.now() }; moved = 0; } else down = null;
             if (pts.size === 2) { const a = [...pts.values()]; pinch = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); mid = { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 }; }
         });
         el.addEventListener('pointermove', (e) => {
@@ -1128,18 +1174,30 @@
             pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); idleAt = Date.now();
             if (pts.size >= 2) {
                 const a = [...pts.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y), m = { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 };
-                if (pinch > 0 && d > 0) { want.dist *= pinch / d; }
+                if (pinch > 0 && d > 0) zoomAt(pinch / d, m.x, m.y);   // จีบนิ้ว: ซูมตรงกลางระหว่างสองนิ้ว
                 if (mid) pan(m.x - mid.x, m.y - mid.y);
-                pinch = d; mid = m; clampWant(); return;
+                pinch = d; mid = m; clampWant(); stopAuto(); return;
             }
             const dx = e.clientX - last.x, dy = e.clientY - last.y; last = { x: e.clientX, y: e.clientY };
+            if (down) moved = Math.max(moved, Math.hypot(e.clientX - down.x, e.clientY - down.y));
+            if (moved > 4) stopAuto();
             if (panMode) pan(dx, dy);
             else { want.az -= dx * 0.0058; want.pol -= dy * 0.0046; clampWant(); }
         });
-        const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) { pinch = 0; mid = null; } const r = [...pts.values()][0]; if (r) last = { x: r.x, y: r.y }; idleAt = Date.now(); };
+        const up = (e) => {
+            pts.delete(e.pointerId); if (pts.size < 2) { pinch = 0; mid = null; }
+            const r = [...pts.values()][0]; if (r) last = { x: r.x, y: r.y }; idleAt = Date.now();
+            // แตะสองครั้ง (จอสัมผัส) → ซูมเข้าจุดนั้น
+            if (e.type === 'pointerup' && e.pointerType !== 'mouse' && down && !pts.size && moved < 10 && Date.now() - down.t < 300) {
+                const now = Date.now();
+                if (lastTap && now - lastTap.t < 340 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 36) { flyTo(e.clientX, e.clientY); lastTap = null; }
+                else lastTap = { x: e.clientX, y: e.clientY, t: now };
+            }
+            if (!pts.size) down = null;
+        };
         el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
-        el.addEventListener('wheel', (e) => { e.preventDefault(); want.dist *= Math.pow(1.0012, e.deltaY); clampWant(); idleAt = Date.now(); }, { passive: false });
-        el.addEventListener('dblclick', () => focus('site'));
+        el.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(Math.pow(1.0012, e.deltaY), e.clientX, e.clientY); stopAuto(); }, { passive: false });
+        el.addEventListener('dblclick', (e) => { if (Date.now() - lastFly > 500) flyTo(e.clientX, e.clientY); });
     }
     function resize() {
         if (!renderer) return;
@@ -1238,7 +1296,7 @@
     function stop() { running = false; cancelAnimationFrame(raf); }
 
     // สถานะสำหรับตรวจสอบ (อ่านอย่างเดียว)
-    window.LamhinCmd3D = { get running() { return running; }, get built() { return built; }, focus: focus, setTime: setTime };
+    window.LamhinCmd3D = { get running() { return running; }, get built() { return built; }, get view() { return { az: want.az, pol: want.pol, dist: want.dist, tx: want.tx, tz: want.tz, auto: autoRot, panLock: panLock }; }, focus: focus, setTime: setTime };
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({ id: 'map3d', label: 'แผนที่ 3 มิติ', icon: 'fa-cube', order: 30, host: 'overview', top: true, mount: mount, update: update, visible: visible });
