@@ -1,0 +1,108 @@
+/* =====================================================================
+   4 ระยะการดูแลการชุมนุม + บันได 7 ขั้น ม.21–24 + ทางลัด ม.25 (Step 3) — สไตล์เฉพาะโมดูล
+   ทุก selector ขึ้นต้นด้วย .ld- (ไม่กระทบสไตล์อื่น)
+   ===================================================================== */
+
+/* ---------- หัวแท็บ: ขั้นถัดไป / นาฬิกาครบกำหนด / ปุ่ม ม.25 ---------- */
+.ld-top { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) { .ld-top { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: stretch; } }
+.ld-now { display: flex; flex-direction: column; gap: 6px; }
+.ld-now small { font-size: 0.74rem; color: #93A7C4; font-weight: 700; }
+.ld-now b { font-size: 1.05rem; font-weight: 800; line-height: 1.4; }
+.ld-now .ld-law { align-self: flex-start; padding: 2px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; color: #F3D774; background: rgba(212, 175, 55, 0.14); border: 1px solid rgba(212, 175, 55, 0.35); }
+.ld-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.ld-sos {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 9px 16px; border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.25); background: linear-gradient(135deg, #DC2626, #991B1B); color: #fff; font: inherit; font-weight: 800; font-size: 0.9rem;
+    cursor: pointer; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+}
+.ld-sos:active { transform: scale(0.98); }
+.ld-timer { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 12px; border-radius: 16px; text-align: center; background: rgba(10, 22, 40, 0.55); border: 1px solid rgba(148, 178, 222, 0.16); }
+.ld-timer small { font-size: 0.74rem; color: #93A7C4; font-weight: 700; }
+.ld-timer b { font-size: 2rem; font-weight: 800; line-height: 1.1; color: #00D2FF; font-variant-numeric: tabular-nums; text-shadow: 0 0 16px rgba(0, 210, 255, 0.4); }
+.ld-timer.due { border-color: rgba(220, 38, 38, 0.55); background: rgba(220, 38, 38, 0.1); }
+.ld-timer.due b { color: #F87171; text-shadow: 0 0 16px rgba(248, 113, 113, 0.45); }
+.ld-timer em { font-style: normal; font-size: 0.78rem; color: #C9D6EA; }
+.ld-timer .ld-res { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+.ld-timer.idle b { font-size: 1rem; color: #5F7594; text-shadow: none; }
+
+/* ---------- 4 ระยะ ---------- */
+.ld-phases { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 860px) { .ld-phases { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ld-ph {
+    position: relative; display: flex; flex-direction: column; gap: 5px; padding: 11px 12px; border-radius: 16px; text-align: left; cursor: pointer;
+    background: rgba(10, 22, 40, 0.45); border: 1px solid rgba(148, 178, 222, 0.16); color: inherit; font: inherit;
+}
+.ld-ph:active { transform: scale(0.985); }
+.ld-ph-n { display: flex; align-items: center; gap: 8px; }
+.ld-ph-n i { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: rgba(148, 178, 222, 0.1); color: #93A7C4; }
+.ld-ph-n b { font-size: 0.86rem; font-weight: 800; line-height: 1.3; }
+.ld-ph small { font-size: 0.72rem; color: #93A7C4; line-height: 1.45; }
+.ld-ph em { font-style: normal; font-size: 0.74rem; font-weight: 800; color: #5F7594; font-variant-numeric: tabular-nums; }
+.ld-ph.done { border-color: rgba(22, 163, 74, 0.35); }
+.ld-ph.done .ld-ph-n i { background: rgba(22, 163, 74, 0.18); color: #86EFAC; }
+.ld-ph.done em { color: #86EFAC; }
+.ld-ph.cur { border-color: #D4AF37; background: rgba(212, 175, 55, 0.12); box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.25) inset; }
+.ld-ph.cur .ld-ph-n i { background: linear-gradient(135deg, #F3D774, #D4AF37); color: #0A1628; }
+.ld-ph.cur em { color: #F3D774; }
+
+/* ---------- บันได 7 ขั้น ---------- */
+.ld-ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.ld-step { position: relative; display: flex; gap: 12px; padding-bottom: 14px; }
+.ld-step:last-child { padding-bottom: 0; }
+.ld-step::before { content: ''; position: absolute; left: 19px; top: 40px; bottom: 0; width: 2px; background: rgba(148, 178, 222, 0.18); }
+.ld-step:last-child::before { display: none; }
+.ld-step.done::before { background: rgba(22, 163, 74, 0.5); }
+.ld-dot { position: relative; z-index: 1; flex: 0 0 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.95rem; background: #13294A; color: #93A7C4; border: 2px solid rgba(148, 178, 222, 0.3); }
+.ld-step.done .ld-dot { background: #16A34A; border-color: #16A34A; color: #fff; }
+.ld-step.next .ld-dot { background: linear-gradient(135deg, #F3D774, #D4AF37); border-color: #fff3c4; color: #0A1628; animation: ldPulse 1.8s infinite; }
+@keyframes ldPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.55); } 50% { box-shadow: 0 0 0 9px rgba(212, 175, 55, 0); } }
+.ld-card { flex: 1 1 auto; min-width: 0; padding: 11px 12px; border-radius: 16px; background: rgba(10, 22, 40, 0.45); border: 1px solid rgba(148, 178, 222, 0.14); }
+.ld-step.next .ld-card { border-color: rgba(212, 175, 55, 0.55); background: rgba(212, 175, 55, 0.07); }
+.ld-step.done .ld-card { border-color: rgba(22, 163, 74, 0.3); }
+.ld-step.lock .ld-card { opacity: 0.72; }
+.ld-card-h { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.ld-card-h b { flex: 1 1 200px; font-size: 0.92rem; font-weight: 800; line-height: 1.4; }
+.ld-card-h .ld-law { flex: 0 0 auto; padding: 2px 9px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; color: #F3D774; background: rgba(212, 175, 55, 0.14); border: 1px solid rgba(212, 175, 55, 0.3); }
+.ld-card p { margin: 6px 0 0; font-size: 0.8rem; color: #C2D0E5; line-height: 1.55; }
+.ld-who { margin-top: 5px; font-size: 0.74rem; color: #93A7C4; }
+.ld-who i { color: #D4AF37; margin-right: 4px; }
+.ld-recs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.ld-recs li { display: flex; gap: 8px; align-items: flex-start; font-size: 0.78rem; color: #C9D6EA; line-height: 1.45; padding: 6px 8px; border-radius: 10px; background: rgba(22, 163, 74, 0.08); border: 1px solid rgba(22, 163, 74, 0.22); }
+.ld-recs li b { flex: 0 0 auto; color: #86EFAC; font-variant-numeric: tabular-nums; }
+.ld-recs li span { flex: 1 1 auto; min-width: 0; }
+.ld-recs li.due { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3); }
+.ld-recs li.due b { color: #FCD34D; }
+.ld-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.ld-note { margin-top: 12px; display: flex; gap: 8px; padding: 10px 12px; border-radius: 12px; font-size: 0.78rem; line-height: 1.55; color: #FECACA; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.3); }
+.ld-note i { color: #F87171; margin-top: 3px; }
+
+/* ---------- แผ่นบันทึก (ในหน้าต่างซ้อนของกระดาน) ---------- */
+.ld-sec { grid-column: 1 / -1; display: grid; gap: 6px; }
+.ld-sec > span { font-size: 0.76rem; font-weight: 700; color: #93A7C4; }
+.ld-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ld-chip {
+    border: 1px solid rgba(148, 178, 222, 0.28); background: rgba(10, 22, 40, 0.6); color: #E8EFF9; font: inherit; font-size: 0.82rem; font-weight: 700;
+    min-height: 36px; padding: 6px 11px; border-radius: 11px; cursor: pointer; text-align: left;
+}
+.ld-chip.on { color: #0A1628; background: linear-gradient(135deg, #F3D774, #D4AF37); border-color: transparent; }
+.ld-chip.short { border-color: rgba(220, 38, 38, 0.45); }
+.ld-chip.short.on { background: linear-gradient(135deg, #fca5a5, #dc2626); color: #fff; }
+.ld-guide { grid-column: 1 / -1; padding: 9px 11px; border-radius: 12px; font-size: 0.78rem; line-height: 1.55; color: #C9D6EA; background: rgba(0, 210, 255, 0.07); border: 1px solid rgba(0, 210, 255, 0.25); }
+.ld-guide b { color: #00D2FF; }
+.ld-guide.warn { color: #FECACA; background: rgba(220, 38, 38, 0.1); border-color: rgba(220, 38, 38, 0.4); }
+.ld-guide.warn b { color: #F87171; }
+.ld-preview { grid-column: 1 / -1; padding: 9px 11px; border-radius: 12px; font-size: 0.8rem; line-height: 1.55; color: #E8EFF9; background: rgba(148, 178, 222, 0.06); border: 1px dashed rgba(148, 178, 222, 0.3); }
+@media (prefers-reduced-motion: reduce) { .ld-step.next .ld-dot { animation: none; } }
+
+/* ---------- มือถือ: การ์ดระยะเหลือชื่อ + เวลา (คำอธิบายเต็มดูบนจอใหญ่/คู่มือ) ---------- */
+@media (max-width: 560px) {
+    .ld-ph small { display: none; }
+    .ld-ph { padding: 10px; }
+    .ld-ph-n b { font-size: 0.8rem; }
+    .ld-step { gap: 9px; }
+    .ld-dot { flex-basis: 34px; height: 34px; font-size: 0.85rem; }
+    .ld-step::before { left: 16px; top: 34px; }
+    .ld-card p { font-size: 0.78rem; }
+    .ld-sos, .ld-btns .cmd-btn.gold { flex: 1 1 100%; }
+}

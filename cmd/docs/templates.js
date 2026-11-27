@@ -43,7 +43,15 @@ window.LAMHIN_DOC_KIT = function (ctx) {
     const lastNum = (k) => { for (let i = log.length - 1; i >= 0; i--) if (log[i][k] != null && log[i][k] !== '') return log[i][k]; return null; };
     const vio = findFirst(['violation']) || findFirst(['risk']);
     const negs = log.filter((x) => x.kind === 'negotiate');
-    const ann = findLast(['announce']);
+    // คำร้องตาม ม.21 วรรคสอง ต้องอ้างประกาศ ม.21 เท่านั้น: เลือกประกาศ ม.21 ล่าสุด
+    // (คำสั่ง ม.23 / ม.25 ก็บันทึกเป็น kind 'announce' — ไม่นำมาใช้) · ข้อมูลรุ่นเก่าที่ไม่ระบุชนิดใช้ได้ถ้าไม่ใช่ ม.23/ม.25
+    const isM21 = (x) => x.ann === 'a212' || x.ann === 'a211' || /ม\.?\s*21/.test(x.law || '');
+    const isOther = (x) => x.ann === 'a23' || x.ann === 'a25' || /ม\.?\s*2[35]\b/.test(x.law || '');
+    const ann = (function () {
+        for (let i = log.length - 1; i >= 0; i--) if (log[i].kind === 'announce' && isM21(log[i])) return log[i];
+        for (let i = log.length - 1; i >= 0; i--) if (log[i].kind === 'announce' && !isOther(log[i])) return log[i];
+        return null;
+    })();
     const crowdN = lastNum('crowd'), vehN = lastNum('vehicles');
     const FACT = {
         vioAt: vio ? hm(vio.at) : '',
