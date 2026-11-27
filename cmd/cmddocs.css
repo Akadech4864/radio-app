@@ -217,3 +217,41 @@
     .cmdd-pin { order: 5; flex: 1 1 100%; justify-content: center; }   /* ปุ่มรายงานตัวลงบรรทัดใหม่ ชื่อไม่ถูกบีบ */
     .cmdd-slots input { font-size: 16px; }   /* กัน iPhone ซูมเมื่อแตะช่อง */
 }
+
+/* ---------- แท็บแทนการเลื่อนยาว: บทคู่มือ / หัวข้อ / กลุ่มหนังสือ / ช่วง-รายคน ---------- */
+.cmdd-chtabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding: 2px 0 4px; -webkit-overflow-scrolling: touch; }
+.cmdd-chtabs button {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--cmd-line2); background: rgba(148, 178, 222, 0.06); color: var(--cmd-mute); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+.cmdd-chtabs button i { font-size: 0.8rem; }
+.cmdd-chtabs button b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 0.7rem; background: rgba(212, 175, 55, 0.18); color: var(--cmd-gold); }
+.cmdd-chtabs button em { font-style: normal; font-size: 0.7rem; padding: 0 6px; border-radius: 999px; background: rgba(148, 178, 222, 0.14); color: var(--cmd-ink); }
+.cmdd-chtabs button.on { color: var(--cmd-bg); background: linear-gradient(135deg, #F3D774, var(--cmd-gold)); border-color: var(--cmd-gold); }
+.cmdd-chtabs button.on b, .cmdd-chtabs button.on em { background: rgba(10, 22, 40, 0.18); color: var(--cmd-bg); }
+.cmdd-ptabs { flex: 1 1 100%; }
+.cmdd-chbox { display: flex; flex-direction: column; gap: 10px; }
+.cmdd-chtitle small { display: block; font-size: 0.72rem; font-weight: 800; color: var(--cmd-gold); }
+.cmdd-chtitle b { display: block; font-size: 0.98rem; font-weight: 800; line-height: 1.35; }
+.cmdd-sectabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.cmdd-sectabs button { min-height: 34px; padding: 5px 11px; border-radius: 10px; border: 1px solid var(--cmd-line); background: transparent; color: var(--cmd-mute); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; text-align: left; }
+.cmdd-sectabs button.on { color: var(--cmd-ink); background: rgba(212, 175, 55, 0.14); border-color: rgba(212, 175, 55, 0.6); }
+.cmdd-chbox .cmdd-sec { border: 0; padding: 0; background: transparent; }
+.cmdd-hitlist { display: flex; flex-direction: column; padding: 4px; }
+.cmdd-hit { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--cmd-line); background: transparent; color: var(--cmd-ink); font: inherit; text-align: left; cursor: pointer; }
+.cmdd-hit:last-child { border-bottom: 0; }
+.cmdd-hit small { flex: 0 0 auto; font-size: 0.72rem; font-weight: 800; color: var(--cmd-gold); }
+.cmdd-hit b { flex: 1 1 auto; font-size: 0.86rem; font-weight: 700; }
+.cmdd-hit i { color: var(--cmd-mute); font-size: 0.75rem; }
+.cmdd-gtabs { margin-top: 2px; }
+
+/* ---------- แก้บนกระดาษ A4 ---------- */
+.cmdd-pv .ds-ed { border-radius: 2px; cursor: text; outline: none; }
+.cmdd-pv .ds-ed:hover { background: rgba(37, 99, 235, 0.07); box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.28); }
+.cmdd-pv .ds-ed:focus { background: rgba(37, 99, 235, 0.1); box-shadow: 0 0 0 1px #2563eb; }
+.cmdd-allf { border: 1px solid var(--cmd-line); border-radius: 12px; padding: 0 10px; }
+.cmdd-allf > summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 42px; cursor: pointer; font-size: 0.84rem; font-weight: 800; color: var(--cmd-ink); list-style: none; }
+.cmdd-allf > summary::-webkit-details-marker { display: none; }
+.cmdd-allf > summary small { font-weight: 600; color: var(--cmd-mute); font-size: 0.74rem; }
+.cmdd-allf[open] > summary { border-bottom: 1px solid var(--cmd-line); margin-bottom: 10px; }
+.cmdd-allf > .cmd-form { padding-bottom: 10px; }

@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '5';
+    const VER = '6';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -58,7 +58,16 @@
     // ช่องที่ยังไม่มีข้อมูล "[ระบุ…]" → เส้นจุดให้เขียนด้วยมือ (หน้าตัวอย่างไฮไลต์สีเหลือง)
     const PH_RE = /\[([^\]\n]{1,160})\]/g;
     const PH_DOTS = '..................';
-    const tf = (th) => (s) => esc(th(s)).replace(PH_RE, (m, a) => '<span class="ds-ph" title="กรอก: ' + a + '">' + PH_DOTS + '</span>');
+    // «…» = คำแนะนำ/ตัวอย่างตามคู่มือ สตช. — หน้าตัวอย่างแสดงตัวเอียงสีเทา · หน้าพิมพ์และ Word ไม่แสดง
+    const HINT_RE = /\s*«[^»\n]{0,400}»/g;
+    let showHints = false;
+    const noHints = (s) => String(s == null ? '' : s).replace(HINT_RE, '');
+    // แก้บนกระดาษ A4: ห่อข้อความแต่ละช่องด้วย span ระบุช่อง (data-ed) · บรรทัด (data-li) · ข้อความนำหน้าที่ไม่แสดงให้แก้ (data-pre)
+    // · ส่วนของชื่อผู้ลงนาม (data-sr = rank / name) — หน้าตัวอย่างแตะแก้แล้วเขียนกลับเข้าช่องเดิม
+    const ED = (key, li, html, pre, sr) => '<span class="ds-ed" data-ed="' + key + '"' + (li != null ? ' data-li="' + li + '"' : '') +
+        (pre ? ' data-pre="' + esc(pre) + '"' : '') + (sr ? ' data-sr="' + sr + '"' : '') + '>' + html + '</span>';
+    const tf = (th) => (s) => esc(th(s)).replace(HINT_RE, (m) => (showHints ? ' <span class="ds-hint">' + m.trim() + '</span>' : ''))
+        .replace(PH_RE, (m, a) => '<span class="ds-ph" title="กรอก: ' + a + '">' + PH_DOTS + '</span>');
     const pad = (n) => String(n).padStart(2, '0');
     // ความกว้างโดยประมาณของข้อความไทย 16 pt (ซม.) — ตรงกับ letterTextCm_ ของโปรแกรม
     function textCm(text) {
@@ -77,7 +86,7 @@
     const ADV_MISC = { 0xA0: 216, 0x2013: 360, 0x2014: 720, 0x2026: 479, 0x200B: 0 };
     function realCm(text) {
         let u = 0;
-        for (const ch of String(text || '').replace(PH_RE, PH_DOTS)) {
+        for (const ch of noHints(text).replace(PH_RE, PH_DOTS)) {
             const c = ch.codePointAt(0);
             const a = c >= 0x20 && c <= 0x7E ? ADV_ASCII[c - 0x20] : c >= 0x0E01 && c <= 0x0E5B ? ADV_THAI[c - 0x0E01] : ADV_MISC[c];
             u += a == null || a < 0 ? 390 : a;
@@ -185,19 +194,20 @@
         k.prefsDefaults = k0.prefsDefaults;
         return k;
     }
-    function tplById(k, id) { return k.templates.find((t) => t.id === id) || null; }
+    // รหัสเดิม (ext-m11 / ann1–4 / petition) ชี้ไปแบบ สตช. ที่แทนที่ — ลิงก์จากแท็บอื่นและแท็บที่จำไว้ยังใช้ได้
+    function tplById(k, id) { return k.templates.find((t) => t.id === id) || k.templates.find((t) => t.alias === id) || null; }
     function saved(t) { const e = ev(); return (e && e.docs && e.docs[t.id]) || {}; }
     function fields(t) {
         const s = saved(t);
         const F = Object.assign({}, t.defaults, s);
         if (t.kind === 'announce') {
-            if (!('body' in s)) F.body = t.buildBody(F);
-            F.given = String(F.given || '').replace('{varAt}', F.varAt || '........');
+            if (t.buildBody && !('body' in s)) F.body = t.buildBody(F);
+            F.given = String(F.given || '').replace('{varAt}', String(F.varAt || '').trim() || '[เวลา]');
         }
         return F;
     }
     function defaultOf(t, key) {
-        if (t.kind === 'announce' && key === 'body') return t.buildBody(Object.assign({}, t.defaults, saved(t)));
+        if (t.kind === 'announce' && key === 'body' && t.buildBody) return t.buildBody(Object.assign({}, t.defaults, saved(t)));
         return t.defaults[key] == null ? '' : String(t.defaults[key]);
     }
     let saveTimer = 0;
@@ -225,27 +235,28 @@
         const office = lines(F.office);
         const officeTab = Math.max(9.45, Math.min(12, W - Math.max.apply(null, office.map((s) => textCm(th(s))).concat([3.5])) - 0.1));
         let h = '<img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:' + cm(gX) + ';top:0;width:' + cm(gW) + ';height:3cm">';
-        h += '<div class="ds-row" style="padding-top:' + cm(3 - 0.66) + '"><span>' + T('ที่ ' + (F.no || '')) + '</span><span class="ds-at" style="left:' + cm(officeTab) + '">' + T(office[0] || '') + '</span></div>';
-        office.slice(1).forEach((l) => { h += '<div style="padding-left:' + cm(officeTab) + '">' + T(l) + '</div>'; });
+        if (String(F.formCode || '').trim()) h += '<div class="ds-fcode">' + ED('formCode', null, T(F.formCode)) + '</div>';
+        h += '<div class="ds-row" style="padding-top:' + cm(3 - 0.66) + '"><span>ที่ ' + ED('no', null, T(F.no || '')) + '</span><span class="ds-at" style="left:' + cm(officeTab) + '">' + ED('office', 0, T(office[0] || '')) + '</span></div>';
+        office.slice(1).forEach((l, i) => { h += '<div style="padding-left:' + cm(officeTab) + '">' + ED('office', i + 1, T(l)) + '</div>'; });
         const date = String(F.date || '').trim();
         const dm = date.match(/^([0-9๐-๙]{1,2})\s+/);
-        h += '<div style="margin-top:6pt;padding-left:' + cm(Math.max(0, rightFoot - (dm ? textCm(th(dm[1]) + ' ') : 0))) + '">' + T(date) + '</div>';
-        [['เรื่อง', F.subject], ['เรียน', F.to], ['อ้างถึง', F.refs], ['สิ่งที่ส่งมาด้วย', F.attach]].forEach((kv) => {
+        h += '<div style="margin-top:6pt;padding-left:' + cm(Math.max(0, rightFoot - (dm ? textCm(th(dm[1]) + ' ') : 0))) + '">' + ED('date', null, T(date)) + '</div>';
+        [['เรื่อง', F.subject, 'subject'], ['เรียน', F.to, 'to'], ['อ้างถึง', F.refs, 'refs'], ['สิ่งที่ส่งมาด้วย', F.attach, 'attach']].forEach((kv) => {
             const vs = lines(kv[1]); if (!vs.length) return;
             const tab = textCm(kv[0]) + 0.35;
             vs.forEach((v, i) => {
-                h += '<div style="margin-top:' + (i ? 0 : 6) + 'pt;padding-left:' + cm(tab) + ';text-indent:-' + cm(tab) + '"><span class="ds-kw" style="width:' + cm(tab) + '">' + (i ? '' : kv[0]) + '</span>' + T(v) + '</div>';
+                h += '<div style="margin-top:' + (i ? 0 : 6) + 'pt;padding-left:' + cm(tab) + ';text-indent:-' + cm(tab) + '"><span class="ds-kw" style="width:' + cm(tab) + '">' + (i ? '' : kv[0]) + '</span>' + ED(kv[2], i, T(v)) + '</div>';
             });
         });
         const eb = extBody(F.body);
         eb.forEach((b, bi) => {
-            h += '<p class="ds-j' + (b.t === 'h' ? ' ds-b' : '') + '"' + (b.t === 'h' || bi === eb.length - 1 ? ' data-kn="1"' : '') + ' style="margin-top:' + (b.t === 'p' ? 6 : 0) + 'pt;text-indent:' + cm(b.t === 'i' ? 3 : 2.5) + '">' + T(b.text) + '</p>';
+            h += '<p class="ds-j' + (b.t === 'h' ? ' ds-b' : '') + '"' + (b.t === 'h' || bi === eb.length - 1 ? ' data-kn="1"' : '') + ' style="margin-top:' + (b.t === 'p' ? 6 : 0) + 'pt;text-indent:' + cm(b.t === 'i' ? 3 : 2.5) + '">' + ED('body', bi, T(b.text), b.t === 'h' ? '# ' : '') + '</p>';
         });
         const closing = String(F.closing || 'ขอแสดงความนับถือ').trim();
         const signCenter = center + realCm(th(closing)) / 2;
         h += signBlock(F, closing, center, signCenter, th, W, 12);
         const owner = lines(F.owner);
-        if (owner.length) h += blank(3) + owner.map((l) => '<div>' + T(l) + '</div>').join('');
+        if (owner.length) h += blank(3) + owner.map((l, i) => '<div>' + ED('owner', i, T(l)) + '</div>').join('');
         if (t.receipt && (F.receiptText || '').trim()) {
             h += '<div class="ds-keep ds-rcpt"><div class="ds-cut">ตัดตามรอยประ — ส่วนบันทึกการรับทราบ</div>' +
                 '<div class="ds-b" style="text-align:center">บันทึกการรับทราบ</div>' +
@@ -253,6 +264,20 @@
                 '<table class="ds-sig2"><tr><td>' + T('ลงชื่อ ................................ ผู้รับทราบ') + '<br>' + T('(' + (F.recvName || '') + ')') + '</td>' +
                 '<td>' + T('ลงชื่อ ................................ ผู้ส่งมอบ') + '<br>' + T('(' + (F.giverName || '') + ')') + '</td></tr></table></div>';
         }
+        return sheet('external', h) + annexSheet(F, th);
+    }
+    // สิ่งที่ส่งมาด้วย (แผ่นแยก) เช่น ท้ายแบบ 2-1: รหัสมุมขวาบน · ชื่อเรื่องกึ่งกลางตัวหนาขีดเส้นใต้ · "#" = หัวข้อตัวหนา · "หมายเหตุ" ขีดเส้นใต้
+    function annexSheet(F, th) {
+        const body = lines(F.annexBody);
+        if (!body.length) return '';
+        const T = tf(th);
+        let h = String(F.annexCode || '').trim() ? '<div class="ds-b" style="text-align:right">' + ED('annexCode', null, T(F.annexCode)) + '</div>' : '';
+        lines(F.annexTitle).forEach((l, i) => { h += '<div class="ds-b ds-ul" style="text-align:center;' + (i ? '' : 'margin-top:6pt') + '">' + ED('annexTitle', i, T(l)) + '</div>'; });
+        body.forEach((l, i) => {
+            if (/^#\s*/.test(l)) h += '<p class="ds-b" data-kn="1" style="margin-top:' + (i ? 3 : 10) + 'pt">' + ED('annexBody', i, T(l.replace(/^#\s*/, '')), '# ') + '</p>';
+            else if (/^หมายเหตุ/.test(l)) h += '<p style="margin-top:3pt"><span class="ds-b ds-ul">หมายเหตุ</span>' + ED('annexBody', i, T(l.replace(/^หมายเหตุ/, '')), 'หมายเหตุ') + '</p>';
+            else h += '<p class="ds-j" style="text-indent:1.5cm">' + ED('annexBody', i, T(l)) + '</p>';
+        });
         return sheet('external', h);
     }
     // คำลงท้าย + ลงชื่อ + ตำแหน่ง (กึ่งกลางซึ่งกันและกันกับคำลงท้าย · ยศบรรทัดแยก) — ตามโปรแกรม
@@ -260,10 +285,10 @@
         const T = tf(th);
         const rank = String(F.signRank || '').trim();
         const signLeft = Math.max(-2.5, 2 * signCenter - W);
-        let s ='<div class="ds-keep"><div style="margin-top:' + beforePt + 'pt;padding-left:' + cm(closeAt) + '">' + T(closing) + '</div>' + blank(rank ? 2 : 3);
-        if (rank) s += '<div style="padding-left:' + cm(Math.max(0, signCenter - 3.0)) + '">' + T(rank) + '</div>';
-        s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">' + T('(' + (F.signName || '..................................................') + ')') + '</div>';
-        lines(F.signPos).forEach((l) => { s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">' + T(l) + '</div>'; });
+        let s ='<div class="ds-keep"><div style="margin-top:' + beforePt + 'pt;padding-left:' + cm(closeAt) + '">' + ED('closing', null, T(closing)) + '</div>' + blank(rank ? 2 : 3);
+        if (rank) s += '<div style="padding-left:' + cm(Math.max(0, signCenter - 3.0)) + '">' + ED('signRank', null, T(rank)) + '</div>';
+        s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">(' + ED('signName', null, T(F.signName || '..................................................')) + ')</div>';
+        lines(F.signPos).forEach((l, i) => { s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">' + ED('signPos', i, T(l)) + '</div>'; });
         return s + '</div>';
     }
 
@@ -271,85 +296,104 @@
         const T = tf(th);
         let h = '<img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:0;top:-0.5cm;width:' + cm(GW(1.5)) + ';height:1.5cm">';
         h += '<div class="ds-b" style="margin-top:4pt;padding-left:0.64cm;text-align:center;font-size:29pt">บันทึกข้อความ</div>';
-        const dept = String(F.department || '') + (F.phone ? '  โทร. ' + F.phone : '');
-        h += '<div><span class="ds-k20">ส่วนราชการ</span>&nbsp;&nbsp;' + T(dept) + '</div>';
-        h += '<div class="ds-row"><span><span class="ds-k20">ที่</span>&nbsp;&nbsp;' + T(memoNo(F.no)) + '</span><span class="ds-at" style="left:8cm"><span class="ds-k20">วันที่</span>&nbsp;&nbsp;' + T(F.date) + '</span></div>';
-        h += '<div style="padding-left:1.126cm;text-indent:-1.126cm"><span class="ds-k20">เรื่อง</span>&nbsp;&nbsp;' + T(F.subject) + '</div>';
-        h += '<div style="margin-top:6pt;padding-left:1.126cm;text-indent:-1.126cm">เรียน&nbsp;&nbsp;' + T(F.to) + '</div>';
+        h += '<div><span class="ds-k20">ส่วนราชการ</span>&nbsp;&nbsp;' + ED('department', null, T(F.department || '')) + (F.phone ? '  โทร. ' + ED('phone', null, T(F.phone)) : '') + '</div>';
+        h += '<div class="ds-row"><span><span class="ds-k20">ที่</span>&nbsp;&nbsp;' + ED('no', null, T(memoNo(F.no))) + '</span><span class="ds-at" style="left:8cm"><span class="ds-k20">วันที่</span>&nbsp;&nbsp;' + ED('date', null, T(F.date)) + '</span></div>';
+        h += '<div style="padding-left:1.126cm;text-indent:-1.126cm"><span class="ds-k20">เรื่อง</span>&nbsp;&nbsp;' + ED('subject', null, T(F.subject)) + '</div>';
+        h += '<div style="margin-top:6pt;padding-left:1.126cm;text-indent:-1.126cm">เรียน&nbsp;&nbsp;' + ED('to', null, T(F.to)) + '</div>';
         const paras = lines(F.body);
         const lay = numberedLayout(paras.map(toArabic));
         paras.forEach((p, i) => {
             const L = lay[i];
             const bold = L.level === 1 && L.rest.length <= 60;
-            if (L.num) h += '<p class="ds-j' + (bold ? ' ds-b' : '') + '"' + (bold ? ' data-kn="1"' : '') + ' style="text-indent:' + cm(L.numCm) + '"><span class="ds-kw" style="width:' + cm(L.textCm - L.numCm) + '">' + T(L.num) + '</span>' + T(L.rest) + '</p>';
-            else h += '<p class="ds-j" style="margin-top:6pt;text-indent:' + cm(L.numCm) + '">' + T(L.rest) + '</p>';
+            const pre = p.slice(0, Math.max(0, p.length - L.rest.length));   // เลขข้อเดิม (ไม่ให้แก้ในกระดาษ)
+            if (L.num) h += '<p class="ds-j' + (bold ? ' ds-b' : '') + '"' + (bold ? ' data-kn="1"' : '') + ' style="text-indent:' + cm(L.numCm) + '"><span class="ds-kw" style="width:' + cm(L.textCm - L.numCm) + '">' + T(L.num) + '</span>' + ED('body', i, T(L.rest), pre) + '</p>';
+            else h += '<p class="ds-j" style="margin-top:6pt;text-indent:' + cm(L.numCm) + '">' + ED('body', i, T(L.rest), pre) + '</p>';
         });
-        lines(F.closing).forEach((l) => { h += '<p class="ds-j" data-kn="1" style="margin-top:6pt;text-indent:2.54cm">' + T(l) + '</p>'; });
+        lines(F.closing).forEach((l, i) => { h += '<p class="ds-j" data-kn="1" style="margin-top:6pt;text-indent:2.54cm">' + ED('closing', i, T(l)) + '</p>'; });
         // ลงชื่อ: เว้น 3 บรรทัด · ยศที่ 6.25 ซม. · ชื่อ/ตำแหน่งกึ่งกลางที่ 12.25 ซม. จากขอบกระดาษ
         const signIndent = 2 * (12.25 - 3) - 16;
         let s = '<div class="ds-keep">' + blank(3);
-        if (String(F.signRank || '').trim()) s += '<div style="padding-left:6.25cm">' + T(F.signRank) + '</div>';
-        s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">' + T(signFix('(' + (F.signName || '..................................................') + ')')) + '</div>';
-        lines(F.signPos).forEach((l) => { s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">' + T(signFix(l)) + '</div>'; });
+        if (String(F.signRank || '').trim()) s += '<div style="padding-left:6.25cm">' + ED('signRank', null, T(F.signRank)) + '</div>';
+        s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">(' + ED('signName', null, T(signFix(F.signName || '..................................................'))) + ')</div>';
+        lines(F.signPos).forEach((l, i) => { s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">' + ED('signPos', i, T(signFix(l))) + '</div>'; });
         h += s + '</div>';
         return sheet('memo', h);
     }
 
+    /* ประกาศ / คำสั่ง ตามแบบ สตช. (แบบ 3-1 … 3-8): รหัสแบบมุมขวาบน · ครุฑกึ่งกลาง · หัว 2 บรรทัดตัวหนา · ที่ · เรื่อง · เส้นสั้น
+       เนื้อความย่อหน้า 2.5 ซม. · "ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป" · "ประกาศ/สั่ง ณ วันที่" ที่ 3 ซม. · (ลงชื่อ) ที่ 6.5 ซม.
+       · ชื่อ/ตำแหน่งกึ่งกลางที่ 9.5 ซม. จากขอบซ้ายเนื้อความ · "หมายเหตุ" ตัวหนาขีดเส้นใต้ */
+    const ORD = { givenAt: 3, signAt: 6.5, nameC: 9.5 };
     function rAnnounce(t, F, th) {
         const T = tf(th);
-        const W = 16, gW = GW(3);
+        const W = 16, gW = GW(3), nameLeft = 2 * ORD.nameC - W;
         let h = '<img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:' + cm((W - gW) / 2) + ';top:0;width:' + cm(gW) + ';height:3cm">';
-        lines(F.issuer).forEach((l, i) => { h += '<div style="text-align:center;' + (i ? '' : 'padding-top:' + cm(3) + ';margin-top:6pt') + '">' + T(l) + '</div>'; });
-        if ((F.subject || '').trim()) h += '<div style="text-align:center;margin-top:6pt">' + T('เรื่อง  ' + F.subject) + '</div>';
+        if (String(F.formCode || '').trim()) h += '<div class="ds-fcode">' + ED('formCode', null, T(F.formCode)) + '</div>';
+        lines(F.issuer).forEach((l, i) => { h += '<div class="ds-b" style="text-align:center;' + (i ? '' : 'padding-top:' + cm(3) + ';margin-top:6pt') + '">' + ED('issuer', i, T(l)) + '</div>'; });
+        if (String(F.no || '').trim()) h += '<div style="text-align:center">ที่ ' + ED('no', null, T(F.no)) + '</div>';
+        if (String(F.subject || '').trim()) h += '<div style="text-align:center">เรื่อง ' + ED('subject', null, T(F.subject)) + '</div>';
         h += '<div class="ds-line"></div>';
-        const ab = lines(F.body);
-        ab.forEach((l, i) => { h += '<p class="ds-j"' + (i === ab.length - 1 ? ' data-kn="1"' : '') + ' style="margin-top:6pt;text-indent:2.5cm">' + T(l) + '</p>'; });
-        const given = String(F.given || '').trim();
-        const givenAt = 4.5;
-        const signCenter = givenAt + realCm(th(given)) / 2;
-        h += signBlock(F, given, givenAt, signCenter, th, W, 12);
+        // ตามแบบ สตช.: ย่อหน้าต่อเนื่อง (ไม่เว้นระยะ) · เว้นบรรทัดก่อน "ทั้งนี้…" และ "ประกาศ ณ วันที่"
+        lines(F.body).forEach((l, i) => { h += '<p class="ds-j" style="margin-top:' + (i ? 0 : 4) + 'pt;text-indent:2.5cm">' + ED('body', i, T(l)) + '</p>'; });
+        if (String(F.effective || '').trim()) h += '<p data-kn="1" style="margin-top:9pt;text-indent:2.5cm">' + ED('effective', null, T(F.effective)) + '</p>';
+        let s = '<div class="ds-keep"><div style="margin-top:9pt;padding-left:' + cm(ORD.givenAt) + '">' + ED('given', null, T(String(F.given || '').trim())) + '</div>';
+        // ลงชื่อ: ยศอยู่บรรทัดลงชื่อ · ชื่อจริง นามสกุลในวงเล็บ (ไม่มียศ)
+        const sr = splitRank(F.signName);
+        s += '<div style="margin-top:10pt;padding-left:' + cm(ORD.signAt) + '">(ลงชื่อ)' + (sr[0] ? ' ' + ED('signName', null, T(sr[0]), '', 'rank') : '') + '</div>';
+        s += '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">(' + ED('signName', null, T(sr[1] || '..................................................'), '', 'name') + ')</div>';
+        lines(F.signPos).forEach((l, i) => { s += '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">' + ED('signPos', i, T(l)) + '</div>'; });
+        h += s + '</div>';
+        const notes = lines(F.notes);
+        if (notes.length) {
+            // หมายเหตุทั้งชุดไม่แยกหน้า (ถ้าไม่พอ ย้ายไปหน้าถัดไปทั้งชุด)
+            h += '<div class="ds-keep"><p class="ds-b ds-ul" style="margin-top:6pt">หมายเหตุ</p>' + notes.map((l, i) => '<p class="ds-j" style="text-indent:2.5cm">' + ED('notes', i, T(l)) + '</p>').join('') + '</div>';
+        }
         return sheet('announce', h);
     }
 
-    /* ---------- คำร้องต่อศาลแพ่ง (ม.21 ว.2 · ม.22) — เอกสารฉบับเดียว: คำร้อง (หัวแบบพิมพ์ศาล) ไม่มีชุดเอกสารแบบคำร้องขอหมายค้น ---------- */
+    /* ---------- แบบ 3-5 คำร้องให้เลิกการชุมนุมสาธารณะ (แบบพิมพ์ศาล (7) ตามคู่มือ สตช.) ----------
+       วงกลมมุมซ้ายบน · ชื่อคำร้องชิดซ้าย · ครุฑกลาง · รหัสแบบขวาบน · คดีหมายเลขดำ/แดง · ศาล · วันที่ · ความ
+       · ระหว่าง { โจทก์ / ผู้ร้อง / จำเลย } · ข้อมูลผู้ร้อง · ข้อ 1–3 · ควรมิควรแล้วแต่จะโปรด · ลงชื่อ ผู้ร้อง (+ ผู้เรียงและพิมพ์) */
     const PET_DOTS = '........................................';
-    const PET_SIGN_AT = 5;
-    // ชื่อ/ตำแหน่งกึ่งกลางใต้เส้นจุดลงชื่อ: กล่องกึ่งกลางเริ่มที่ left ถึงขอบขวา → จุดกึ่งกลาง = (left + 16) / 2
-    const petSignLeft = () => Math.max(-2.5, 2 * (PET_SIGN_AT + realCm('ลงชื่อ ') + realCm(PET_DOTS) / 2) - 16);
-    const courtName = (F) => String(F.court || '').replace(/^ศาล\s*/, '');
+    const PET_SIGN_AT = 7.5;
+    // บรรทัดลงชื่อ: "ลงชื่อ [ยศ] ........ ผู้ร้อง" · (ชื่อจริง นามสกุล) กึ่งกลางใต้เส้นจุด
+    // กล่องกึ่งกลางเริ่มที่ left ถึงขอบขวา → จุดกึ่งกลาง = (left + 16) / 2
+    const petSignLead = (rank) => 'ลงชื่อ ' + (rank ? rank + ' ' : '');
+    const petSignLeft = (rank) => Math.max(-2.5, 2 * (PET_SIGN_AT + realCm(petSignLead(rank)) + realCm(PET_DOTS) / 2) - 16);
+    const BRACE = '<svg class="ds-brace" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><path d="M9 1 C4 1 5 6 5 16 L5 40 C5 47 3 50 1 50 C3 50 5 53 5 60 L5 84 C5 94 4 99 9 99" fill="none" stroke="#000" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>';
     function rPetition(t, F, th) {
         const T = tf(th);
-        const U = (v, minCm) => '<span class="ds-u" style="min-width:' + cm(minCm || 1) + '">' + (String(v || '').trim() ? T(v) : '&nbsp;') + '</span>';
-        const dateLine = () => 'วันที่ ' + U(F.day, 1.2) + ' เดือน ' + U(F.month, 2.8) + ' พุทธศักราช ' + U(F.year, 1.6);
-        const head = (leftHtml, rightHtml) => {
-            const gW = GW(2.5);
-            return '<div class="ds-chead"><img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:' + cm((16 - gW) / 2) + ';top:0;width:' + cm(gW) + ';height:2.5cm">' +
-                '<div class="ds-chl">' + leftHtml + '</div><div class="ds-chr">' + rightHtml + '</div></div>';
+        const U = (key, minCm) => '<span class="ds-u" style="min-width:' + cm(minCm || 1) + '">' + ED(key, null, String(F[key] || '').trim() ? T(F[key]) : '&nbsp;') + '</span>';
+        const gW = GW(3);
+        const sign = (role, name) => {
+            const sr = splitRank(name);
+            const key = role === 'ผู้ร้อง' ? 'signName' : 'writer';
+            return '<div style="padding-left:' + cm(PET_SIGN_AT) + '">ลงชื่อ ' + (sr[0] ? ED(key, null, T(sr[0]), '', 'rank') + ' ' : '') + T(PET_DOTS + ' ' + role) + '</div>' +
+                (sr[1] ? '<div style="margin-left:' + cm(petSignLeft(sr[0])) + ';text-align:center">(' + ED(key, null, T(sr[1]), '', 'name') + ')</div>' : '');
         };
-        const kind = () => '<div class="ds-b" style="text-align:center;font-size:18pt;margin-top:4pt">' + T('ความ' + (F.caseKind || '')) + '</div>';
-        const party = () => {
-            const row = (name, role) => { const ls = lines(name); return ls.length ? '<div class="ds-party" style="padding-left:2.5cm"><div>' + ls.map(T).join('<br>') + '</div><div class="ds-role ds-b">' + role + '</div></div>' : ''; };
-            return row(F.applicant, 'ผู้ร้อง') + (lines(F.respondent).length ? '<div style="text-align:center">ระหว่าง</div>' + row(F.respondent, 'ผู้คัดค้าน') : '');
-        };
-        const left = petSignLeft();
-        const sign = (role, name, pos) => '<div style="padding-left:' + cm(PET_SIGN_AT) + '">' + T('ลงชื่อ ' + PET_DOTS + ' ' + role) + '</div>' +
-            (name ? '<div style="margin-left:' + cm(left) + ';text-align:center">' + T('(' + name + ')') + '</div>' : '') +
-            lines(pos).map((l) => '<div style="margin-left:' + cm(left) + ';text-align:center">' + T(l) + '</div>').join('');
-        let h = head('<div>(คำร้อง)</div><div>' + T(F.subtitle) + '</div>', '<div>ที่ ' + U(F.petNo, 3) + '</div>');
-        h += '<div class="ds-b" style="text-align:center;font-size:20pt">' + T(F.court) + '</div>';
-        h += '<div class="ds-row" style="min-height:2.5em"><div class="ds-recv">รับคำร้อง<br>เรียกสอบ</div><div style="text-align:right">' + dateLine() + '</div></div>';
-        h += '<div class="ds-recvj">................................ ผู้พิพากษา</div>';
-        h += kind() + party();
-        h += '<p class="ds-j" style="margin-top:6pt;text-indent:2.5cm">' + T(F.intro) + '</p>';
-        lines(F.body).forEach((l) => {
+        let h = '<div class="ds-h35"><span class="ds-circ"></span><div class="ds-b ds-h35t">' + ED('title', null, T(F.title)) + '</div>' +
+            '<img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:' + cm((16 - gW) / 2) + ';top:0;width:' + cm(gW) + ';height:3cm">' +
+            (String(F.formCode || '').trim() ? '<div class="ds-fcode">' + ED('formCode', null, T(F.formCode)) + '</div>' : '') +
+            '<div class="ds-h35n">คดีหมายเลขดำที่ ' + U('blackNo', 2.6) + '<br>คดีหมายเลขแดงที่ ' + U('redNo', 2.6) + '</div></div>';
+        h += '<div>ศาล' + U('court', 4) + '</div>';
+        h += '<div style="padding-left:6.3cm">วันที่' + U('day', 1.2) + 'เดือน' + U('month', 2.8) + 'พุทธศักราช ' + U('year', 1.4) + '</div>';
+        h += '<div style="margin-top:10pt;padding-left:7.3cm">ความ' + U('caseKind', 6) + '</div>';
+        const row = (key, role) => '<div class="ds-btr"><span class="ds-u ds-btv">' + ED(key, null, String(F[key] || '').trim() ? T(F[key]) : '&nbsp;') + '</span><span class="ds-btl">' + role + '</span></div>';
+        h += '<div class="ds-btw ds-keep"><span class="ds-b ds-btk">ระหว่าง</span>' + BRACE + row('plaintiff', 'โจทก์') + row('applicant', 'ผู้ร้อง') + row('defendant', 'จำเลย') + '</div>';
+        h += '<div style="margin-top:8pt;padding-left:1.27cm">ข้าพเจ้า <span class="ds-ui">' + ED('pName', null, T(F.pName || '')) + '</span></div>';   // ชื่อยาวขึ้นบรรทัดต่อได้ (เส้นจุดตามบรรทัด)
+        h += '<div>เชื้อชาติ' + U('race', 1.6) + 'สัญชาติ' + U('nationality', 1.6) + 'อาชีพ' + U('occupation', 3) + 'เกิดวันที่' + U('birthDay', 1.8) + '</div>';
+        h += '<div>เดือน' + U('birthMonth', 2.6) + 'พ.ศ.' + U('birthYear', 1.6) + 'อายุ' + U('age', 1.2) + 'ปี อยู่บ้านเลขที่' + U('houseNo', 2.4) + 'หมู่ที่' + U('moo', 1) + '</div>';
+        h += '<div>ถนน' + U('road', 3) + 'ตรอก/ซอย' + U('soi', 1.2) + 'ใกล้เคียง' + U('near', 1.2) + 'ตำบล/แขวง' + U('subdistrict', 2.4) + '</div>';
+        h += '<div>อำเภอ/เขต' + U('district', 2.4) + 'จังหวัด' + U('province', 3) + 'โทรศัพท์' + U('phone', 2.8) + '</div>';
+        h += '<div>ขอยื่นคำร้องมีข้อความตามที่จะกล่าวต่อไปนี้</div>';
+        lines(F.body).forEach((l, i) => {
             const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
-            h += '<p class="ds-j" style="margin-top:3pt;text-indent:2.5cm">' + (m ? '<b>' + T(m[1]) + '</b> ' + T(m[2]) : T(l)) + '</p>';
+            h += '<p class="ds-j" style="margin-top:3pt;text-indent:2.5cm">' + (m ? '<b>' + T(m[1]) + '</b> ' + ED('body', i, T(m[2]), m[1] + ' ') : ED('body', i, T(l))) + '</p>';
         });
-        h += '<p data-kn="1" style="margin-top:3pt;text-indent:2.5cm">' + T(F.prayer) + '</p>';
-        // ให้จบในหน้าเดียว: ระยะห่างก่อนลงชื่อแทนบรรทัดว่าง · ผู้เรียงและพิมพ์แบบกะทัดรัด (ไม่มีวงเล็บชื่อซ้ำเมื่อยังไม่ได้กรอก)
+        h += '<p data-kn="1" style="margin-top:8pt;padding-left:8cm">' + ED('prayer', null, T(F.prayer)) + '</p>';
+        h += '<div class="ds-keep" style="margin-top:14pt">' + sign('ผู้ร้อง', F.signName) + '</div>';
         const writerName = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
-        h += '<div class="ds-keep" style="margin-top:14pt">' + sign('ผู้ร้อง', F.signName, F.signPos) + '</div>';
-        h += '<div class="ds-keep" style="margin-top:8pt"><p style="text-indent:2.5cm">' + T('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์') + '</p><div style="margin-top:12pt">' + sign('ผู้เรียงและพิมพ์', writerName, '') + '</div></div>';
+        h += '<div class="ds-keep" style="margin-top:10pt"><p style="text-indent:2.5cm">คำร้องฉบับนี้ ข้าพเจ้า ' + ED('writer', null, T(F.writer || '')) + ' เป็นผู้เรียงและพิมพ์</p><div style="margin-top:12pt">' + sign('ผู้เรียงและพิมพ์', writerName) + '</div></div>';
         return sheet('petition', h);
     }
 
@@ -520,6 +564,11 @@
         '.ds-u{display:inline-block;border-bottom:1px dotted #000;text-align:center;padding:0 .15cm;line-height:1.05;text-indent:0}',
         '.ds-recv{position:absolute;left:0;top:0;font-size:14pt;font-style:italic;line-height:1.3}.ds-recvj{font-size:14pt;font-style:italic}',
         '.ds-dotline{border-bottom:1px dotted #000;height:1.17em}.ds-fill{display:inline-block;width:6cm;border-bottom:1px dotted #000;text-indent:0}',
+        '.ds-fcode{position:absolute;right:0;top:0;font-weight:700;z-index:1}.ds-hint{color:#6b7280;font-style:italic}.ds-ul{text-decoration:underline}',
+        '.ds-ui{border-bottom:1px dotted #000;padding:0 .15cm;-webkit-box-decoration-break:clone;box-decoration-break:clone}',
+        '.ds-h35{position:relative;height:3.5cm}.ds-circ{position:absolute;left:0;top:0;width:.75cm;height:.75cm;border:1px solid #000;border-radius:50%}.ds-h35t{position:absolute;left:0;top:.85cm}.ds-h35n{position:absolute;left:9.6cm;top:2.1cm;line-height:1.35}',
+        '.ds-btw{position:relative;margin-top:6pt;padding-left:2.5cm}.ds-btk{position:absolute;left:0;top:1.3em}.ds-brace{position:absolute;left:1.85cm;top:.15cm;width:.4cm;height:calc(100% - .3cm)}',
+        '.ds-btr{display:flex;align-items:flex-end;gap:.2cm;margin:3pt 0}.ds-btv{flex:1 1 auto;text-align:left;padding-left:.25cm}.ds-btl{flex:0 0 1.4cm}',
         '.ds-sheet.k-cover,.ds-page.k-cover{width:29.7cm;padding:2cm 2cm 2cm 3cm}.ds-sheet.k-cover{min-height:21cm}.ds-page.k-cover{height:20.99cm}.k-cover>.ds-c{height:16.9cm;display:flex;flex-direction:column;justify-content:space-between}'
     ].join('\n');
 
@@ -606,8 +655,9 @@
             return out;
         } catch (e) { return t; }
     }
-    const runX = (text, pt, bold, italic) => '<w:r><w:rPr>' + (bold ? '<w:b/><w:bCs/>' : '') + (italic ? '<w:i/><w:iCs/>' : '') + '<w:sz w:val="' + pt * 2 + '"/><w:szCs w:val="' + pt * 2 + '"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(String(text == null ? '' : text).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
-    const runU = (text) => '<w:r><w:rPr><w:u w:val="dotted"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(String(text).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
+    const runX = (text, pt, bold, italic) => '<w:r><w:rPr>' + (bold ? '<w:b/><w:bCs/>' : '') + (italic ? '<w:i/><w:iCs/>' : '') + '<w:sz w:val="' + pt * 2 + '"/><w:szCs w:val="' + pt * 2 + '"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(noHints(text).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
+    const runU = (text) => '<w:r><w:rPr><w:u w:val="dotted"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(noHints(text).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
+    const runBU = (text) => '<w:r><w:rPr><w:b/><w:bCs/><w:u w:val="single"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(noHints(text).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
     const pX = (ppr, inner) => '<w:p><w:pPr>' + ppr + '</w:pPr>' + (inner || '') + '</w:p>';
     const spX = (before) => '<w:spacing w:before="' + Math.round(before * 20) + '" w:after="0" w:line="240" w:lineRule="auto"/>';
     function picX(rid, w, h, id) {
@@ -683,7 +733,9 @@
         const parts = [];
         const office = lines(F.office);
         const officeTab = Math.max(9.45, Math.min(12, W - Math.max.apply(null, office.map((s) => textCm(th(s))).concat([3.5])) - 0.1));
-        parts.push(pX('<w:tabs><w:tab w:val="left" w:pos="' + tw(officeTab) + '"/></w:tabs>' + spX((3 - 0.66) * 28.35),
+        const fcode = String(F.formCode || '').trim();   // รหัสแบบ (เช่น แบบ 2-1) มุมขวาบน
+        if (fcode) parts.push(pX(spX(0) + '<w:jc w:val="right"/>', run(fcode, true)));
+        parts.push(pX('<w:tabs><w:tab w:val="left" w:pos="' + tw(officeTab) + '"/></w:tabs>' + spX(Math.max(0, 3 - 0.66 - (fcode ? 0.74 : 0)) * 28.35),
             anchorX('rIdGaruda', gW, gH, gX * DX.EMU_CM, 2.5 * DX.EMU_CM, 1) + run('ที่ ' + (F.no || '')) + '<w:r><w:tab/></w:r>' + run(office[0] || '')));
         office.slice(1).forEach((l) => parts.push(pX(spX(0) + '<w:ind w:left="' + tw(officeTab) + '"/>', run(l))));
         const date = String(F.date || '').trim(), dm = date.match(/^([0-9๐-๙]{1,2})\s+/);
@@ -711,7 +763,22 @@
             parts.push('<w:tbl><w:tblPr><w:tblW w:w="' + tw(16) + '" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="' + tw(8) + '"/><w:gridCol w:w="' + tw(8) + '"/></w:tblGrid><w:tr>' +
                 cell('ลงชื่อ ................................ ผู้รับทราบ', '(' + (F.recvName || '') + ')') + cell('ลงชื่อ ................................ ผู้ส่งมอบ', '(' + (F.giverName || '') + ')') + '</w:tr></w:tbl>' + pX(spX(0)));
         }
-        return { xml: parts.join(''), margin: [2.5, 2, 2, 3], pageNumbers: true };
+        // สิ่งที่ส่งมาด้วย (แผ่นแยก): ขึ้นส่วนใหม่ ไม่มีเลขหน้าของหนังสือ
+        const annex = lines(F.annexBody);
+        let finalSect = null;
+        if (annex.length) {
+            const pg = '<w:pgSz w:w="' + DX.PAGE_W + '" w:h="' + DX.PAGE_H + '"/><w:pgMar w:top="' + tw(2.5) + '" w:right="' + tw(2) + '" w:bottom="' + tw(2) + '" w:left="' + tw(3) + '" w:header="709" w:footer="709" w:gutter="0"/>';
+            parts.push(pX('<w:sectPr><w:headerReference w:type="default" r:id="rIdHdr"/><w:headerReference w:type="first" r:id="rIdHdrFirst"/>' + pg + '<w:titlePg/></w:sectPr>'));
+            if (String(F.annexCode || '').trim()) parts.push(pX(spX(0) + '<w:jc w:val="right"/>', run(F.annexCode, true)));
+            lines(F.annexTitle).forEach((l, i) => parts.push(pX(spX(i ? 0 : 6) + '<w:jc w:val="center"/>', runBU(wbr(th(l))))));
+            annex.forEach((l, i) => {
+                if (/^#\s*/.test(l)) parts.push(pX('<w:keepNext/>' + spX(i ? 3 : 10), run(l.replace(/^#\s*/, ''), true)));
+                else if (/^หมายเหตุ/.test(l)) parts.push(pX(spX(3), runBU('หมายเหตุ') + run(l.replace(/^หมายเหตุ/, ''))));
+                else parts.push(pX(spX(0) + '<w:ind w:firstLine="' + tw(1.5) + '"/><w:jc w:val="thaiDistribute"/>', run(l)));
+            });
+            finalSect = '<w:sectPr><w:headerReference w:type="default" r:id="rIdHdrFirst"/>' + pg + '</w:sectPr>';
+        }
+        return { xml: parts.join(''), margin: [2.5, 2, 2, 3], pageNumbers: true, finalSect: finalSect };
     }
     function xMemo(t, F, th) {
         const run = (s, pt, b) => runX(wbr(th(s)), pt || 16, b);
@@ -739,60 +806,69 @@
         lines(F.signPos).forEach((l) => parts.push(pX(spX(0) + '<w:ind w:left="' + signIndent + '"/><w:jc w:val="center"/>', run(signFix(l)))));
         return { xml: parts.join(''), margin: [2, 2, 2, 3], pageNumbers: false };
     }
+    // ประกาศ / คำสั่ง ตามแบบ สตช. (.docx) — ระยะเดียวกับหน้าพิมพ์ (ORD)
     function xAnnounce(t, F, th) {
         const run = (s, b) => runX(wbr(th(s)), 16, b);
         const W = 16, gH = 3 * DX.EMU_CM, gW = Math.round(gH * 118 / 130), gX = (W - GW(3)) / 2;
+        const nameLeft = tw(2 * ORD.nameC - W);
         const parts = [];
-        lines(F.issuer).forEach((l, i) => parts.push(pX(spX(i ? 0 : 3 * 28.35 + 6) + '<w:jc w:val="center"/>', (i ? '' : anchorX('rIdGaruda', gW, gH, gX * DX.EMU_CM, 2.5 * DX.EMU_CM, 1)) + run(l))));
-        if ((F.subject || '').trim()) parts.push(pX(spX(6) + '<w:jc w:val="center"/>', run('เรื่อง  ' + F.subject)));
+        parts.push(pX(spX(0) + '<w:jc w:val="right"/>', anchorX('rIdGaruda', gW, gH, gX * DX.EMU_CM, 2.5 * DX.EMU_CM, 1) + run(F.formCode || '', true)));
+        lines(F.issuer).forEach((l, i) => parts.push(pX(spX(i ? 0 : (3 - 0.74) * 28.35 + 6) + '<w:jc w:val="center"/>', run(l, true))));
+        if (String(F.no || '').trim()) parts.push(pX(spX(0) + '<w:jc w:val="center"/>', run('ที่ ' + F.no)));
+        if (String(F.subject || '').trim()) parts.push(pX(spX(0) + '<w:jc w:val="center"/>', run('เรื่อง ' + F.subject)));
         parts.push(pX(spX(4) + '<w:ind w:left="' + tw(5.75) + '" w:right="' + tw(5.75) + '"/><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>'));
-        lines(F.body).forEach((l) => parts.push(pX(spX(6) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(l))));
-        const given = String(F.given || '').trim();
-        parts.push(signX(F, given, 4.5, 4.5 + realCm(th(given)) / 2, th, 12));
+        lines(F.body).forEach((l, i) => parts.push(pX(spX(i ? 0 : 4) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(l))));
+        if (String(F.effective || '').trim()) parts.push(pX('<w:keepNext/>' + spX(9) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run(F.effective)));
+        parts.push(pX('<w:keepNext/>' + spX(9) + '<w:ind w:left="' + tw(ORD.givenAt) + '"/>', run(String(F.given || '').trim())));
+        const sr = splitRank(F.signName);   // ยศอยู่บรรทัดลงชื่อ · (ชื่อจริง นามสกุล)
+        parts.push(pX('<w:keepNext/>' + spX(10) + '<w:ind w:left="' + tw(ORD.signAt) + '"/>', run('(ลงชื่อ)' + (sr[0] ? ' ' + sr[0] : ''))));
+        const pos = lines(F.signPos);
+        parts.push(pX((pos.length ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run('(' + (sr[1] || '..................................................') + ')')));
+        pos.forEach((l, i) => parts.push(pX((i < pos.length - 1 ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run(l))));
+        const notes = lines(F.notes);
+        if (notes.length) {
+            parts.push(pX('<w:keepNext/>' + spX(6), runBU(th('หมายเหตุ'))));
+            notes.forEach((l) => parts.push(pX('<w:keepLines/>' + spX(0) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(l))));
+        }
         return { xml: parts.join(''), margin: [2.5, 2, 2, 3], pageNumbers: false };
     }
-    // ชุดเอกสารยื่นศาลแพ่ง (.docx): หน้าละส่วน · ใบปะหน้าเป็นส่วนสุดท้ายแนวนอน
+    // แบบ 3-5 คำร้องให้เลิกการชุมนุมสาธารณะ (.docx) — เส้นจุดกรอกด้วยขีดเส้นใต้จุด · บรรทัด "ระหว่าง" ใช้แท็บจุดนำ
     function xPetition(t, F, th) {
         const run = (s, b, pt, it) => runX(wbr(th(s)), pt || 16, b, it);
-        const U = (s, n) => runU(String(s || '').trim() ? ' ' + th(s) + ' ' : new Array((n || 12) + 1).join(' '));
-        const W = 16, gH = 2.5 * DX.EMU_CM, gW = Math.round(gH * 118 / 130), gX = (W - GW(2.5)) / 2;
-        let gid = 1;
-        const garudaRun = () => anchorX('rIdGaruda', gW, gH, gX * DX.EMU_CM, 2 * DX.EMU_CM, gid++);
-        const right = '<w:tabs><w:tab w:val="right" w:pos="' + tw(W) + '"/></w:tabs>';
-        const dateRuns = () => run('วันที่ ') + U(F.day, 6) + run(' เดือน ') + U(F.month, 14) + run(' พุทธศักราช ') + U(F.year, 8);
-        const kind = () => pX(spX(4) + '<w:jc w:val="center"/>', run('ความ' + (F.caseKind || ''), true, 18));
-        const partyX = () => {
-            const row = (name, role) => { const ls = lines(name); return ls.length ? pX(spX(4) + right + '<w:ind w:left="' + tw(2.5) + '"/>', ls.map((l, i) => (i ? '<w:r><w:br/></w:r>' : '') + run(l)).join('') + '<w:r><w:tab/></w:r>' + run(role, true)) : ''; };
-            return row(F.applicant, 'ผู้ร้อง') + (lines(F.respondent).length ? pX(spX(0) + '<w:jc w:val="center"/>', run('ระหว่าง')) + row(F.respondent, 'ผู้คัดค้าน') : '');
+        const U = (s, n) => runU(String(s || '').trim() ? ' ' + th(s) + ' ' : new Array((n || 12) + 1).join(' '));
+        const W = 16, gH = 3 * DX.EMU_CM, gW = Math.round(gH * 118 / 130), gX = (W - GW(3)) / 2;
+        const signX2 = (role, name) => {
+            const sr = splitRank(name);
+            return pX((sr[1] ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + tw(PET_SIGN_AT) + '"/>', run(petSignLead(sr[0]) + PET_DOTS + ' ' + role)) +
+                (sr[1] ? pX(spX(0) + '<w:ind w:left="' + tw(petSignLeft(sr[0])) + '"/><w:jc w:val="center"/>', run('(' + sr[1] + ')')) : '');
         };
-        const left = tw(petSignLeft());
-        const signX2 = (role, name, pos) => pX('<w:keepNext/>' + spX(0) + '<w:ind w:left="' + tw(PET_SIGN_AT) + '"/>', run('ลงชื่อ ' + PET_DOTS + ' ' + role)) +
-            (name ? pX('<w:keepNext/>' + spX(0) + '<w:ind w:left="' + left + '"/><w:jc w:val="center"/>', run('(' + name + ')')) : '') +
-            lines(pos).map((l) => pX(spX(0) + '<w:ind w:left="' + left + '"/><w:jc w:val="center"/>', run(l))).join('');
-        const blankX = (n) => new Array(n + 1).join(pX('<w:keepNext/>' + spX(0)));
-        const headX = (leftLines, rightLines, leftBold) => {
-            const ps = [];
-            leftLines.forEach((l, i) => ps.push(pX(spX(0), (i ? '' : garudaRun()) + run(l, leftBold))));
-            const pad = Math.max(0, 2.5 - leftLines.length * 0.66 - rightLines.length * 0.66 + 0.4);
-            rightLines.forEach((r, i) => ps.push(pX(spX(i ? 0 : pad * 28.35) + '<w:jc w:val="right"/>', r)));
-            return ps.join('');
-        };
+        const ind = (c) => '<w:ind w:left="' + tw(c) + '"/>';
         const x = [];
-        x.push(headX(['(คำร้อง)', F.subtitle || ''], [run('ที่ ') + U(F.petNo, 14)]));
-        x.push(pX(spX(0) + '<w:jc w:val="center"/>', run(F.court, true, 20)));
-        x.push(pX(spX(2) + right, run('รับคำร้อง', false, 14, true) + '<w:r><w:tab/></w:r>' + dateRuns()));
-        x.push(pX(spX(0), run('เรียกสอบ', false, 14, true)));
-        x.push(pX(spX(0), run('................................ ผู้พิพากษา', false, 14, true)));
-        x.push(kind() + partyX());
-        x.push(pX(spX(6) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(F.intro)));
+        x.push(pX(spX(0) + '<w:tabs><w:tab w:val="right" w:pos="' + tw(W) + '"/></w:tabs>',
+            anchorX('rIdGaruda', gW, gH, gX * DX.EMU_CM, 2 * DX.EMU_CM, 1) + runX('○', 20, false) + '<w:r><w:tab/></w:r>' + run(F.formCode || '', true)));
+        x.push(pX(spX(0), run(F.title, true)));
+        x.push(pX(spX(12) + ind(9.6), run('คดีหมายเลขดำที่ ') + U(F.blackNo, 14)));
+        x.push(pX(spX(0) + ind(9.6), run('คดีหมายเลขแดงที่ ') + U(F.redNo, 14)));
+        x.push(pX(spX(6), run('ศาล') + U(F.court, 20)));
+        x.push(pX(spX(0) + ind(6.3), run('วันที่') + U(F.day, 6) + run('เดือน') + U(F.month, 14) + run('พุทธศักราช ') + U(F.year, 8)));
+        x.push(pX(spX(10) + ind(7.3), run('ความ') + U(F.caseKind, 30)));
+        const btw = (v, role, lead) => pX('<w:keepNext/>' + spX(4) + '<w:tabs><w:tab w:val="left" w:pos="' + tw(2.5) + '"/><w:tab w:val="left" w:leader="dot" w:pos="' + tw(14.3) + '"/></w:tabs>',
+            (lead ? run('ระหว่าง', true) : '') + '<w:r><w:tab/></w:r>' + run(String(v || '').trim()) + '<w:r><w:tab/></w:r>' + run(' ' + role));
+        x.push(btw(F.plaintiff, 'โจทก์'), btw(F.applicant, 'ผู้ร้อง', true), btw(F.defendant, 'จำเลย'));
+        x.push(pX(spX(8) + '<w:ind w:firstLine="' + tw(1.27) + '"/>', run('ข้าพเจ้า') + U(F.pName, 40)));
+        x.push(pX(spX(0), run('เชื้อชาติ') + U(F.race, 8) + run('สัญชาติ') + U(F.nationality, 8) + run('อาชีพ') + U(F.occupation, 14) + run('เกิดวันที่') + U(F.birthDay, 8)));
+        x.push(pX(spX(0), run('เดือน') + U(F.birthMonth, 12) + run('พ.ศ.') + U(F.birthYear, 8) + run('อายุ') + U(F.age, 5) + run('ปี อยู่บ้านเลขที่') + U(F.houseNo, 10) + run('หมู่ที่') + U(F.moo, 4)));
+        x.push(pX(spX(0), run('ถนน') + U(F.road, 14) + run('ตรอก/ซอย') + U(F.soi, 6) + run('ใกล้เคียง') + U(F.near, 6) + run('ตำบล/แขวง') + U(F.subdistrict, 10)));
+        x.push(pX(spX(0), run('อำเภอ/เขต') + U(F.district, 10) + run('จังหวัด') + U(F.province, 14) + run('โทรศัพท์') + U(F.phone, 12)));
+        x.push(pX(spX(0), run('ขอยื่นคำร้องมีข้อความตามที่จะกล่าวต่อไปนี้')));
         lines(F.body).forEach((l) => {
             const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
             x.push(pX(spX(3) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', m ? run(m[1], true) + run(' ' + m[2]) : run(l)));
         });
-        x.push(pX('<w:keepNext/>' + spX(3) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run(F.prayer)));
+        x.push(pX('<w:keepNext/>' + spX(8) + ind(8), run(F.prayer)));
+        x.push(signX2('ผู้ร้อง', F.signName).replace(spX(0), spX(14)));
         const writerName = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
-        x.push(signX2('ผู้ร้อง', F.signName, F.signPos).replace(spX(0), spX(14)));
-        x.push(pX('<w:keepNext/>' + spX(8) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์')) + signX2('ผู้เรียงและพิมพ์', writerName, '').replace(spX(0), spX(12)));
+        x.push(pX('<w:keepNext/>' + spX(10) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์')) + signX2('ผู้เรียงและพิมพ์', writerName).replace(spX(0), spX(12)));
         return { xml: x.join(''), margin: [2, 2, 2, 3], pageNumbers: false };
     }
         function docxBlob(t, k) {
@@ -917,10 +993,15 @@
             return;
         }
         const D = planData(k), byPerson = ui.planBy === 'person';
-        let html = '';
+        let html = '', chips = '';
         if (!byPerson) {
+            // ชิปเลือกช่วง (ค่าตั้งต้น = ทั้งหมด ต่อเนื่องตามเวลา)
+            const phs = Object.keys(D.L.phases).map(Number);
+            const cur = phs.indexOf(Number(ui.pphase)) !== -1 ? Number(ui.pphase) : 0;
+            chips = '<div class="cmdd-chtabs cmdd-ptabs" role="tablist" aria-label="ช่วงปฏิบัติ"><button type="button" role="tab" class="' + (cur ? '' : 'on') + '" data-d="pphase" data-v="0"><span>ทั้งหมด</span></button>' +
+                phs.map((n) => '<button type="button" role="tab" class="' + (cur === n ? 'on' : '') + '" data-d="pphase" data-v="' + n + '"><b>' + n + '</b><span>' + esc(D.L.phases[n].label.split(' · ')[0].split(' (')[0]) + '</span></button>').join('') + '</div>';
             let ph = 0, day = null, jumped = false;
-            D.steps.forEach((s) => {
+            D.steps.filter((s) => !cur || s.ph === cur).forEach((s) => {
                 if (s.ph !== ph) {
                     if (ph) html += '</section>';
                     ph = s.ph; day = null;
@@ -935,7 +1016,12 @@
             });
             if (ph) html += '</section>';
         } else {
-            html = D.L.people.map((p) => {
+            // เลือกทีละคน (แถวชื่อด้านบน) แทนการ์ดยาวเรียงลงมา
+            const people = D.L.people.filter((p) => D.steps.some((s) => s.who.indexOf(p.id) !== -1));
+            const sel = people.find((p) => p.id === ui.pperson) || people[0];
+            chips = '<div class="cmdd-chtabs cmdd-ptabs" role="tablist" aria-label="ผู้รับผิดชอบ">' + people.map((p) =>
+                '<button type="button" role="tab" class="' + (p === sel ? 'on' : '') + '" data-d="pperson" data-v="' + p.id + '" title="' + esc(p.name) + '"><span>' + esc(p.short) + '</span><em>' + D.steps.filter((s) => s.who.indexOf(p.id) !== -1).length + '</em></button>').join('') + '</div>';
+            html = [sel].map((p) => {
                 const mine = D.steps.filter((s) => s.who.indexOf(p.id) !== -1);
                 if (!mine.length) return '';
                 const lead = mine.filter((s) => s.who[0] === p.id).length;
@@ -948,7 +1034,7 @@
         }
         body.innerHTML = '<div class="cmdd-ptools cmd-card">' + planSeg(byPerson ? 'person' : 'time') +
             '<button type="button" class="cmd-btn sm gold" data-d="print-plan"><i class="fa-solid fa-print"></i> พิมพ์</button>' +
-            '<small class="cmdd-psum">' + D.steps.length + ' ขั้นตอน ตั้งแต่รับแจ้งจนปิดภารกิจ · ชื่อแรก = ผู้รับผิดชอบหลัก · <i class="fa-solid fa-file-lines"></i> เปิดหนังสือที่ใช้ในขั้นนั้น</small></div>' + html;
+            chips + '</div>' + html;
     }
     function printPlan(k) {
         const D = planData(k), byPerson = ui.planBy === 'person', e = ev();
@@ -983,32 +1069,38 @@
         const s = e && e.docs && e.docs['manual:' + sec.id];
         return s ? s.html : sec.html;
     }
+    // คู่มือแบบแท็บ: แท็บบท (แถวบน) → แท็บหัวข้อในบท → แสดงทีละหัวข้อ ไม่ต้องเลื่อนยาว · ค้นหา = รายการหัวข้อที่พบ กดเพื่อเปิด
+    function secArticle(s, e) {
+        const edited = !!(e.docs && e.docs['manual:' + s.id]);
+        return '<article class="cmdd-sec" data-sec="' + s.id + '"><header><h4>' + esc(s.title) + '</h4><div class="cmdd-tools">' +
+            (s.script ? '<button type="button" class="cmd-btn sm neon" data-d="prompt-sec" data-id="' + s.id + '"><i class="fa-solid fa-microphone-lines"></i> อ่านหน้างาน</button>' : '') +
+            '<button type="button" class="cmd-btn sm" data-d="edit-sec" data-id="' + s.id + '"><i class="fa-solid fa-pen"></i> แก้ไข</button>' +
+            (edited ? '<button type="button" class="cmd-btn sm danger" data-d="reset-sec" data-id="' + s.id + '" title="คืนค่าข้อความเดิม"><i class="fa-solid fa-rotate-left"></i></button>' : '') +
+            '</div></header><div class="cmdd-md">' + manualHtml(s) + '</div></article>';
+    }
     function renderManual(body, k) {
         const M = window.LAMHIN_MANUAL;
         const q = String(ui.q || '').trim().toLowerCase();
         const e = ev();
-        let hits = 0;
-        const chapters = M.chapters.map((c) => {
-            const secs = c.sections.filter((s) => !q || (s.title + ' ' + stripTags(manualHtml(s))).toLowerCase().indexOf(q) !== -1);
-            hits += secs.length;
-            if (q && !secs.length) return '';
-            const open = q ? true : !!ui.open[c.id];
-            return '<section class="cmdd-ch cmd-card' + (open ? ' open' : '') + '">' +
-                '<button type="button" class="cmdd-ch-h" data-d="chapter" data-id="' + c.id + '" aria-expanded="' + open + '"><i class="fa-solid ' + c.icon + '"></i><span><small>' + esc(c.no) + '</small><b>' + esc(c.title) + '</b></span><em>' + secs.length + ' หัวข้อ</em><i class="fa-solid fa-chevron-down cmdd-chev"></i></button>' +
-                (open ? '<div class="cmdd-secs">' + secs.map((s) => {
-                    const edited = !!(e.docs && e.docs['manual:' + s.id]);
-                    return '<article class="cmdd-sec" data-sec="' + s.id + '"><header><h4>' + esc(s.title) + '</h4><div class="cmdd-tools">' +
-                        (s.script ? '<button type="button" class="cmd-btn sm neon" data-d="prompt-sec" data-id="' + s.id + '"><i class="fa-solid fa-microphone-lines"></i> อ่านหน้างาน</button>' : '') +
-                        '<button type="button" class="cmd-btn sm" data-d="edit-sec" data-id="' + s.id + '"><i class="fa-solid fa-pen"></i> แก้ไข</button>' +
-                        (edited ? '<button type="button" class="cmd-btn sm danger" data-d="reset-sec" data-id="' + s.id + '" title="คืนค่าข้อความเดิม"><i class="fa-solid fa-rotate-left"></i></button>' : '') +
-                        '</div></header><div class="cmdd-md">' + manualHtml(s) + '</div></article>';
-                }).join('') + '</div>' : '') + '</section>';
-        }).join('');
-        body.innerHTML = '<div class="cmdd-mhead cmd-card"><div><b>' + esc(M.title) + '</b><small>' + esc(M.sub) + '</small><small>' + esc(M.by) + '</small></div>' +
-            '<div class="cmdd-mtools"><label class="cmdd-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-d="q" placeholder="ค้นหาในคู่มือ เช่น ม.21, ยึดรถ, ศาล" value="' + esc(ui.q || '') + '"></label>' +
-            '<button type="button" class="cmd-btn sm" data-d="expand">' + (Object.keys(ui.open).length >= M.chapters.length ? 'ย่อทั้งหมด' : 'เปิดทั้งหมด') + '</button>' +
-            '<button type="button" class="cmd-btn sm gold" data-d="print-manual"><i class="fa-solid fa-print"></i> พิมพ์คู่มือ</button></div>' +
-            (q ? '<div class="cmdd-hits">พบ ' + hits + ' หัวข้อ</div>' : '') + '</div>' + (chapters || '<div class="cmd-card"><div class="cmd-empty">ไม่พบคำที่ค้นหา</div></div>');
+        const head = '<div class="cmdd-mhead cmd-card"><div class="cmdd-mtools"><label class="cmdd-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" data-d="q" placeholder="ค้นหาในคู่มือ เช่น ม.21, ยึดรถ, ศาล" value="' + esc(ui.q || '') + '"></label>' +
+            '<button type="button" class="cmd-btn sm gold" data-d="print-manual"><i class="fa-solid fa-print"></i> พิมพ์คู่มือ</button></div>';
+        if (q) {
+            const hits = [];
+            M.chapters.forEach((c) => c.sections.forEach((s) => { if ((s.title + ' ' + stripTags(manualHtml(s))).toLowerCase().indexOf(q) !== -1) hits.push({ c: c, s: s }); }));
+            body.innerHTML = head + '<div class="cmdd-hits">พบ ' + hits.length + ' หัวข้อ — กดเพื่อเปิด</div></div>' +
+                (hits.length ? '<div class="cmd-card cmdd-hitlist">' + hits.map((h) => '<button type="button" class="cmdd-hit" data-d="msec" data-ch="' + h.c.id + '" data-id="' + h.s.id + '"><small>' + esc(h.c.no) + '</small><b>' + esc(h.s.title) + '</b><i class="fa-solid fa-chevron-right"></i></button>').join('') + '</div>'
+                    : '<div class="cmd-card"><div class="cmd-empty">ไม่พบคำที่ค้นหา</div></div>');
+            return;
+        }
+        const ch = M.chapters.find((c) => c.id === ui.ch) || M.chapters[0];
+        ui.sec = ui.sec || {};
+        const sec = ch.sections.find((s) => s.id === ui.sec[ch.id]) || ch.sections[0];
+        body.innerHTML = head + '<div class="cmdd-chtabs" role="tablist" aria-label="บทในคู่มือ">' + M.chapters.map((c) =>
+            '<button type="button" role="tab" class="' + (c === ch ? 'on' : '') + '" data-d="mch" data-id="' + c.id + '" title="' + esc(c.no + ' ' + c.title) + '"><i class="fa-solid ' + c.icon + '"></i><span>' + esc(c.no.replace('บทที่ ', 'บท ')) + '</span></button>').join('') + '</div></div>' +
+            '<section class="cmd-card cmdd-chbox"><div class="cmdd-chtitle"><small>' + esc(ch.no) + '</small><b>' + esc(ch.title) + '</b></div>' +
+            (ch.sections.length > 1 ? '<div class="cmdd-sectabs" role="tablist" aria-label="หัวข้อในบท">' + ch.sections.map((s) =>
+                '<button type="button" role="tab" class="' + (s === sec ? 'on' : '') + '" data-d="msec" data-ch="' + ch.id + '" data-id="' + s.id + '">' + esc(s.title.replace(/\s*\(.*\)\s*$/, '')) + '</button>').join('') + '</div>' : '') +
+            secArticle(sec, e) + '</section>';
     }
     const stripTags = (h) => String(h || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ');
     function findSection(id) {
@@ -1079,20 +1171,22 @@
         const groups = [];
         k.templates.forEach((t) => { let g = groups.find((x) => x.name === t.group); if (!g) groups.push(g = { name: t.group, items: [] }); g.items.push(t); });
         const logN = Array.isArray(e.log) ? e.log.length : 0;
+        const g0 = groups.find((g) => g.name === ui.grp) || groups[0];
+        const tabs = '<div class="cmdd-chtabs cmdd-gtabs" role="tablist" aria-label="กลุ่มหนังสือ">' + groups.map((g) =>
+            '<button type="button" role="tab" class="' + (g === g0 ? 'on' : '') + '" data-d="grp" data-v="' + esc(g.name) + '"><span>' + esc(g.name.replace(/\s*\(.*\)$/, '')) + '</span><em>' + g.items.length + '</em></button>').join('') + '</div>';
         body.innerHTML = '<div class="cmdd-lhead cmd-card">' +
-            '<div><b>ศูนย์หนังสือราชการพร้อมพิมพ์</b><small>จัดหน้าตามโปรแกรม Case Glambing Management (ระเบียบงานสารบรรณ) · แก้ข้อความแล้วตัวอย่างอัปเดตทันที · พิมพ์ / PDF / Word</small></div>' +
             '<div class="cmdd-ltools">' +
             '<button type="button" class="cmd-btn sm gold" data-d="print-set"><i class="fa-solid fa-print"></i> พิมพ์ชุดเอกสารประสานงาน</button>' +
             '<button type="button" class="cmd-btn sm" data-d="prefs"><i class="fa-solid fa-gear"></i> ค่ากลางหน่วยงาน</button>' +
             '<button type="button" class="cmd-btn sm" data-d="digits"><i class="fa-solid fa-hashtag"></i> ' + (useThai(k) ? 'เลขไทย ๑๒๓' : 'เลขอารบิก 123') + '</button></div>' +
             (officeMissing ? '<div class="cmdd-warn"><i class="fa-solid fa-circle-exclamation"></i> ยังไม่ได้กรอกที่ตั้ง/โทรศัพท์ของ สน.ลำหิน — กด "ค่ากลางหน่วยงาน" กรอกครั้งเดียว ใช้กับหนังสือทุกฉบับ</div>' : '') +
             (e.category && e.category !== 'ชุมนุมสาธารณะ' ? '<div class="cmdd-warn"><i class="fa-solid fa-circle-info"></i> แบบหนังสือชุดนี้ตั้งต้นจากการชุมนุม 28 พ.ย. 69 — แก้ข้อความให้ตรงเหตุการณ์ก่อนพิมพ์</div>' : '') +
-            '</div>' +
-            groups.map((g) => '<section class="cmd-card cmdd-grp"><div class="cmd-card-h"><i class="fa-solid fa-folder-open"></i><h4>' + esc(g.name) + '</h4><small>' + g.items.length + ' ฉบับ</small></div><div class="cmdd-cards">' +
+            tabs + '</div>' +
+            [g0].map((g) => '<section class="cmd-card cmdd-grp"><div class="cmdd-cards">' +
                 g.items.map((t) => {
                     const edited = !!(e.docs && e.docs[t.id]);
                     return '<button type="button" class="cmdd-doc" data-d="open" data-id="' + t.id + '"><i class="fa-solid ' + t.icon + '"></i><span><b>' + esc(t.title) + '</b><small>' + esc(t.to || '') + '</small>' +
-                        '<em>' + (t.kind === 'memo' ? 'บันทึกข้อความ' : t.kind === 'external' ? 'หนังสือภายนอก' : t.kind === 'petition' ? 'แบบพิมพ์ศาล' : 'ประกาศ') +
+                        '<em>' + (t.kind === 'memo' ? 'บันทึกข้อความ' : t.kind === 'external' ? 'หนังสือภายนอก' : t.kind === 'petition' ? 'แบบพิมพ์ศาล' : 'ประกาศ / คำสั่ง') +
                         (edited ? ' · <u>แก้ไขแล้ว</u>' : '') + (t.fromLog ? ' · ดึงจากบันทึก ศปก. (' + logN + ')' : '') + '</em></span><i class="fa-solid fa-chevron-right"></i></button>';
                 }).join('') + '</div></section>').join('');
     }
@@ -1106,17 +1200,25 @@
             ['refs', 'อ้างถึง (ถ้ามี)', 'ml', 2], ['attach', 'สิ่งที่ส่งมาด้วย (ถ้ามี)', 'ml', 2],
             ['body', 'เนื้อความ — บรรทัดละ 1 ย่อหน้า · ขึ้นต้น 1. = ข้อย่อย (ย่อหน้า 3 ซม.) · # = หัวข้อตัวหนา', 'body', 16], ['closing', 'คำลงท้าย'],
             ['signRank', 'ยศ (เต็ม)'], ['signName', 'ชื่อ-สกุล'], ['signPos', 'ตำแหน่ง (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['owner', 'ส่วนราชการเจ้าของเรื่อง / โทร. / โทรสาร', 'ml', 3]],
-        petition: [['petNo', 'ที่ (เลขคำร้อง มุมขวาบน)'], ['subtitle', 'ชื่อคำร้อง (ใต้ "(คำร้อง)")'], ['court', 'ศาล'], ['day', 'วันที่'], ['month', 'เดือน'], ['year', 'พุทธศักราช'], ['caseKind', 'ความ'],
-            ['applicant', 'ผู้ร้อง (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['respondent', 'ผู้คัดค้าน (เว้นว่างได้ — คำร้องตาม ม.21 ยื่นฝ่ายเดียว)', 'ml', 2],
-            ['intro', 'คำขึ้นต้น (ข้าพเจ้า … ขอยื่นคำร้อง)', 'ml', 3], ['body', 'ข้อความคำร้อง — บรรทัดละ 1 ข้อ ("ข้อ 1." เป็นตัวหนา)', 'body', 18],
-            ['prayer', 'คำลงท้าย'], ['signName', 'ผู้ร้อง (ยศ ชื่อ-สกุล)'], ['signPos', 'ตำแหน่ง', 'ml', 2], ['writer', 'ผู้เรียงและพิมพ์ (ยศ ชื่อ-สกุล)']],
-        announce: [['issuer', 'ชื่อผู้ออกประกาศ (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['subject', 'เรื่อง'], ['body', 'ข้อความประกาศ — บรรทัดละ 1 ย่อหน้า', 'body', 14], ['given', 'ประกาศ ณ วันที่'],
-            ['signRank', 'ยศ (เต็ม)'], ['signName', 'ชื่อ-สกุล'], ['signPos', 'ตำแหน่ง', 'ml', 2]]
+        petition: [['formCode', 'รหัสแบบ (มุมขวาบน)'], ['title', 'ชื่อคำร้อง (ชิดซ้ายบน)'], ['blackNo', 'คดีหมายเลขดำที่'], ['redNo', 'คดีหมายเลขแดงที่'],
+            ['court', 'ศาล (เช่น แพ่งมีนบุรี)'], ['day', 'วันที่'], ['month', 'เดือน'], ['year', 'พุทธศักราช'], ['caseKind', 'ความ'],
+            ['plaintiff', 'ระหว่าง — โจทก์ (เว้นว่าง)'], ['applicant', 'ระหว่าง — ผู้ร้อง'], ['defendant', 'ระหว่าง — จำเลย (เว้นว่าง)'],
+            ['pName', 'ข้าพเจ้า (ยศ ชื่อ-สกุล ตำแหน่ง)'], ['race', 'เชื้อชาติ'], ['nationality', 'สัญชาติ'], ['occupation', 'อาชีพ'],
+            ['birthDay', 'เกิดวันที่'], ['birthMonth', 'เดือน'], ['birthYear', 'พ.ศ.'], ['age', 'อายุ (ปี)'], ['houseNo', 'อยู่บ้านเลขที่'], ['moo', 'หมู่ที่'],
+            ['road', 'ถนน'], ['soi', 'ตรอก/ซอย'], ['near', 'ใกล้เคียง'], ['subdistrict', 'ตำบล/แขวง'], ['district', 'อำเภอ/เขต'], ['province', 'จังหวัด'], ['phone', 'โทรศัพท์'],
+            ['body', 'ข้อความคำร้อง — บรรทัดละ 1 ข้อ ("ข้อ 1." เป็นตัวหนา)', 'body', 14],
+            ['prayer', 'คำลงท้าย'], ['signName', 'ผู้ร้อง (ชื่อในวงเล็บใต้ลายมือชื่อ)'], ['writer', 'ผู้เรียงและพิมพ์ (ยศ ชื่อ-สกุล)']],
+        announce: [['formCode', 'รหัสแบบ (มุมขวาบน)'], ['issuer', 'หัวประกาศ / คำสั่ง (บรรทัดละ 1 บรรทัด · ตัวหนา)', 'ml', 2], ['no', 'ที่'], ['subject', 'เรื่อง'],
+            ['body', 'ข้อความ — บรรทัดละ 1 ย่อหน้า · [ช่อง] = เส้นจุด · «…» = คำแนะนำ (ไม่พิมพ์)', 'body', 14], ['effective', 'ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป'], ['given', 'ประกาศ / สั่ง ณ วันที่'],
+            ['signName', 'ผู้ลงนาม (ยศ ชื่อ-สกุล)'], ['signPos', 'ตำแหน่ง (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['notes', 'หมายเหตุ (บรรทัดละ 1 ข้อ)', 'ml', 5]]
     };
     function renderEditor(body, k, t) {
         const F = fields(t);
         const s = saved(t);
         const list = FIELDS[t.kind].slice();
+        if (t.kind === 'external' && t.defaults.formCode != null) list.unshift(['formCode', 'รหัสแบบ (มุมขวาบน)']);
+        if (t.kind === 'external' && t.defaults.annexBody != null) list.push(['annexCode', 'สิ่งที่ส่งมาด้วย: ข้อความมุมขวาบน'], ['annexTitle', 'สิ่งที่ส่งมาด้วย: ชื่อเรื่อง (บรรทัดละ 1 บรรทัด)', 'ml', 2],
+            ['annexBody', 'สิ่งที่ส่งมาด้วย: เนื้อหา — "#" = หัวข้อตัวหนา', 'body', 12]);
         if (t.receipt) list.push(['receiptText', 'บันทึกการรับทราบ (ท้ายหนังสือ)', 'ml', 3], ['recvName', 'ผู้รับทราบ'], ['giverName', 'ผู้ส่งมอบ']);
         const input = (f) => {
             const v = F[f[0]] == null ? '' : F[f[0]];
@@ -1146,9 +1248,12 @@
             '</div></div>' +
             '<div class="cmdd-mseg"><button type="button" data-d="mob" data-v="form" class="' + (ui.mob !== 'preview' ? 'on' : '') + '"><i class="fa-solid fa-pen"></i> แก้ไขข้อความ</button><button type="button" data-d="mob" data-v="preview" class="' + (ui.mob === 'preview' ? 'on' : '') + '"><i class="fa-solid fa-file"></i> ตัวอย่าง A4</button></div>' +
             '<div class="cmdd-ed' + (ui.mob === 'preview' ? ' show-pv' : ' show-form') + '">' +
-            '<div class="cmdd-form cmd-card"><div class="cmd-form">' + varsHtml + list.map(input).join('') + '</div></div>' +
-            '<div class="cmdd-pvwrap"><div class="cmdd-pvbar"><span><i class="fa-solid fa-file"></i> ตัวอย่างกระดาษ A4 ' + (t.kind === 'memo' ? '(บันทึกข้อความ)' : t.kind === 'external' ? '(หนังสือภายนอก · เลขหน้าตั้งแต่หน้า 2)' : '') + '</span><small data-pages></small></div><div class="cmdd-pv"><div class="cmdd-pv-in"></div></div></div>' +
+            '<div class="cmdd-form cmd-card"><div class="cmd-form">' + varsHtml +
+            '<details class="cmdd-allf full"' + (ui.allf ? ' open' : '') + '><summary><i class="fa-solid fa-list"></i> ช่องกรอกทั้งหมด (' + list.length + ' ช่อง) <small>หรือแตะแก้บนกระดาษ A4 ได้เลย</small></summary><div class="cmd-form">' + list.map(input).join('') + '</div></details></div></div>' +
+            '<div class="cmdd-pvwrap"><div class="cmdd-pvbar"><span><i class="fa-solid fa-pen-to-square"></i> กระดาษ A4 — แตะข้อความเพื่อแก้ได้ทันที · Enter = บันทึก · Esc = ยกเลิก</span><small data-pages></small></div><div class="cmdd-pv"><div class="cmdd-pv-in"></div></div></div>' +
             '</div>';
+        const af = body.querySelector('.cmdd-allf');
+        if (af) af.addEventListener('toggle', () => { ui.allf = af.open; saveUi(); });
         drawPreview(body, k, t);
     }
     let pvTimer = 0, pvGen = 0;
@@ -1158,12 +1263,85 @@
         const gen = ++pvGen;
         const thai = useThai(k);
         if (!inn.firstChild) inn.innerHTML = '<div class="cmdd-pvwait"><span class="spin"></span> กำลังจัดหน้า A4…</div>';
-        paginate(renderDoc(t, fields(t), thai), { pageNumbers: t.kind === 'external', thai: thai }).then((html) => {
+        showHints = true;   // หน้าตัวอย่างเท่านั้น: แสดงคำแนะนำ «…» สีเทา (หน้าพิมพ์/Word ไม่แสดง)
+        let flow;
+        try { flow = renderDoc(t, fields(t), thai); } finally { showHints = false; }
+        paginate(flow, { pageNumbers: t.kind === 'external', thai: thai }).then((html) => {
             if (gen !== pvGen || !inn.isConnected) return;
             inn.innerHTML = html;
+            inn.querySelectorAll('.ds-ed').forEach((x) => { x.contentEditable = 'true'; x.spellcheck = false; });   // แตะแก้บนกระดาษได้
+            edCtx = { t: t, k: k };
             fitPreview(pv, inn);
         });
     }
+
+    /* ---------------- แก้ข้อความบนกระดาษ A4 โดยตรง ----------------
+       แตะข้อความ → พิมพ์ → Enter หรือแตะที่อื่น = บันทึกเข้าช่องเดิม (ช่องกรอกด้านซ้ายอัปเดตตาม) แล้วจัดหน้าใหม่ · Esc = ยกเลิก
+       เส้นจุด [ช่อง] / คำแนะนำ «…» ที่ไม่ได้แตะยังคงเป็นช่อง/คำแนะนำเหมือนเดิม */
+    let edCtx = null, edCancel = false;
+    function edText(el) {
+        const c = el.cloneNode(true);
+        c.querySelectorAll('.ds-ph').forEach((x) => {
+            const lab = String(x.getAttribute('title') || '').replace(/^กรอก:\s*/, '');
+            x.replaceWith(document.createTextNode(x.textContent === PH_DOTS && lab ? '[' + lab + ']' : x.textContent));
+        });
+        c.querySelectorAll('.ds-hint').forEach((x) => x.replaceWith(document.createTextNode(' ' + x.textContent)));
+        return c.textContent;
+    }
+    function edCommit(el) {
+        if (!edCtx) return 0;
+        const t = edCtx.t, k = edCtx.k;
+        const key = el.dataset.ed, li = el.dataset.li, sr = el.dataset.sr || '';
+        const sel = '[data-ed="' + key + '"]' + (li != null ? '[data-li="' + li + '"]' : ':not([data-li])') + (sr ? '[data-sr="' + sr + '"]' : ':not([data-sr])');
+        let text = Array.from(host.querySelectorAll('.cmdd-pv ' + sel)).map(edText).join('').replace(/[ \t\r\n]+/g, ' ').trim();
+        if (useThai(k)) text = toArabic(text);
+        text = (el.dataset.pre || '') + text;
+        const F = fields(t);
+        const cur = String(F[key] == null ? '' : F[key]);
+        let val, removed = false;
+        if (sr) { const p = splitRank(cur); val = (sr === 'rank' ? text + ' ' + p[1] : (p[0] ? p[0] + ' ' : '') + text).trim(); }
+        else if (li != null) {
+            const arr = lines(cur), i = Number(li);
+            if (!text.trim() || text === (el.dataset.pre || '')) { arr.splice(i, 1); removed = true; } else arr[i] = text;   // ลบข้อความหมด = ลบย่อหน้านั้น
+            val = arr.join('\n');
+        } else val = text;
+        // ประกาศ: เวลาที่มาจากช่องกรอก "เวลาที่ประกาศ" คงเป็นตัวแปรเดิม
+        if (t.kind === 'announce' && key === 'given') {
+            const src = String(saved(t).given != null ? saved(t).given : t.defaults.given || '');
+            const shown = String(F.varAt || '').trim() || '[เวลา]';
+            if (src.indexOf('{varAt}') !== -1 && val.indexOf(shown) !== -1) val = val.replace(shown, '{varAt}');
+        }
+        if (val === cur) return 0;
+        setField(t, key, val);
+        const inp = host.querySelector('.cmdd-form [data-k="' + key + '"]'); if (inp) inp.value = val;
+        const rb = host.querySelector('[data-d="reset"]'); if (rb) rb.disabled = !Object.keys(saved(t)).length;
+        return removed ? 2 : 1;
+    }
+    const edRedraw = () => { const b = host.querySelector('.cmdd-body'); if (b && edCtx) drawPreview(b, kit(), edCtx.t); };
+    function onEdKey(e) {
+        const el = e.target.closest && e.target.closest('.cmdd-pv .ds-ed'); if (!el) return;
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+        else if (e.key === 'Escape') { e.preventDefault(); edCancel = true; el.blur(); }
+    }
+    function onEdPaste(e) {
+        const el = e.target.closest && e.target.closest('.cmdd-pv .ds-ed'); if (!el) return;
+        e.preventDefault();
+        const tx = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\s+/g, ' ');
+        document.execCommand('insertText', false, tx);
+    }
+    function onEdBlur(e) {
+        const el = e.target.closest && e.target.closest('.cmdd-pv .ds-ed'); if (!el) return;
+        if (edCancel) { edCancel = false; edRedraw(); return; }
+        const r = edCommit(el);
+        if (r === 2) { edPending = false; edRedraw(); return; }   // ย่อหน้าถูกลบ: ลำดับบรรทัดเปลี่ยน ต้องจัดหน้าใหม่ทันที
+        if (r) edPending = true;
+        // จัดหน้าใหม่เมื่อเลิกแก้ (ถ้าแตะไปแก้อีกจุดทันที รอจนเลิกแก้จุดนั้น)
+        setTimeout(() => {
+            const a = document.activeElement;
+            if (edPending && !(a && a.closest && a.closest('.cmdd-pv .ds-ed'))) { edPending = false; edRedraw(); }
+        }, 0);
+    }
+    let edPending = false;
     function fitPreview(pv, inn) {
         const w = pv.clientWidth || 600;
         const pages = Array.from(inn.querySelectorAll('.ds-page'));
@@ -1183,7 +1361,11 @@
         wrap.className = 'cmdd-tp';
         const draw = () => {
             let text = html;
-            if (tpl) { const F = fields(tpl); text = '<p class="cmdd-tp-hd">' + lines(F.issuer).map(esc).join('<br>') + '</p>' + lines(F.body).map((l) => '<p>' + esc(useThai(k) ? l : l) + '</p>').join(''); }
+            if (tpl) {   // อ่านประกาศ/คำสั่งทั้งฉบับ: หัว · เรื่อง · เนื้อความ · ทั้งนี้… · ประกาศ ณ วันที่ (ไม่อ่านคำแนะนำ «…»)
+                const F = fields(tpl), cl = (s) => esc(noHints(s)).replace(PH_RE, PH_DOTS);
+                text = '<p class="cmdd-tp-hd">' + lines(F.issuer).map(cl).join('<br>') + (String(F.subject || '').trim() ? '<br>เรื่อง ' + cl(F.subject) : '') + '</p>' +
+                    lines(F.body).map((l) => '<p>' + cl(l) + '</p>').join('') + (String(F.effective || '').trim() ? '<p>' + cl(F.effective) + '</p>' : '') + '<p>' + cl(F.given) + '</p>';
+            }
             wrap.querySelector('.cmdd-tp-text').innerHTML = text;
         };
         const varRow = tpl ? '<div class="cmdd-tp-vars">' + tpl.vars.filter((v) => /^(varAt|varWithin|varDeadline)$/.test(v[0])).map((v) =>
@@ -1247,7 +1429,7 @@
         const M = window.LAMHIN_MANUAL;
         const secs = [];
         M.chapters.forEach((c) => c.sections.forEach((s) => { if (s.script) secs.push(s); }));
-        const anns = k.templates.filter((t) => t.kind === 'announce');
+        const anns = k.templates.filter((t) => t.kind === 'announce' && t.script);
         const box = api.modal({
             title: 'โหมดอ่านหน้างาน (ตัวใหญ่)', icon: 'fa-microphone-lines',
             body: '<div class="cmdd-pmenu">' + secs.map((s) => '<button type="button" class="cmd-btn" data-p="sec" data-id="' + s.id + '"><i class="fa-solid fa-scroll"></i> ' + esc(s.title) + '</button>').join('') +
@@ -1323,6 +1505,11 @@
         else if (d === 'ops-in') { if (window.LamhinOps) { window.LamhinOps.checkIn(ev(), b.dataset.rid); render(); } }
         else if (d === 'plan-doc') { ui.view = 'docs'; ui.doc = b.dataset.id; saveUi(); render(); syncOps(); window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' }); }
         else if (d === 'chapter') { const id = b.dataset.id; if (ui.open[id]) delete ui.open[id]; else ui.open[id] = 1; saveUi(); render(); }
+        else if (d === 'mch') { ui.ch = b.dataset.id; ui.q = ''; saveUi(); render(); }
+        else if (d === 'msec') { ui.ch = b.dataset.ch; ui.sec = ui.sec || {}; ui.sec[b.dataset.ch] = b.dataset.id; ui.q = ''; saveUi(); render(); }
+        else if (d === 'grp') { ui.grp = b.dataset.v; saveUi(); render(); }
+        else if (d === 'pphase') { ui.pphase = b.dataset.v; saveUi(); render(); }
+        else if (d === 'pperson') { ui.pperson = b.dataset.v; saveUi(); render(); }
         else if (d === 'expand') { const all = Object.keys(ui.open).length >= window.LAMHIN_MANUAL.chapters.length; ui.open = {}; if (!all) window.LAMHIN_MANUAL.chapters.forEach((c) => { ui.open[c.id] = 1; }); saveUi(); render(); }
         else if (d === 'edit-sec') editSection(b.dataset.id);
         else if (d === 'reset-sec') { if (window.confirm('คืนค่าข้อความเดิมของหัวข้อนี้?')) { const e0 = ev(); delete e0.docs['manual:' + b.dataset.id]; api.save(); render(); } }
@@ -1388,6 +1575,9 @@
             el.classList.add('cmdd');
             el.addEventListener('click', onClick);
             el.addEventListener('input', onInput);
+            el.addEventListener('keydown', onEdKey);     // แก้บนกระดาษ A4
+            el.addEventListener('paste', onEdPaste);
+            el.addEventListener('focusout', onEdBlur);
             el.addEventListener('change', (e) => {   // เลือกชื่อ ผช.พงส. (รายคน)
                 const sl = e.target.closest('[data-d="ops-slot"]');
                 if (sl && window.LamhinOps) { window.LamhinOps.setSlot(ev(), Number(sl.dataset.slot), sl.value); render(); }

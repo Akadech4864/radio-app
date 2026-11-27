@@ -13,6 +13,7 @@
     const BY_KEY = 'lamhin_cmd_logby';
     const PRINT_KEY = 'lamhin_cmd_logprint';
     const ORDER_KEY = 'lamhin_cmd_logorder';
+    const SUB_KEY = 'lamhin_cmd_logsub';   // แท็บย่อย: 'log' บันทึกเหตุการณ์ | 'ladder' ขั้นตอน & กฎหมาย (แผงของ cmdladder.js ที่ cmd.js วางต่อท้าย)
 
     const KINDS = {
         muster: { label: 'ปล่อยแถว', icon: 'fa-flag', tone: 'blue' },
@@ -103,6 +104,14 @@
     /* ---------------- สถานะ ---------------- */
     let api = null, el = null, evId = '', timer = 0, sheet = null, S = null;
     let newestFirst = (function () { try { return localStorage.getItem(ORDER_KEY) !== 'old'; } catch (e) { return true; } })();
+    let sub = (function () { try { return localStorage.getItem(SUB_KEY) === 'ladder' ? 'ladder' : 'log'; } catch (e) { return 'log'; } })();
+    const hasLadder = () => !!document.querySelector('.cmd-ext-pane[data-ext="ladder"]');
+    function setSubTab(v) { sub = v === 'ladder' ? 'ladder' : 'log'; try { localStorage.setItem(SUB_KEY, sub); } catch (e) { /* ไม่จำก็ได้ */ } }
+    function subTabsHtml() {
+        if (!hasLadder()) return '';
+        return '<nav class="cmd-subtabs" role="tablist" aria-label="บันทึก ศปก.">' + [['log', 'fa-clipboard-list', 'บันทึกเหตุการณ์'], ['ladder', 'fa-stairs', 'ขั้นตอน & กฎหมาย']].map((t) =>
+            '<button type="button" role="tab" class="cmd-subtab' + (sub === t[0] ? ' on' : '') + '" data-cl="sub" data-v="' + t[0] + '" aria-selected="' + (sub === t[0]) + '"><i class="fa-solid ' + t[1] + '"></i><span>' + t[2] + '</span></button>').join('') + '</nav>';
+    }
     const esc = (s) => api.esc(s);
     const pad = (n) => String(n).padStart(2, '0');
     const hm = (ms) => { const d = new Date(ms); return pad(d.getHours()) + '.' + pad(d.getMinutes()); };
@@ -176,7 +185,8 @@
         evId = ev.id;
         const crowd = latest(ev, 'crowd'), veh = latest(ev, 'vehicles');
         const lv = api.LEVELS[ev.level] || {};
-        el.innerHTML = '<div class="cl">' +
+        if (sub === 'ladder' && hasLadder()) { el.innerHTML = '<div class="cl">' + subTabsHtml() + '</div>'; return; }
+        el.innerHTML = '<div class="cl">' + subTabsHtml() +
             '<section class="cmd-card cl-head">' +
                 '<div class="cl-top"><div class="cl-stats">' +
                     '<span><i class="fa-regular fa-clock"></i><b data-cl-tick="now">' + hm(Date.now()) + '</b></span>' +
@@ -515,7 +525,12 @@
             'td.c{text-align:center;white-space:nowrap}.m{font-size:12.5pt;color:#333}tr.plan td{font-style:italic;color:#444;background:#f6f6f6}' +
             '.cert{margin-top:12pt;text-indent:2.5cm;text-align:justify}.signs{display:flex;justify-content:space-around;margin-top:22pt;page-break-inside:avoid}.signs div{text-align:center;min-width:40%}' +
             '.signs p{margin:0}';
-        const sign = (label, name, pos) => '<div><p>(ลงชื่อ) ..................................................... ' + label + '</p><p>(' + esc(name || '.....................................................') + ')</p>' + (pos ? '<p>' + esc(pos) + '</p>' : '') + '</div>';
+        // ลงชื่อ: ยศอยู่บรรทัดลงชื่อ · (ชื่อจริง นามสกุล) ไม่มียศ
+        const RANK_RE = /^((?:ว่าที่\s*)?(?:พล\.ต\.[อทต]\.|[พร]\.ต\.[อทต]\.|ส\.ต\.[อทต]\.|จ\.ส\.ต\.|ด\.ต\.|พลตำรวจ(?:เอก|โท|ตรี)|พันตำรวจ(?:เอก|โท|ตรี)|ร้อยตำรวจ(?:เอก|โท|ตรี)|ดาบตำรวจ|จ่าสิบตำรวจ|สิบตำรวจ(?:เอก|โท|ตรี))(?:\s*หญิง)?)\s*/;
+        const sign = (label, name, pos) => {
+            const n = String(name || '').trim(), m = n.match(RANK_RE), rank = m && n.slice(m[0].length) ? m[1] : '', nm = rank ? n.slice(m[0].length) : n;
+            return '<div><p>(ลงชื่อ) ' + (rank ? esc(rank) + ' ' : '') + '.............................................. ' + label + '</p><p>(' + esc(nm || '.....................................................') + ')</p>' + (pos ? '<p>' + esc(pos) + '</p>' : '') + '</div>';
+        };
         const body =
             (p.attach ? '<p class="att">' + esc(T(p.attach)) + '</p>' : '') +
             '<h1>' + title + '</h1><p class="sub">' + esc(ev.title) + '</p>' +
@@ -551,6 +566,7 @@
         if (!b || !el.contains(b)) return;
         const ev = api.active(); if (!ev) return;
         const act = b.dataset.cl;
+        if (act === 'sub') { setSubTab(b.dataset.v); render(); if (api.syncSections) api.syncSections(); return; }
         if (act === 'new') openSheet(freshS(ev, b.dataset.k));
         else if (act === 'go') api.openTab(b.dataset.tab);
         else if (act === 'edit') { const x = logOf(ev).find((y) => y.id === b.dataset.id); if (x) openSheet(fromEntry(x)); }
@@ -603,6 +619,8 @@
 
     window.LamhinCmd.registerSection({
         id: 'log', label: 'บันทึก ศปก.', icon: 'fa-clipboard-list', order: 35,
+        shows(childId) { return childId === 'ladder' ? sub === 'ladder' : true; },
+        reveal(childId) { if (childId === 'ladder') { setSubTab('ladder'); if (el) render(); } },
         mount(node, a) {
             api = a; el = node;
             el.addEventListener('click', onClick);

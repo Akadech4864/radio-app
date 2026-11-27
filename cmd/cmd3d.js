@@ -15,7 +15,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const BUILD = '7';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
+    const BUILD = '8';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
     const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.' + BUILD;
 
     const LAT = 13.883804945497769, LON = 100.80997853378307;

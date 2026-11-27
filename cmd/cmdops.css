@@ -133,3 +133,9 @@
     .ops-head { padding: 11px 12px; }
     .ops-head-txt b { font-size: 0.9rem; }
 }
+
+/* สายงานทีละแท็บ */
+.ops-bar.on { color: #0A1628; background: linear-gradient(135deg, #F3D774, #D4AF37); border-color: transparent; }
+.ops-bar.on > i, .ops-bar.on em { color: #0A1628; }
+.ops-grid.one { grid-template-columns: minmax(0, 1fr); }
+.ops-div .ops-head { cursor: default; }

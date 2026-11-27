@@ -1,6 +1,6 @@
 /* =====================================================================
    4 ระยะการดูแลการชุมนุม + บันได 7 ขั้นตอนบังคับใช้กฎหมาย (พ.ร.บ.การชุมนุมสาธารณะฯ ม.21–24) + ทางลัดฉุกเฉิน ม.25
-   (Step 3 · แท็บ "ขั้นตอน & กฎหมาย" = 4 ระยะ · บันได 7 ขั้น ม.21–25)
+   (Step 3 · แท็บย่อย "ขั้นตอน & กฎหมาย" ในแท็บ บันทึก ศปก. (host: 'log') = 4 ระยะ · บันได 7 ขั้น ม.21–25 · ขั้นตอนพับได้ เปิดทีละขั้น)
    - ข้อมูลชุดเดียวกับแท็บ "บันทึก ศปก." (ev.log) — กดบันทึกที่นี่จะขึ้นใน timeline และเติมคำร้องศาลในแท็บเอกสารเอง
      รูปแบบรายการตรงกับ cmdlog.js: { id, at, kind, title, detail, crowd, vehicles, law, unit, place, by, level, evidence,
      deadlineAt, refId, ann, minutes, outcome } + ladder ('L1'–'L7' / 'S25') / phase (1–4) ของโมดูลนี้
@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.2';   // เลขหลังจุด: เพิ่มทุกครั้งที่แก้ cmdladder.css
+    const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.3';   // เลขหลังจุด: เพิ่มทุกครั้งที่แก้ cmdladder.css
     (function () {
         if (document.querySelector('link[data-ldcss]')) return;
         const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = BASE + 'cmdladder.css?v=' + VER; l.setAttribute('data-ldcss', '');
@@ -63,6 +63,7 @@
 
     /* ---------------- สถานะ / ข้อมูล ---------------- */
     let api = null, host = null, timer = 0, lastKey = '', timerKey = '';
+    let openN = null;   // ขั้นที่กางอยู่ (null = ขั้นถัดไปอัตโนมัติ · 0 = พับหมด)
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const pad = (n) => String(n).padStart(2, '0');
     const logOf = (ev) => { if (!Array.isArray(ev.log)) ev.log = []; return ev.log; };
@@ -146,6 +147,7 @@
             }).join('') + '</div></section>';
 
         // ---- บันได 7 ขั้น ----
+        const shownN = openN === null ? (next ? next.n : 0) : openN;
         h += '<section class="cmd-card"><div class="cmd-card-h"><i class="fa-solid fa-stairs"></i><h4>บันได 7 ขั้น (ม.21–24)</h4><small>ห้ามข้ามขั้น ยกเว้น ม.25</small></div><ol class="ld-ladder">' +
             STEPS.map((s) => {
                 const recs = R[s.n], done = recs.length > 0, isNext = next && next.n === s.n;
@@ -156,8 +158,10 @@
                     return '<li class="' + (x.deadlineAt && !res ? 'due' : '') + '"><b>' + esc(hm(x.at)) + '</b><span>' + esc(x.title) + esc(due) + (res ? ' → ' + esc(res.title) + ' (' + esc(hm(res.at)) + ')' : '') + '</span></li>';
                 }).join('') + '</ul>' : '';
                 const canAct = isNext || (done && s.repeat) || (!done && !isNext);
-                return '<li class="ld-step ' + cls + '"><div class="ld-dot">' + (done ? '<i class="fa-solid fa-check"></i>' : s.n) + '</div>' +
-                    '<div class="ld-card"><div class="ld-card-h"><b>ขั้นที่ ' + s.n + ' · ' + esc(s.name) + '</b><span class="ld-law">' + esc(s.law) + '</span></div>' +
+                const open = s.n === shownN;
+                const tag = done ? '<em class="ld-tag ok">✓ ' + esc(hm(recs[recs.length - 1].at)) + (recs.length > 1 ? ' · ' + recs.length + ' ครั้ง' : '') + '</em>' : isNext ? '<em class="ld-tag">ถัดไป</em>' : '';
+                return '<li class="ld-step ' + cls + (open ? ' open' : '') + '"><div class="ld-dot">' + (done ? '<i class="fa-solid fa-check"></i>' : s.n) + '</div>' +
+                    '<div class="ld-card"><button type="button" class="ld-card-h" data-ld="open" data-n="' + s.n + '" aria-expanded="' + open + '"><b>ขั้นที่ ' + s.n + ' · ' + esc(s.name) + '</b><span class="ld-law">' + esc(s.law) + '</span>' + tag + '<i class="fa-solid fa-chevron-down ld-chev"></i></button>' +
                     '<p>' + esc(s.desc) + '</p><div class="ld-who"><i class="fa-solid fa-user-shield"></i>' + esc(s.who) + '</div>' + recHtml +
                     '<div class="ld-act">' +
                         (canAct ? '<button type="button" class="cmd-btn sm ' + (isNext ? 'gold' : '') + '" data-ld="step" data-n="' + s.n + '"><i class="fa-solid ' + (done ? 'fa-plus' : 'fa-pen-to-square') + '"></i> ' + (done ? 'บันทึกเพิ่ม' : esc(s.btn)) + '</button>' : '') +
@@ -205,6 +209,11 @@
         else if (k === 's25') openSheet('s25');
         else if (k === 'phase') phaseClick(ev, Number(b.dataset.n));
         else if (k === 'tab') api.openTab(b.dataset.tab);
+        else if (k === 'open') {   // กาง/พับขั้นตอน (กางได้ทีละขั้น)
+            const n = Number(b.dataset.n), L = sorted(ev), R = stepRecs(L), nx = STEPS.find((x) => !R[x.n].length);
+            const cur = openN === null ? (nx ? nx.n : 0) : openN;
+            openN = cur === n ? 0 : n; render();
+        }
         else if (k === 'due') {
             const i = Number(b.dataset.i), out = DUE_OUT[i];
             const a = logOf(ev).find((x) => x.id === b.dataset.ref);
@@ -337,6 +346,7 @@
     }
 
     function save(kind, S) {
+        openN = null;   // บันทึกแล้ว → กางขั้นถัดไปให้เอง
         const ev = api.active(); if (!ev) return false;
         const at = atMs(S.at), iso = new Date(at).toISOString(), log = logOf(ev);
         const crowd = S.crowd !== '' && !isNaN(Number(S.crowd)) ? Math.max(1, Math.min(500, Number(S.crowd))) : null;
@@ -384,7 +394,7 @@
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({
-        id: 'ladder', label: 'ขั้นตอน & กฎหมาย', icon: 'fa-stairs', order: 18,
+        id: 'ladder', label: 'ขั้นตอน & กฎหมาย', icon: 'fa-stairs', order: 18, host: 'log',
         mount: function (el, A) { api = A; host = el; el.addEventListener('click', onClick); render(); },
         update: function (ev) {   // บันทึกจากแท็บอื่น (เช่น บันทึก ศปก.) → วาดใหม่เมื่อเห็นอยู่
             const L = ev && Array.isArray(ev.log) ? ev.log : [];

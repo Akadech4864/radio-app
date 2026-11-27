@@ -89,6 +89,10 @@
     padding: 6px 12px; border-radius: 10px; background: rgba(220, 38, 38, 0.92); color: #fff; font-size: 0.76rem; font-weight: 700; text-align: center; pointer-events: none;
 }
 @media (max-width: 560px) {
+    .m3-hint { display: none; }
+    .m3-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+    .m3-bar::-webkit-scrollbar { display: none; }
+    .m3-bar > * { flex: 0 0 auto; }
     .m3-stage { height: min(56vh, 470px); min-height: 320px; }
     .m3-legend { display: none; }
     .m3-focus button span { display: none; }

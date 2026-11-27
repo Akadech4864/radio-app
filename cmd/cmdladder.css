@@ -106,3 +106,13 @@
     .ld-card p { font-size: 0.78rem; }
     .ld-sos, .ld-btns .cmd-btn.gold { flex: 1 1 100%; }
 }
+
+/* ขั้นตอนพับได้ — กางทีละขั้น (ขั้นถัดไปกางให้เอง) */
+.ld-step { padding-bottom: 10px; }
+button.ld-card-h { width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; align-items: center; }
+.ld-tag { flex: 0 0 auto; font-style: normal; font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: #0A1628; background: #D4AF37; }
+.ld-tag.ok { color: #86EFAC; background: rgba(22, 163, 74, 0.16); }
+.ld-chev { flex: 0 0 auto; margin-left: auto; font-size: 0.72rem; color: #93A7C4; transition: transform 0.15s; }
+.ld-step.open .ld-chev { transform: rotate(180deg); }
+.ld-step:not(.open) .ld-card > :not(.ld-card-h) { display: none; }
+.ld-step:not(.open) .ld-card { padding-top: 9px; padding-bottom: 9px; }

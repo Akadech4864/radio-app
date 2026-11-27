@@ -16,7 +16,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.3';   // เลขหลังจุด: เพิ่มทุกครั้งที่แก้ cmdops.css
+    const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.4';   // เลขหลังจุด: เพิ่มทุกครั้งที่แก้ cmdops.css
     const UI_KEY = 'lamhin_cmd_ops_ui';
     (function () {
         if (document.querySelector('link[data-opscss]')) return;
@@ -188,7 +188,8 @@
         const total = divs.reduce((s, d) => s + d.items.length, 0), done = divs.reduce((s, d) => s + d.done, 0);
         const pct = total ? Math.round(done / total * 100) : 0;
         const cnt = { todo: 0, doing: 0, done: 0 }; divs.forEach((d) => { cnt[d.st]++; });
-        const mobile = window.innerWidth < 860;
+        // แสดงทีละสายงาน (แท็บ) — ค่าเริ่มต้น: สายงานแรกที่ยังไม่เสร็จ
+        if (!ASSEMBLY.some((d) => d.id === ui.div)) ui.div = (divs.find((d) => d.st !== 'done') || divs[0]).id;
         const C = 2 * Math.PI * 42;
         let html = '<section class="cmd-card">' +
             '<div class="ops-sum">' +
@@ -197,19 +198,17 @@
                 '<div class="ops-sum-txt"><h4>ความพร้อมทุกสายงาน</h4><p>' + done + '/' + total + ' รายการ · แตะเพื่อติ๊ก (ลงเวลาให้)</p>' +
                     '<div class="ops-counts"><span><i style="background:#16A34A"></i>เสร็จสิ้น ' + cnt.done + '</span><span><i style="background:#F59E0B"></i>กำลังปฏิบัติ ' + cnt.doing + '</span><span><i style="background:#5F7594"></i>ยังไม่เริ่ม ' + cnt.todo + '</span></div></div>' +
                 '<div class="ops-sum-btns">' +
-                    '<button type="button" class="cmd-btn sm" data-op="expand"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> ' + (divs.every((d) => isOpen(d.id, mobile)) ? 'ย่อทั้งหมด' : 'ขยายทั้งหมด') + '</button>' +
                     '<button type="button" class="cmd-btn sm danger" data-op="reset"><i class="fa-solid fa-rotate-left"></i> ล้างการติ๊ก</button>' +
                 '</div>' +
             '</div>' +
-            '<div class="ops-bars">' + divs.map((d) => '<button type="button" class="ops-bar" data-op="jump" data-div="' + d.id + '"><i class="fa-solid ' + d.icon + '"></i><span>' + esc(d.short) + '</span><em>' + d.done + '/' + d.items.length + '</em></button>').join('') + '</div>' +
+            '<div class="ops-bars" role="tablist" aria-label="สายงาน">' + divs.map((d) => '<button type="button" role="tab" class="ops-bar' + (d.id === ui.div ? ' on' : '') + '" data-op="seldiv" data-div="' + d.id + '" aria-selected="' + (d.id === ui.div) + '"><i class="fa-solid ' + d.icon + '"></i><span>' + esc(d.short) + '</span><em>' + d.done + '/' + d.items.length + '</em></button>').join('') + '</div>' +
             '</section>';
 
-        html += '<div class="ops-grid">' + divs.map((d) => divCard(d, ev, o, mobile)).join('') + '</div>';
+        html += '<div class="ops-grid one">' + divs.filter((d) => d.id === ui.div).map((d) => divCard(d, ev, o)).join('') + '</div>';
         host.innerHTML = html;
     }
-    function isOpen(id, mobile) { return ui.open[id] !== undefined ? !!ui.open[id] : !mobile; }
-    function divCard(d, ev, o, mobile) {
-        const open = isOpen(d.id, mobile);
+    function divCard(d, ev, o) {
+        const open = true;
         let body = '<div class="ops-boss"><i class="fa-solid fa-user-tie"></i><span><b>' + esc(d.head.name) + '</b><small>' + esc(d.head.pos) + '</small></span>' +
             (d.head.phone ? '<a class="ops-call" href="' + esc(tel(d.head.phone)) + '"><i class="fa-solid fa-phone"></i> ' + esc(d.head.phone) + '</a>' : '') +
             '<button type="button" class="ops-ico" data-op="head" data-div="' + d.id + '" title="แก้ไขหัวหน้าสายงาน" aria-label="แก้ไขหัวหน้าสายงาน"><i class="fa-solid fa-pen"></i></button></div>';
@@ -224,10 +223,10 @@
         if (d.note) body += '<div class="ops-note"><i class="fa-solid fa-circle-info"></i><span>' + esc(d.note) + '</span></div>';
         if (d.id === 'qa' && isAssembly(ev)) body += qaExtra(o);
         return '<section class="cmd-card ops-div' + (d.wide ? ' ops-wide' : '') + (open ? ' open' : '') + '" data-st="' + d.st + '" id="ops-' + d.id + '">' +
-            '<button type="button" class="ops-head" data-op="toggle" data-div="' + d.id + '" aria-expanded="' + open + '">' +
+            '<div class="ops-head">' +
                 '<span class="ops-head-ic"><i class="fa-solid ' + d.icon + '"></i></span>' +
                 '<span class="ops-head-txt"><b>' + esc(d.name) + '</b><small>' + esc(d.head.name) + ' · ' + esc(d.head.pos.split(' · ')[0]) + '</small></span>' +
-                '<span class="ops-pill">' + ST[d.st] + '</span><i class="fa-solid fa-chevron-down ops-chev"></i></button>' +
+                '<span class="ops-pill">' + ST[d.st] + '</span></div>' +
             '<div class="ops-prog"><i style="width:' + d.pct + '%"></i></div>' +
             '<div class="ops-prog-lb"><span>ความคืบหน้า ' + d.pct + '%</span><span>' + d.done + '/' + d.items.length + ' รายการ</span></div>' +
             '<div class="ops-body">' + body + '</div></section>';
@@ -275,14 +274,7 @@
         if (!b || !host.contains(b) || b.tagName === 'FORM' || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
         const ev = api.active(); if (!ev) return;
         const o = ops(ev), op = b.dataset.op, now = new Date().toISOString();
-        if (op === 'toggle') { ui.open[b.dataset.div] = !isOpen(b.dataset.div, window.innerWidth < 860); saveUi(); render(); return; }
-        if (op === 'expand') { const all = ASSEMBLY.every((d) => isOpen(d.id, window.innerWidth < 860)); ASSEMBLY.forEach((d) => { ui.open[d.id] = !all; }); saveUi(); render(); return; }
-        if (op === 'jump') {
-            ui.open[b.dataset.div] = true; saveUi(); render();
-            const card = document.getElementById('ops-' + b.dataset.div);
-            if (card) window.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' });
-            return;
-        }
+        if (op === 'seldiv') { ui.div = b.dataset.div; saveUi(); render(); return; }
         if (op === 'people') { if (window.LamhinDocs && window.LamhinDocs.plan) window.LamhinDocs.plan('person'); return; }
         if (op === 'check') {
             const id = b.dataset.item, d = divisions(ev).find((x) => x.items.some((it) => it.id === id));

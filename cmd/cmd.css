@@ -424,3 +424,17 @@
 @media (prefers-reduced-motion: reduce) {
     .cmd-root *, .cmd-modal, .cmd-modal-box, .cmd-toast { animation: none !important; transition: none !important; }
 }
+
+/* ---------- แท็บย่อยภายในหัวข้อ (กดสลับแทนการเลื่อนยาว) ---------- */
+.cmd-root .cmd-subtabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(10, 22, 40, 0.6); border: 1px solid var(--cmd-line); overflow-x: auto; scrollbar-width: none; }
+.cmd-root .cmd-subtabs::-webkit-scrollbar { display: none; }
+.cmd-root .cmd-subtab { position: relative; flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 6px 12px; border: 0; border-radius: 11px; background: transparent; color: var(--cmd-mute); font-weight: 800; font-size: 0.84rem; white-space: nowrap; }
+.cmd-root .cmd-subtab:hover { color: var(--cmd-ink); }
+.cmd-root .cmd-subtab.on { color: var(--cmd-bg); background: linear-gradient(135deg, #F3D774, var(--cmd-gold)); }
+.cmd-root .cmd-subtab .cmd-dot { width: 11px; height: 11px; flex: 0 0 auto; }
+.cmd-root .cmd-flag { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--cmd-red); box-shadow: 0 0 0 2px rgba(10, 22, 40, 0.85); }
+.cmd-g-pair { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) { .cmd-g-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+    .cmd-root .cmd-subtab { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 3px; padding: 6px 3px; font-size: 0.72rem; line-height: 1.2; white-space: normal; text-align: center; }
+}
