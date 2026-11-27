@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '2';
+    const VER = '3';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -287,13 +287,7 @@
         return sheet('announce', h);
     }
 
-    /* ---------- ชุดเอกสารยื่นศาลแพ่ง: คัดเฉพาะหน้าที่ใช้ได้จากแบบคำร้องขอหมายค้น (ไม่ลอกทั้งฉบับ) ----------
-       คำร้อง (หัวแบบพิมพ์ศาล) · บัญชีเอกสารแนบ · รายงานกระบวนพิจารณา · คำให้การพยาน (ชั้นไต่สวนคำร้อง) · ใบปะหน้าเสนอศาล (แนวนอน) */
-    const PET_PARTS = [['petition', 'คำร้อง (หัวแบบพิมพ์ศาล)'], ['attach', 'บัญชีเอกสารแนบท้ายคำร้อง'], ['report', 'รายงานกระบวนพิจารณา (ให้ศาลบันทึก)'], ['testimony', 'คำให้การพยาน (ชั้นไต่สวนคำร้อง)'], ['cover', 'ใบปะหน้าเสนอศาล (แนวนอน)']];
-    const partsOf = (F) => {
-        const s = String(F.parts == null ? 'petition,attach,report,testimony,cover' : F.parts).split(',').map((x) => x.trim());
-        return PET_PARTS.map((p) => p[0]).filter((p) => s.indexOf(p) !== -1);
-    };
+    /* ---------- คำร้องต่อศาลแพ่ง (ม.21 ว.2 · ม.22) — เอกสารฉบับเดียว: คำร้อง (หัวแบบพิมพ์ศาล) ไม่มีชุดเอกสารแบบคำร้องขอหมายค้น ---------- */
     const PET_DOTS = '........................................';
     const PET_SIGN_AT = 5;
     const petSignLeft = () => Math.max(0, 2 * (PET_SIGN_AT + textCm('ลงชื่อ ') + textCm(PET_DOTS) / 2) - 16);
@@ -316,60 +310,22 @@
         const sign = (role, name, pos) => '<div style="padding-left:' + cm(PET_SIGN_AT) + '">' + T('ลงชื่อ ' + PET_DOTS + ' ' + role) + '</div>' +
             (name ? '<div style="margin-left:' + cm(left) + ';text-align:center">' + T('(' + name + ')') + '</div>' : '') +
             lines(pos).map((l) => '<div style="margin-left:' + cm(left) + ';text-align:center">' + T(l) + '</div>').join('');
-        const caseNos = '<div>คดีหมายเลขดำที่ ' + U(F.blackNo, 2.6) + '</div><div>คดีหมายเลขแดงที่ ' + U(F.redNo, 2.6) + '</div>';
-        const courtDate = '<div style="text-align:right;margin-top:2pt">ศาล ' + U(courtName(F), 5) + '</div><div style="text-align:right">' + dateLine() + '</div>';
-        const parts = partsOf(F);
-        let out = '';
-        if (parts.indexOf('petition') !== -1) {
-            let h = head('<div>(คำร้อง)</div><div>' + T(F.subtitle) + '</div>', '<div>ที่ ' + U(F.petNo, 3) + '</div>');
-            h += '<div class="ds-b" style="text-align:center;font-size:20pt">' + T(F.court) + '</div>';
-            h += '<div class="ds-row" style="min-height:2.5em"><div class="ds-recv">รับคำร้อง<br>เรียกสอบ</div><div style="text-align:right">' + dateLine() + '</div></div>';
-            h += '<div class="ds-recvj">................................ ผู้พิพากษา</div>';
-            h += kind() + party();
-            h += '<p class="ds-j" style="margin-top:10pt;text-indent:2.5cm">' + T(F.intro) + '</p>';
-            lines(F.body).forEach((l) => {
-                const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
-                h += '<p class="ds-j" style="margin-top:6pt;text-indent:2.5cm">' + (m ? '<b>' + T(m[1]) + '</b> ' + T(m[2]) : T(l)) + '</p>';
-            });
-            h += '<p data-kn="1" style="margin-top:6pt;text-indent:2.5cm">' + T(F.prayer) + '</p>';
-            h += '<div class="ds-keep">' + blank(2) + sign('ผู้ร้อง', F.signName, F.signPos) + '</div>';
-            h += '<div class="ds-keep">' + blank(1) + '<p style="text-indent:2.5cm">' + T('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์') + '</p>' + blank(2) + sign('ผู้เรียงและพิมพ์', F.writer, '') + '</div>';
-            out += sheet('petition', h);
-        }
-        const list = lines(F.attachList);
-        if (parts.indexOf('attach') !== -1 && list.length) {
-            let a = '<div class="ds-b" style="text-align:center;font-size:18pt">บัญชีเอกสารแนบท้ายคำร้อง</div>' +
-                '<div style="text-align:center">' + T((F.court || '') + ' · คำร้องที่ ' + (F.petNo || '')) + '</div>' + blank(1);
-            list.forEach((l) => { a += '<div style="padding-left:1cm;text-indent:-1cm;margin-top:6pt"><span class="ds-kw" style="width:1cm">☐</span>' + T(l) + '</div>'; });
-            out += sheet('petition', a);
-        }
-        if (parts.indexOf('report') !== -1) {
-            let h = head('<div>รายงาน</div><div>กระบวนพิจารณา</div>', caseNos) + courtDate + kind() + party();
-            h += '<div style="margin-top:8pt">ผู้พิพากษาออกนั่งพิจารณาคดีนี้เวลา ' + U('', 3) + ' นาฬิกา</div>';
-            h += '<p class="ds-j" style="margin-top:6pt;text-indent:2.5cm">' + T(F.reportText) + '</p>';
-            h += '<div class="ds-keep">' + blank(2) + '<div style="padding-left:6cm">' + T('.................................... ผู้พิพากษา บันทึก/อ่าน') + '</div>' + blank(1) +
-                '<div style="padding-left:6cm">' + T((splitRank(F.signName)[0] || '') + ' .................................... พยานผู้ร้อง') + '</div></div>';
-            h += blank(1) + '<div class="ds-b" style="text-align:center;font-size:18pt">คำสั่ง</div>';
-            h += '<div style="text-indent:2.5cm">พิเคราะห์พยานหลักฐานของผู้ร้องแล้วเห็นว่า <span class="ds-fill"></span></div>' + new Array(10).join('<div class="ds-dotline"></div>');
-            out += sheet('petition', h);
-        }
-        if (parts.indexOf('testimony') !== -1) {
-            let h = head('<div class="ds-b">คำให้การพยาน</div><div class="ds-b">(ชั้นไต่สวนคำร้อง)</div>', caseNos) + courtDate + kind() + party();
-            h += '<div class="ds-b" style="margin-top:8pt;padding-left:1.5cm">ข้าพเจ้าได้ปฏิญาณหรือสาบานตนแล้ว ขอให้การว่า</div>';
-            h += '<div style="margin-top:6pt"><b>ข้าพเจ้า</b> ' + U(F.signName, 6) + ' <b>อายุ</b> ' + U(F.age, 1.2) + ' <b>ปี อาชีพ</b> ' + U('รับราชการตำรวจ', 3) + '</div>';
-            h += '<div><b>ตั้งบ้านเรือนอยู่เลขที่ / สถานที่ทำงาน</b> ' + U(F.workplace, 7) + '</div>';
-            h += '<div style="margin-top:4pt">เกี่ยวพันกับคู่ความเป็น ☑ ผู้ร้อง ☐ ผู้รับมอบอำนาจ</div>';
-            lines(F.testimony).forEach((l) => { h += '<p class="ds-j" style="margin-top:6pt;text-indent:2.5cm">' + T(l) + '</p>'; });
-            h += '<div class="ds-keep">' + blank(2) + sign('ผู้ร้อง/พยาน', F.signName, '') + blank(1) +
-                '<div style="padding-left:' + cm(PET_SIGN_AT) + '">' + T('ลงชื่อ ' + PET_DOTS + ' ผู้พิพากษา/บันทึก/อ่าน') + '</div></div>';
-            out += sheet('petition', h);
-        }
-        if (parts.indexOf('cover') !== -1) {
-            const hd = (kw, v) => { const tab = textCm(kw) + 0.35; return lines(v).map((x, i) => '<div class="ds-b" style="padding-left:' + cm(tab) + ';text-indent:-' + cm(tab) + '"><span class="ds-kw" style="width:' + cm(tab) + '">' + (i ? '' : kw) + '</span>' + T(x) + '</div>').join(''); };
-            out += sheet('cover', '<div>' + hd('เรื่อง', F.coverSubject) + hd('เรียน', F.coverTo) + '</div>' +
-                '<div>' + (F.coverUnit ? '<div>' + T(F.coverUnit) + '</div>' : '') + (F.coverCase ? '<div class="ds-b">' + T(F.coverCase) + '</div>' : '') + (F.coverCount ? '<div class="ds-b">' + T(F.coverCount) + '</div>' : '') + '</div>');
-        }
-        return out || sheet('petition', '<div style="text-align:center;color:#888">ยังไม่ได้เลือกหน้าที่จะพิมพ์ (ช่อง "หน้าที่จะพิมพ์")</div>');
+        let h = head('<div>(คำร้อง)</div><div>' + T(F.subtitle) + '</div>', '<div>ที่ ' + U(F.petNo, 3) + '</div>');
+        h += '<div class="ds-b" style="text-align:center;font-size:20pt">' + T(F.court) + '</div>';
+        h += '<div class="ds-row" style="min-height:2.5em"><div class="ds-recv">รับคำร้อง<br>เรียกสอบ</div><div style="text-align:right">' + dateLine() + '</div></div>';
+        h += '<div class="ds-recvj">................................ ผู้พิพากษา</div>';
+        h += kind() + party();
+        h += '<p class="ds-j" style="margin-top:6pt;text-indent:2.5cm">' + T(F.intro) + '</p>';
+        lines(F.body).forEach((l) => {
+            const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
+            h += '<p class="ds-j" style="margin-top:3pt;text-indent:2.5cm">' + (m ? '<b>' + T(m[1]) + '</b> ' + T(m[2]) : T(l)) + '</p>';
+        });
+        h += '<p data-kn="1" style="margin-top:3pt;text-indent:2.5cm">' + T(F.prayer) + '</p>';
+        // ให้จบในหน้าเดียว: ระยะห่างก่อนลงชื่อแทนบรรทัดว่าง · ผู้เรียงและพิมพ์แบบกะทัดรัด (ไม่มีวงเล็บชื่อซ้ำเมื่อยังไม่ได้กรอก)
+        const writerName = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
+        h += '<div class="ds-keep" style="margin-top:14pt">' + sign('ผู้ร้อง', F.signName, F.signPos) + '</div>';
+        h += '<div class="ds-keep" style="margin-top:8pt"><p style="text-indent:2.5cm">' + T('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์') + '</p><div style="margin-top:12pt">' + sign('ผู้เรียงและพิมพ์', writerName, '') + '</div></div>';
+        return sheet('petition', h);
     }
 
 
@@ -796,67 +752,23 @@
             rightLines.forEach((r, i) => ps.push(pX(spX(i ? 0 : pad * 28.35) + '<w:jc w:val="right"/>', r)));
             return ps.join('');
         };
-        const caseNos = [run('คดีหมายเลขดำที่ ') + U(F.blackNo, 12), run('คดีหมายเลขแดงที่ ') + U(F.redNo, 12)];
-        const courtDateX = () => pX(spX(2) + '<w:jc w:val="right"/>', run('ศาล ') + U(courtName(F), 20)) + pX(spX(0) + '<w:jc w:val="right"/>', dateRuns());
-        const para = (text, before) => pX(spX(before == null ? 6 : before) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(text));
-        const parts = partsOf(F);
-        const docs = [];
-        if (parts.indexOf('petition') !== -1) {
-            const x = [];
-            x.push(headX(['(คำร้อง)', F.subtitle || ''], [run('ที่ ') + U(F.petNo, 14)]));
-            x.push(pX(spX(0) + '<w:jc w:val="center"/>', run(F.court, true, 20)));
-            x.push(pX(spX(2) + right, run('รับคำร้อง', false, 14, true) + '<w:r><w:tab/></w:r>' + dateRuns()));
-            x.push(pX(spX(0), run('เรียกสอบ', false, 14, true)));
-            x.push(pX(spX(0), run('................................ ผู้พิพากษา', false, 14, true)));
-            x.push(kind() + partyX());
-            x.push(para(F.intro, 10));
-            lines(F.body).forEach((l) => {
-                const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
-                x.push(pX(spX(6) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', m ? run(m[1], true) + run(' ' + m[2]) : run(l)));
-            });
-            x.push(pX('<w:keepNext/>' + spX(6) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run(F.prayer)));
-            x.push(blankX(2) + signX2('ผู้ร้อง', F.signName, F.signPos));
-            x.push(pX(spX(0)) + pX('<w:keepNext/>' + spX(0) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์')) + blankX(2) + signX2('ผู้เรียงและพิมพ์', F.writer, ''));
-            docs.push(x.join(''));
-        }
-        const list = lines(F.attachList);
-        if (parts.indexOf('attach') !== -1 && list.length) {
-            docs.push(pX(spX(0) + '<w:jc w:val="center"/>', run('บัญชีเอกสารแนบท้ายคำร้อง', true, 18)) +
-                pX(spX(0) + '<w:jc w:val="center"/>', run((F.court || '') + ' · คำร้องที่ ' + (F.petNo || ''))) + pX(spX(0)) +
-                list.map((l) => pX(spX(6) + '<w:tabs><w:tab w:val="left" w:pos="' + tw(1) + '"/></w:tabs><w:ind w:left="' + tw(1) + '" w:hanging="' + tw(1) + '"/>', run('☐') + '<w:r><w:tab/></w:r>' + run(l))).join(''));
-        }
-        if (parts.indexOf('report') !== -1) {
-            docs.push(headX(['รายงาน', 'กระบวนพิจารณา'], caseNos) + courtDateX() + kind() + partyX() +
-                pX(spX(8), run('ผู้พิพากษาออกนั่งพิจารณาคดีนี้เวลา ') + U('', 16) + run(' นาฬิกา')) + para(F.reportText) +
-                blankX(2) + pX('<w:keepNext/>' + spX(0) + '<w:ind w:left="' + tw(6) + '"/>', run('.................................... ผู้พิพากษา บันทึก/อ่าน')) + blankX(1) +
-                pX(spX(0) + '<w:ind w:left="' + tw(6) + '"/>', run((splitRank(F.signName)[0] || '') + ' .................................... พยานผู้ร้อง')) + pX(spX(0)) +
-                pX(spX(0) + '<w:jc w:val="center"/>', run('คำสั่ง', true, 18)) +
-                pX(spX(0) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run('พิเคราะห์พยานหลักฐานของผู้ร้องแล้วเห็นว่า ') + U('', 40)) +
-                new Array(10).join(pX(spX(0) + '<w:pBdr><w:bottom w:val="dotted" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>')));
-        }
-        if (parts.indexOf('testimony') !== -1) {
-            docs.push(headX(['คำให้การพยาน', '(ชั้นไต่สวนคำร้อง)'], caseNos, true) + courtDateX() + kind() + partyX() +
-                pX(spX(8) + '<w:ind w:left="' + tw(1.5) + '"/>', run('ข้าพเจ้าได้ปฏิญาณหรือสาบานตนแล้ว ขอให้การว่า', true)) +
-                pX(spX(6), run('ข้าพเจ้า ', true) + U(F.signName, 30) + run(' อายุ ', true) + U(F.age, 6) + run(' ปี อาชีพ ', true) + U('รับราชการตำรวจ')) +
-                pX(spX(0), run('ตั้งบ้านเรือนอยู่เลขที่ / สถานที่ทำงาน ', true) + U(F.workplace, 30)) +
-                pX(spX(4), run('เกี่ยวพันกับคู่ความเป็น ☑ ผู้ร้อง ☐ ผู้รับมอบอำนาจ')) +
-                lines(F.testimony).map((l) => para(l)).join('') +
-                blankX(2) + signX2('ผู้ร้อง/พยาน', F.signName, '') + blankX(1) +
-                pX(spX(0) + '<w:ind w:left="' + tw(PET_SIGN_AT) + '"/>', run('ลงชื่อ ' + PET_DOTS + ' ผู้พิพากษา/บันทึก/อ่าน')));
-        }
-        const margin = [2, 2, 2, 3];
-        let xml = docs.join('<w:p><w:r><w:br w:type="page"/></w:r></w:p>');
-        let finalSect = null;
-        if (parts.indexOf('cover') !== -1) {
-            const hd = (kw, v) => { const tab = textCm(kw) + 0.35; return lines(v).map((x, i) => pX('<w:tabs><w:tab w:val="left" w:pos="' + tw(tab) + '"/></w:tabs>' + spX(0) + '<w:ind w:left="' + tw(tab) + '" w:hanging="' + tw(tab) + '"/>', (i ? '' : run(kw, true)) + '<w:r><w:tab/></w:r>' + run(x, true))).join(''); };
-            const cover = hd('เรื่อง', F.coverSubject) + hd('เรียน', F.coverTo) +
-                pX(spX(11 * 28.35), run(F.coverUnit || '')) + (F.coverCase ? pX(spX(0), run(F.coverCase, true)) : '') + (F.coverCount ? pX(spX(0), run(F.coverCount, true)) : '');
-            if (xml) xml += pX('<w:sectPr><w:pgSz w:w="' + DX.PAGE_W + '" w:h="' + DX.PAGE_H + '"/><w:pgMar w:top="' + tw(margin[0]) + '" w:right="' + tw(margin[1]) + '" w:bottom="' + tw(margin[2]) + '" w:left="' + tw(margin[3]) + '" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>');
-            xml += cover;
-            finalSect = '<w:sectPr><w:pgSz w:w="' + DX.PAGE_H + '" w:h="' + DX.PAGE_W + '" w:orient="landscape"/><w:pgMar w:top="' + tw(2) + '" w:right="' + tw(2) + '" w:bottom="' + tw(2) + '" w:left="' + tw(3) + '" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr>';
-        }
-        if (!xml) xml = pX(spX(0), run('ยังไม่ได้เลือกหน้าที่จะพิมพ์'));
-        return { xml: xml, margin: margin, pageNumbers: false, finalSect: finalSect };
+        const x = [];
+        x.push(headX(['(คำร้อง)', F.subtitle || ''], [run('ที่ ') + U(F.petNo, 14)]));
+        x.push(pX(spX(0) + '<w:jc w:val="center"/>', run(F.court, true, 20)));
+        x.push(pX(spX(2) + right, run('รับคำร้อง', false, 14, true) + '<w:r><w:tab/></w:r>' + dateRuns()));
+        x.push(pX(spX(0), run('เรียกสอบ', false, 14, true)));
+        x.push(pX(spX(0), run('................................ ผู้พิพากษา', false, 14, true)));
+        x.push(kind() + partyX());
+        x.push(pX(spX(6) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(F.intro)));
+        lines(F.body).forEach((l) => {
+            const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
+            x.push(pX(spX(3) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', m ? run(m[1], true) + run(' ' + m[2]) : run(l)));
+        });
+        x.push(pX('<w:keepNext/>' + spX(3) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run(F.prayer)));
+        const writerName = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
+        x.push(signX2('ผู้ร้อง', F.signName, F.signPos).replace(spX(0), spX(14)));
+        x.push(pX('<w:keepNext/>' + spX(8) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์')) + signX2('ผู้เรียงและพิมพ์', writerName, '').replace(spX(0), spX(12)));
+        return { xml: x.join(''), margin: [2, 2, 2, 3], pageNumbers: false };
     }
         function docxBlob(t, k) {
         const thai = useThai(k);
@@ -864,7 +776,9 @@
         const F = fields(t);
         return jszip().then((JSZip) => {
             const b = t.kind === 'memo' ? xMemo(t, F, th) : t.kind === 'announce' ? xAnnounce(t, F, th) : t.kind === 'petition' ? xPetition(t, F, th) : xExternal(t, F, th);
-            return docxPackage(JSZip, b.xml, { margin: b.margin, pageNumbers: b.pageNumbers, thai: thai, finalSect: b.finalSect });
+            // เอกสารหน้าเดียว (หนังสือถึงศาล/คำร้อง): ระยะบรรทัด 0.9 เท่า ≈ 0.66 ซม. เท่าหน้าพิมพ์ในแอป จึงจบหน้าเดียวเหมือนกัน
+            if (t.onePage) b.xml = b.xml.replace(/w:line="240" w:lineRule="auto"/g, 'w:line="216" w:lineRule="auto"');
+            return docxPackage(JSZip, b.xml,{ margin: b.margin, pageNumbers: b.pageNumbers, thai: thai, finalSect: b.finalSect });
         });
     }
     function exportDocx(t, k) {
@@ -1045,16 +959,10 @@
             ['refs', 'อ้างถึง (ถ้ามี)', 'ml', 2], ['attach', 'สิ่งที่ส่งมาด้วย (ถ้ามี)', 'ml', 2],
             ['body', 'เนื้อความ — บรรทัดละ 1 ย่อหน้า · ขึ้นต้น 1. = ข้อย่อย (ย่อหน้า 3 ซม.) · # = หัวข้อตัวหนา', 'body', 16], ['closing', 'คำลงท้าย'],
             ['signRank', 'ยศ (เต็ม)'], ['signName', 'ชื่อ-สกุล'], ['signPos', 'ตำแหน่ง (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['owner', 'ส่วนราชการเจ้าของเรื่อง / โทร. / โทรสาร', 'ml', 3]],
-        petition: [['parts', 'หน้าที่จะพิมพ์ — คัดเฉพาะหน้าที่ใช้ได้จากแบบคำร้องขอหมายค้น', 'parts'],
-            ['petNo', 'ที่ (เลขคำร้อง มุมขวาบน)'], ['subtitle', 'ชื่อคำร้อง (ใต้ "(คำร้อง)")'], ['court', 'ศาล'], ['day', 'วันที่'], ['month', 'เดือน'], ['year', 'พุทธศักราช'], ['caseKind', 'ความ'],
-            ['blackNo', 'คดีหมายเลขดำที่ (รายงาน/คำให้การ)'], ['redNo', 'คดีหมายเลขแดงที่'],
+        petition: [['petNo', 'ที่ (เลขคำร้อง มุมขวาบน)'], ['subtitle', 'ชื่อคำร้อง (ใต้ "(คำร้อง)")'], ['court', 'ศาล'], ['day', 'วันที่'], ['month', 'เดือน'], ['year', 'พุทธศักราช'], ['caseKind', 'ความ'],
             ['applicant', 'ผู้ร้อง (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['respondent', 'ผู้คัดค้าน (เว้นว่างได้ — คำร้องตาม ม.21 ยื่นฝ่ายเดียว)', 'ml', 2],
             ['intro', 'คำขึ้นต้น (ข้าพเจ้า … ขอยื่นคำร้อง)', 'ml', 3], ['body', 'ข้อความคำร้อง — บรรทัดละ 1 ข้อ ("ข้อ 1." เป็นตัวหนา)', 'body', 18],
-            ['prayer', 'คำลงท้าย'], ['signName', 'ผู้ร้อง (ยศ ชื่อ-สกุล)'], ['signPos', 'ตำแหน่ง', 'ml', 2], ['writer', 'ผู้เรียงและพิมพ์ (ยศ ชื่อ-สกุล)'],
-            ['attachList', 'บัญชีเอกสารแนบ (บรรทัดละรายการ)', 'ml', 6],
-            ['reportText', 'รายงานกระบวนพิจารณา — ข้อความ "วันนี้ …"', 'ml', 4],
-            ['age', 'คำให้การพยาน: อายุผู้ร้อง'], ['workplace', 'คำให้การพยาน: ตั้งบ้านเรือน / สถานที่ทำงาน'], ['testimony', 'คำให้การพยาน — บรรทัดละ 1 ย่อหน้า', 'ml', 10],
-            ['coverSubject', 'ใบปะหน้า: เรื่อง', 'ml', 2], ['coverTo', 'ใบปะหน้า: เรียน'], ['coverUnit', 'ใบปะหน้า: หน่วยงาน'], ['coverCase', 'ใบปะหน้า: เลขที่ / วันที่'], ['coverCount', 'ใบปะหน้า: จำนวน']],
+            ['prayer', 'คำลงท้าย'], ['signName', 'ผู้ร้อง (ยศ ชื่อ-สกุล)'], ['signPos', 'ตำแหน่ง', 'ml', 2], ['writer', 'ผู้เรียงและพิมพ์ (ยศ ชื่อ-สกุล)']],
         announce: [['issuer', 'ชื่อผู้ออกประกาศ (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['subject', 'เรื่อง'], ['body', 'ข้อความประกาศ — บรรทัดละ 1 ย่อหน้า', 'body', 14], ['given', 'ประกาศ ณ วันที่'],
             ['signRank', 'ยศ (เต็ม)'], ['signName', 'ชื่อ-สกุล'], ['signPos', 'ตำแหน่ง', 'ml', 2]]
     };
@@ -1067,11 +975,6 @@
             const v = F[f[0]] == null ? '' : F[f[0]];
             const changed = f[0] in s;
             const lab = '<span>' + esc(f[1]) + (changed ? ' <u>แก้ไขแล้ว</u>' : '') + '</span>';
-            if (f[2] === 'parts') {
-                const cur = partsOf(F);
-                return '<div class="cmd-f full">' + lab + '<div class="cmdd-partlist">' + PET_PARTS.map((p) =>
-                    '<label><input type="checkbox" data-k="parts" value="' + p[0] + '"' + (cur.indexOf(p[0]) !== -1 ? ' checked' : '') + '><span>' + esc(p[1]) + '</span></label>').join('') + '</div></div>';
-            }
             if (f[2] === 'ml' || f[2] === 'body') return '<label class="cmd-f full' + (f[2] === 'body' ? ' cmdd-bodyf' : '') + '">' + lab + '<textarea data-k="' + f[0] + '" rows="' + (f[3] || 3) + '" spellcheck="false">' + esc(v) + '</textarea></label>';
             return '<label class="cmd-f">' + lab + '<input data-k="' + f[0] + '" value="' + esc(v) + '"></label>';
         };

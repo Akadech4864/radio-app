@@ -83,6 +83,25 @@
     const PLACE_OF = { muster: 'หน้า สน.ลำหิน', deploy: 'หน้า สน.ลำหิน', court: 'ศาลแพ่งมีนบุรี' };
     const DEFAULT_PLACE = 'จุดชุมนุม ปากซอยคู้คลองสิบ 4';
 
+    // รายชื่อผู้บันทึก (ยศ ชื่อ-สกุลทางการตามข้อมูลกำลังพล สน.ลำหิน 2569)
+    const RECENT_KEY = 'lamhin_cmd_logby_recent';
+    const DUTY = ['ร.ต.ท.สัญญา พนมกุล', 'ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', 'ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์', 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์', 'พ.ต.ท.อัคเดช ลัดดาวัลย์'];
+    const STAFF = [
+        ['พ.ต.อ.สุขสันต์ แสนสวัสดิ์', 'รรท.ผกก.สน.ลำหิน'], ['พ.ต.ท.รัติศัย นิลน้อย', 'รอง ผกก.ป.'], ['พ.ต.ท.ไพโรจน์ รุกขพันธ์', 'รอง ผกก.สส.'],
+        ['พ.ต.ท.อัคเดช ลัดดาวัลย์', 'รอง ผกก.(สอบสวน)'], ['พ.ต.ท.สุจิตร ศิริราช', 'รอง ผกก.จร.'],
+        ['พ.ต.ท.ภานุพงษ์ เทศสุวรรณ', 'สวป.'], ['พ.ต.ท.เกียรติศักดิ์ สุรังกาญจน์', 'สวป.'], ['พ.ต.ท.สุวเมธ เนื่องขันตรี', 'สว.(สอบสวน)'],
+        ['พ.ต.ท.ธีร์ธวัช สวัสดิสาร', 'สว.สส.'], ['พ.ต.ท.เอกพล สุทธิรักษ์', 'สว.อก.'], ['พ.ต.ท.กฤตวัฒน์ เจริญชัย', 'สวป.(ชส.)'], ['พ.ต.ต.วิสิทธิ์ คงบุญ', 'สว.จร.'],
+        ['ร.ต.อ.วีรยุทธ น้อยพันธ์', 'รอง สวป.'], ['ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', 'รอง สว.(สอบสวน)'], ['ร.ต.อ.คิมหันฐ์ ศรีสุพรรณ์', 'รอง สว.(สอบสวน)'],
+        ['ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์', 'รอง สว.(สอบสวน)'], ['ร.ต.อ.ธรรมฤทธิ์ จุ่นมา', 'รอง สว.(จร.)'], ['ร.ต.ท.เศกสรรค์ เนียมสวรรค์', 'รอง สว.(จร.)'],
+        ['ร.ต.ท.เอกวัชร์ วชิรทรงสัตยา', 'รอง สว.(ป.)'], ['ร.ต.ท.ประสิทธิ์ พัลพัฒน์', 'รอง สว.(สส.)'], ['ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์', 'รอง สว.(สอบสวน)'],
+        ['ร.ต.ท.สัญญา พนมกุล', 'รอง สว.(สอบสวน)'], ['ร.ต.ต.หญิงประสพสุข เสนาจันทร์', 'รอง สว.(สส.)'], ['ร.ต.ต.อดิศักดิ์ กองมนต์', 'รอง สว.(จร.)'],
+        ['ด.ต.เริงณรงค์ รัตนโสภณ', 'ผบ.หมู่(สส.)'], ['จ.ส.ต.มานะ บัวใหญ่รักษา', 'ผบ.หมู่(สส.)'], ['ส.ต.อ.เมธาพร โขงจำปา', 'ผบ.หมู่(สส.)'],
+        ['ส.ต.อ.นราธร สายสีแก้ว', 'ผบ.หมู่(สส.)'], ['ส.ต.ท.เกียรติคุณ แสนศรี', 'ผบ.หมู่(สส.)'],
+        ['ส.ต.ท.นนทิวัฒน์ สิงห์อ่อน', 'ผบ.หมู่(ผช.พงส.)'], ['ส.ต.ท.สุทัศน์ ขุนทอง', 'ผบ.หมู่(ผช.พงส.)'], ['ส.ต.ต.กิตติศักดิ์ บุญสม', 'ผบ.หมู่(ผช.พงส.)'],
+        ['ส.ต.ต.ธณต ตัณฑะผลิน', 'ผบ.หมู่(ผช.พงส.)'], ['ส.ต.ต.อัครพัชร์ ปอสร้อยเจริญ', 'ผบ.หมู่(ผช.พงส.)'], ['ส.ต.ต.ธีรสรรค พรหมพิทักษ์', 'ผบ.หมู่(ผช.พงส.)'],
+        ['ส.ต.ต.อลีฟ บือซา', 'ผบ.หมู่(ผช.พงส.)']
+    ];
+
     /* ---------------- สถานะ ---------------- */
     let api = null, el = null, evId = '', timer = 0, sheet = null, S = null;
     let newestFirst = (function () { try { return localStorage.getItem(ORDER_KEY) !== 'old'; } catch (e) { return true; } })();
@@ -95,6 +114,18 @@
     const num = (v) => { const n = parseInt(String(v == null ? '' : v).replace(/[^0-9]/g, ''), 10); return isNaN(n) ? null : n; };
     function recorder() { try { return localStorage.getItem(BY_KEY) || ''; } catch (e) { return ''; } }
     function setRecorder(v) { try { localStorage.setItem(BY_KEY, v); } catch (e) { /* ไม่จำก็ได้ */ } }
+    function recents() { try { const a = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function pushRecent(name) {
+        const n = String(name || '').trim(); if (!n) return;
+        try { localStorage.setItem(RECENT_KEY, JSON.stringify([n].concat(recents().filter((x) => x !== n)).slice(0, 4))); } catch (e) { /* ไม่จำก็ได้ */ }
+    }
+    // ปุ่มชื่อด่วน: ที่ใช้ล่าสุด → ผช.พงส. 4 นายที่เลือกไว้ในแท็บ "สายงาน" → ชุดสอบสวนเวรวันนี้ (ไม่ซ้ำ ไม่เกิน 8 ชื่อ)
+    function quickNames(ev) {
+        const slots = ev && ev.ops && Array.isArray(ev.ops.slots) ? ev.ops.slots : [];
+        const out = [];
+        recents().concat(slots, DUTY).forEach((n) => { n = String(n || '').trim(); if (n && out.indexOf(n) === -1) out.push(n); });
+        return out.slice(0, 8);
+    }
     function logOf(ev) { if (!Array.isArray(ev.log)) ev.log = []; return ev.log; }
     function sorted(ev) { return logOf(ev).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at)); }
     function latest(ev, key) {
@@ -282,8 +313,11 @@
         f += '<label class="cl-f"><span>หัวข้อ (เรียบเรียงให้อัตโนมัติ แก้ได้)</span><textarea rows="2" data-cl-in="title">' + esc(S.title) + '</textarea></label>';
         if (k === 'risk' || k === 'sitrep' || k === 'negotiate' || k === 'note' || S.detail) f += '<label class="cl-f"><span>รายละเอียด</span><textarea rows="2" data-cl-in="detail" placeholder="ไม่บังคับ">' + esc(S.detail) + '</textarea></label>';
         if (S.law || k === 'risk') f += '<label class="cl-f"><span>ข้อกฎหมาย</span><input data-cl-in="law" value="' + esc(S.law) + '"></label>';
-        f += '<div class="cl-row2"><label class="cl-f"><span>เวลา</span><input type="time" data-cl-in="time" value="' + hmc(S.at) + '"></label>' +
-            '<label class="cl-f"><span>ผู้บันทึก</span><input data-cl-in="by" value="' + esc(S.by != null ? S.by : recorder()) + '" placeholder="ยศ ชื่อ"></label></div>';
+        const by = S.by != null ? S.by : recorder();
+        f += '<label class="cl-f cl-time"><span>เวลา</span><input type="time" data-cl-in="time" value="' + hmc(S.at) + '"></label>';
+        f += '<div class="cl-sec cl-by"><span>ผู้บันทึก — แตะชื่อ หรือพิมพ์ค้นจากรายชื่อ สน.ลำหิน</span>' + chips('by', quickNames(api.active()), by, false) +
+            '<input list="cl-staff" data-cl-in="by" value="' + esc(by) + '" placeholder="พิมพ์ชื่อหรือตำแหน่ง เช่น ภาณุ, สส., ผช.พงส." autocomplete="off">' +
+            '<datalist id="cl-staff">' + STAFF.map((p) => '<option value="' + esc(p[0]) + '">' + esc(p[1]) + '</option>').join('') + '</datalist></div>';
         return f;
     }
     function drawSheet() {
@@ -316,7 +350,8 @@
         const c = e.target.closest('[data-cl-chip]');
         if (c) {
             const g = c.dataset.clChip, v = c.dataset.v;
-            if (g === 'violated') S.violated = v === '1';
+            if (g === 'by') { S.by = v; setRecorder(v); }
+            else if (g === 'violated') S.violated = v === '1';
             else if (g === 'minutes') S.minutes = Number(v);
             else if (g === 'ann') S.ann = v;
             else if (g === 'outcome') S.outcome = S.outcome === v ? '' : v;
@@ -351,7 +386,10 @@
         else if (k === 'title') { S.title = t.value; S.titleDirty = true; }
         else if (k === 'detail') { S.detail = t.value; S.detailDirty = true; }
         else if (k === 'law') { S.law = t.value; S.lawDirty = true; }
-        else if (k === 'by') { S.by = t.value; setRecorder(t.value.trim()); }
+        else if (k === 'by') {
+            S.by = t.value; setRecorder(t.value.trim());
+            sheet.querySelectorAll('[data-cl-chip="by"]').forEach((c) => c.classList.toggle('on', c.dataset.v === t.value.trim()));
+        }
         else if (k === 'time') {
             const m = t.value.match(/^(\d{1,2}):(\d{2})/); if (!m) return;
             const d = new Date(S.at); d.setHours(Number(m[1]), Number(m[2]), 0, 0); S.at = d.getTime();
@@ -378,6 +416,7 @@
             deadlineAt: S.kind === 'announce' && a && a.id !== 'a25' ? new Date(S.at + S.minutes * 60000).toISOString() : (S.kind === 'announce' ? '' : S.deadlineAt || ''),
             refId: S.refId || '', picks: S.picks.slice(), groups: S.groups.slice(), units: S.units.slice(), outcome: S.outcome, ann: S.kind === 'announce' ? S.ann : '', minutes: S.kind === 'announce' ? S.minutes : ''
         };
+        pushRecent(entry.by);
         if (S.editId) {
             const x = logOf(ev).find((y) => y.id === S.editId);
             if (x) Object.assign(x, entry);
