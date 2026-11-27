@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '9';
+    const VER = '10';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -365,13 +365,7 @@
 
     /* ---------- แบบ 3-5 คำร้องให้เลิกการชุมนุมสาธารณะ (แบบพิมพ์ศาล (7) ตามคู่มือ สตช.) ----------
        วงกลมมุมซ้ายบน · ชื่อคำร้องชิดซ้าย · ครุฑกลาง · รหัสแบบขวาบน · คดีหมายเลขดำ/แดง · ศาล · วันที่ · ความ
-       · ระหว่าง { โจทก์ / ผู้ร้อง / จำเลย } · ข้อมูลผู้ร้อง · ข้อ 1–3 · ควรมิควรแล้วแต่จะโปรด · ลงชื่อ ผู้ร้อง (+ ผู้เรียงและพิมพ์) */
-    const PET_DOTS = '........................................';
-    const PET_SIGN_AT = 7.5;
-    // บรรทัดลงชื่อ: "ลงชื่อ [ยศ] ........ ผู้ร้อง" · (ชื่อจริง นามสกุล) กึ่งกลางใต้เส้นจุด
-    // กล่องกึ่งกลางเริ่มที่ left ถึงขอบขวา → จุดกึ่งกลาง = (left + 16) / 2
-    const petSignLead = (rank) => 'ลงชื่อ ' + (rank ? rank + ' ' : '');
-    const petSignLeft = (rank) => Math.max(-2.5, 2 * (PET_SIGN_AT + realCm(petSignLead(rank)) + realCm(PET_DOTS) / 2) - 16);
+       · ระหว่าง { โจทก์ / ผู้ร้อง / จำเลย } · ข้อมูลผู้ร้อง · ข้อ 1–3 · ควรมิควรแล้วแต่จะโปรด · ลงชื่อ ........ ผู้ร้อง (ตามแบบพิมพ์: ไม่มีชื่อในวงเล็บ ไม่มีผู้เรียงและพิมพ์) */
     const BRACE = '<svg class="ds-brace" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><path d="M9 1 C4 1 5 6 5 16 L5 40 C5 47 3 50 1 50 C3 50 5 53 5 60 L5 84 C5 94 4 99 9 99" fill="none" stroke="#000" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>';
     // ตำแหน่งตามคู่มือ สตช. หน้า 96 (ซม. จากขอบซ้ายเนื้อความ กว้าง 16 ซม.) — ช่องกรอก = ป้าย + ค่า + เส้นจุดจนถึงจุดหยุดถัดไป
     const P35 = {
@@ -418,20 +412,10 @@
             h += '<p class="ds-j ds-lead" style="margin-top:' + (i ? 2 : 8) + 'pt;text-indent:' + cm(P35.itemIndent) + '">' + (m ? '<b>' + T(m[1]) + '</b> <span class="ds-dul">' + ED('body', i, T(m[2]), m[1] + ' ') + '</span>' : '<span class="ds-dul">' + ED('body', i, T(l)) + '</span>') + '</p>';
         });
         h += '<p data-kn="1" style="margin-top:6pt;text-align:center">' + ED('prayer', null, T(F.prayer)) + '</p>';
-        // ลงชื่อ [ยศ] ........ ผู้ร้อง · (ชื่อจริง นามสกุล) กึ่งกลางใต้เส้นจุด
-        const sr = splitRank(F.signName);
-        const lead = 'ลงชื่อ ' + (sr[0] ? sr[0] + ' ' : '');
-        const dotsFrom = P35.signAt + realCm(th(lead)), dotsTo = 16 - realCm(' ผู้ร้อง') - 0.12;   // เส้นจุดจบก่อนคำว่า "ผู้ร้อง" ชิดขวา
-        const nameLeft = 2 * ((dotsFrom + dotsTo) / 2) - 16;
-        h += '<div class="ds-keep" style="margin-top:16pt"><div class="prow" style="padding-left:' + cm(P35.signAt) + '"><span class="pf" style="flex:1 1 auto"><span class="pl">ลงชื่อ ' +
-            (sr[0] ? ED('signName', null, T(sr[0]), '', 'rank') : '') + '</span><span class="pd" style="margin-right:.1cm">' + NB + '</span><span class="pl">ผู้ร้อง</span></span></div>' +
-            (sr[1] ? '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">(' + ED('signName', null, T(sr[1]), '', 'name') + ')</div>' : '') + '</div>';
-        // ผู้เรียงและพิมพ์ (ด้านหลังแบบพิมพ์ศาล) ตัวเล็กลง
-        const wr = splitRank(/[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '');
-        h += '<div class="ds-keep ds-sm" style="margin-top:12pt"><p style="text-indent:' + cm(P35.itemIndent) + '">คำร้องฉบับนี้ ข้าพเจ้า ' + ED('writer', null, T(F.writer || '')) + ' เป็นผู้เรียงและพิมพ์</p>' +
-            '<div class="prow" style="margin-top:10pt;padding-left:' + cm(P35.signAt) + '"><span class="pf" style="flex:1 1 auto"><span class="pl">ลงชื่อ ' + (wr[0] ? ED('writer', null, T(wr[0]), '', 'rank') : '') +
-            '</span><span class="pd" style="margin-right:.1cm">' + NB + '</span><span class="pl">ผู้เรียงและพิมพ์</span></span></div>' +
-            (wr[1] ? '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">(' + ED('writer', null, T(wr[1]), '', 'name') + ')</div>' : '') + '</div>';
+        // ลงชื่อ [ยศ] ........ ผู้ร้อง — ตามแบบพิมพ์ศาล (คู่มือ สตช. หน้า 96): ไม่มีชื่อในวงเล็บ และไม่มีผู้เรียงและพิมพ์
+        const rk = String(F.signRank || '').trim();
+        h += '<div class="ds-keep" style="margin-top:16pt"><div class="prow" style="padding-left:' + cm(P35.signAt) + '"><span class="pf" style="flex:1 1 auto"><span class="pl">ลงชื่อ' + (rk ? ' ' + ED('signRank', null, T(rk)) : '') + '</span>' +
+            '<span class="pd" style="margin-right:.1cm">' + NB + '</span><span class="pl">ผู้ร้อง</span></span></div></div>';
         return sheet('petition', h);
     }
 
@@ -938,16 +922,9 @@
                 (m ? run(m[1], true) + run(' ') + runDU(m[2]) : runDU(l)) + UTAB));
         });
         x.push(pX('<w:keepNext/>' + spX(6) + '<w:jc w:val="center"/>', run(F.prayer)));
-        const signRow = (name, role, pt, before) => {
-            const sr = splitRank(name), lead = 'ลงชื่อ ' + (sr[0] ? sr[0] + ' ' : '');
-            const k = pt / 16, from = P35.signAt + realCm(th(lead)) * k, end = W - realCm(' ' + role) * k - 0.12;   // จุดจบก่อนคำบทบาทชิดขวา
-            const left = 2 * ((from + end) / 2) - W;
-            return pX((sr[1] ? '<w:keepNext/>' : '') + spX(before) + '<w:tabs>' + dotTab(end) + '</w:tabs><w:ind w:left="' + tw(P35.signAt) + '"/>', run(lead, false, pt) + UTAB + run(' ' + role, false, pt)) +
-                (sr[1] ? pX(spX(0) + '<w:ind w:left="' + tw(left) + '"/><w:jc w:val="center"/>', run('(' + sr[1] + ')', false, pt)) : '');
-        };
-        x.push(signRow(F.signName, 'ผู้ร้อง', 16, 16));
-        const writer = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
-        x.push(pX('<w:keepNext/>' + spX(12) + '<w:ind w:firstLine="' + tw(P35.itemIndent) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์', false, 14)) + signRow(writer, 'ผู้เรียงและพิมพ์', 14, 10));
+        // ลงชื่อ [ยศ] ........ ผู้ร้อง ตามแบบพิมพ์ศาล (ไม่มีชื่อในวงเล็บ / ผู้เรียงและพิมพ์) · เส้นจุดจบก่อนคำว่า "ผู้ร้อง" ชิดขวา
+        const signEnd = W - realCm(' ผู้ร้อง') - 0.12, rk = String(F.signRank || '').trim();
+        x.push(pX(spX(16) + '<w:tabs>' + dotTab(signEnd) + '</w:tabs><w:ind w:left="' + tw(P35.signAt) + '"/>', run('ลงชื่อ' + (rk ? ' ' + rk + ' ' : '')) + UTAB + run(' ผู้ร้อง')));
         return { xml: x.join(''), margin: [2, 2, 2, 3], pageNumbers: false };
     }
         function docxBlob(t, k) {
@@ -1286,7 +1263,7 @@
             ['birthDay', 'เกิดวันที่'], ['birthMonth', 'เดือน'], ['birthYear', 'พ.ศ.'], ['age', 'อายุ (ปี)'], ['houseNo', 'อยู่บ้านเลขที่'], ['moo', 'หมู่ที่'],
             ['road', 'ถนน'], ['soi', 'ตรอก/ซอย'], ['near', 'ใกล้เคียง'], ['subdistrict', 'ตำบล/แขวง'], ['district', 'อำเภอ/เขต'], ['province', 'จังหวัด'], ['phone', 'โทรศัพท์'],
             ['body', 'ข้อความคำร้อง — บรรทัดละ 1 ข้อ ("ข้อ 1." เป็นตัวหนา)', 'body', 14],
-            ['prayer', 'คำลงท้าย'], ['signName', 'ผู้ร้อง (ชื่อในวงเล็บใต้ลายมือชื่อ)'], ['writer', 'ผู้เรียงและพิมพ์ (ยศ ชื่อ-สกุล)']],
+            ['prayer', 'คำลงท้าย'], ['signRank', 'ยศผู้ร้อง (บรรทัดลงชื่อ ... ผู้ร้อง)']],
         announce: [['formCode', 'รหัสแบบ (มุมขวาบน)'], ['issuer', 'หัวประกาศ / คำสั่ง (บรรทัดละ 1 บรรทัด · ตัวหนา)', 'ml', 2], ['no', 'ที่'], ['subject', 'เรื่อง'],
             ['body', 'ข้อความ — บรรทัดละ 1 ย่อหน้า · [ช่อง] = เส้นจุด · «…» = คำแนะนำ (ไม่พิมพ์)', 'body', 14], ['effective', 'ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป'], ['given', 'ประกาศ / สั่ง ณ วันที่'],
             ['signName', 'ผู้ลงนาม (ยศ ชื่อ-สกุล)'], ['signPos', 'ตำแหน่ง (บรรทัดละ 1 บรรทัด)', 'ml', 2], ['notes', 'หมายเหตุ (บรรทัดละ 1 ข้อ)', 'ml', 5]]
