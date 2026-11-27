@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '6';
+    const VER = '7';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -361,39 +361,65 @@
     const petSignLead = (rank) => 'ลงชื่อ ' + (rank ? rank + ' ' : '');
     const petSignLeft = (rank) => Math.max(-2.5, 2 * (PET_SIGN_AT + realCm(petSignLead(rank)) + realCm(PET_DOTS) / 2) - 16);
     const BRACE = '<svg class="ds-brace" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><path d="M9 1 C4 1 5 6 5 16 L5 40 C5 47 3 50 1 50 C3 50 5 53 5 60 L5 84 C5 94 4 99 9 99" fill="none" stroke="#000" stroke-width="1" vector-effect="non-scaling-stroke"/></svg>';
+    // ตำแหน่งตามคู่มือ สตช. หน้า 96 (ซม. จากขอบซ้ายเนื้อความ กว้าง 16 ซม.) — ช่องกรอก = ป้าย + ค่า + เส้นจุดจนถึงจุดหยุดถัดไป
+    const P35 = {
+        gar: { left: 6.3, h: 3.2 },
+        caseAt: 9.6,
+        court: [['ศาล', 'court', 0, 4.9]],
+        date: [['วันที่', 'day', 6.4, 8.5], ['เดือน', 'month', 8.5, 12.0], ['พุทธศักราช', 'year', 12.0, 15.3]],
+        kind: [['ความ', 'caseKind', 7.35, 14.05]],
+        btw: { at: 2.56, end: 14.1, role: 14.3 },
+        me: [['ข้าพเจ้า', 'pName', 1.32, 14.05]],
+        rows: [
+            [['เชื้อชาติ', 'race', 0, 3.4], ['สัญชาติ', 'nationality', 3.4, 6.85], ['อาชีพ', 'occupation', 6.85, 10.65], ['เกิดวันที่', 'birthDay', 10.65, 14.05]],
+            [['เดือน', 'birthMonth', 0, 3.3], ['พ.ศ.', 'birthYear', 3.3, 5.7], ['อายุ', 'age', 5.7, 7.0], ['ปี อยู่บ้านเลขที่', 'houseNo', 7.0, 12.1], ['หมู่ที่', 'moo', 12.1, 14.9]],
+            [['ถนน', 'road', 0, 3.9], ['ตรอก/ซอย', 'soi', 3.9, 8.3], ['ใกล้เคียง', 'near', 8.3, 10.6], ['ตำบล/แขวง', 'subdistrict', 10.6, 15.25]],
+            [['อำเภอ/เขต', 'district', 0, 5.4], ['จังหวัด', 'province', 5.4, 10.1], ['โทรศัพท์', 'phone', 10.1, 14.9]]
+        ],
+        itemIndent: 2.6, signAt: 7.7, signEnd: 15.1
+    };
     function rPetition(t, F, th) {
         const T = tf(th);
-        const U = (key, minCm) => '<span class="ds-u" style="min-width:' + cm(minCm || 1) + '">' + ED(key, null, String(F[key] || '').trim() ? T(F[key]) : '&nbsp;') + '</span>';
-        const gW = GW(3);
-        const sign = (role, name) => {
-            const sr = splitRank(name);
-            const key = role === 'ผู้ร้อง' ? 'signName' : 'writer';
-            return '<div style="padding-left:' + cm(PET_SIGN_AT) + '">ลงชื่อ ' + (sr[0] ? ED(key, null, T(sr[0]), '', 'rank') + ' ' : '') + T(PET_DOTS + ' ' + role) + '</div>' +
-                (sr[1] ? '<div style="margin-left:' + cm(petSignLeft(sr[0])) + ';text-align:center">(' + ED(key, null, T(sr[1]), '', 'name') + ')</div>' : '');
-        };
+        const gW = GW(P35.gar.h);
+        // ช่องกรอก: ป้าย · ค่า (แก้บนกระดาษได้) · เส้นจุดเติมถึงจุดหยุด
+        const seg = (s) => '<span class="pf" style="min-width:' + cm(s[3] - s[2]) + '"><span class="pl">' + s[0] + '</span>' +
+            ED(s[1], null, String(F[s[1]] || '').trim() ? T(F[s[1]]) : '', '', '') + '<span class="pd"></span></span>';
+        const row = (segs, gapPt) => '<div class="prow" style="margin-top:' + (gapPt || 0) + 'pt;padding-left:' + cm(segs[0][2]) + '">' + segs.map(seg).join('') + '</div>';
+        const caseNo = (label, key, top) => '<div class="pf" style="position:absolute;left:' + cm(P35.caseAt) + ';width:' + cm(16 - P35.caseAt) + ';top:' + cm(top) + '"><span class="pl">' + label + '</span>' +
+            (String(F[key] || '').trim() ? ED(key, null, T(F[key])) + '<span class="pd"></span>'
+                : ED(key, null, '') + '<span class="pd"></span><span class="pl">' + T('/25') + '</span><span class="pd" style="flex:0 0 1.1cm"></span>') + '</div>';
         let h = '<div class="ds-h35"><span class="ds-circ"></span><div class="ds-b ds-h35t">' + ED('title', null, T(F.title)) + '</div>' +
-            '<img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:' + cm((16 - gW) / 2) + ';top:0;width:' + cm(gW) + ';height:3cm">' +
+            '<img class="ds-gar" alt="ตราครุฑ" src="' + garuda() + '" style="left:' + cm(P35.gar.left) + ';top:0;width:' + cm(gW) + ';height:' + cm(P35.gar.h) + '">' +
             (String(F.formCode || '').trim() ? '<div class="ds-fcode">' + ED('formCode', null, T(F.formCode)) + '</div>' : '') +
-            '<div class="ds-h35n">คดีหมายเลขดำที่ ' + U('blackNo', 2.6) + '<br>คดีหมายเลขแดงที่ ' + U('redNo', 2.6) + '</div></div>';
-        h += '<div>ศาล' + U('court', 4) + '</div>';
-        h += '<div style="padding-left:6.3cm">วันที่' + U('day', 1.2) + 'เดือน' + U('month', 2.8) + 'พุทธศักราช ' + U('year', 1.4) + '</div>';
-        h += '<div style="margin-top:10pt;padding-left:7.3cm">ความ' + U('caseKind', 6) + '</div>';
-        const row = (key, role) => '<div class="ds-btr"><span class="ds-u ds-btv">' + ED(key, null, String(F[key] || '').trim() ? T(F[key]) : '&nbsp;') + '</span><span class="ds-btl">' + role + '</span></div>';
-        h += '<div class="ds-btw ds-keep"><span class="ds-b ds-btk">ระหว่าง</span>' + BRACE + row('plaintiff', 'โจทก์') + row('applicant', 'ผู้ร้อง') + row('defendant', 'จำเลย') + '</div>';
-        h += '<div style="margin-top:8pt;padding-left:1.27cm">ข้าพเจ้า <span class="ds-ui">' + ED('pName', null, T(F.pName || '')) + '</span></div>';   // ชื่อยาวขึ้นบรรทัดต่อได้ (เส้นจุดตามบรรทัด)
-        h += '<div>เชื้อชาติ' + U('race', 1.6) + 'สัญชาติ' + U('nationality', 1.6) + 'อาชีพ' + U('occupation', 3) + 'เกิดวันที่' + U('birthDay', 1.8) + '</div>';
-        h += '<div>เดือน' + U('birthMonth', 2.6) + 'พ.ศ.' + U('birthYear', 1.6) + 'อายุ' + U('age', 1.2) + 'ปี อยู่บ้านเลขที่' + U('houseNo', 2.4) + 'หมู่ที่' + U('moo', 1) + '</div>';
-        h += '<div>ถนน' + U('road', 3) + 'ตรอก/ซอย' + U('soi', 1.2) + 'ใกล้เคียง' + U('near', 1.2) + 'ตำบล/แขวง' + U('subdistrict', 2.4) + '</div>';
-        h += '<div>อำเภอ/เขต' + U('district', 2.4) + 'จังหวัด' + U('province', 3) + 'โทรศัพท์' + U('phone', 2.8) + '</div>';
-        h += '<div>ขอยื่นคำร้องมีข้อความตามที่จะกล่าวต่อไปนี้</div>';
+            caseNo('คดีหมายเลขดำที่', 'blackNo', 2.35) + caseNo('คดีหมายเลขแดงที่', 'redNo', 3.1) + '</div>';
+        h += row(P35.court, 2) + row(P35.date, 4) + row(P35.kind, 24);
+        // ระหว่าง { โจทก์ / ผู้ร้อง / จำเลย }
+        const bt = (key, role, out) => '<div class="ds-btr" style="padding-left:' + cm(P35.btw.at) + '"><span class="pf" style="min-width:' + cm(P35.btw.end - P35.btw.at) + '">' +
+            ED(key, null, String(F[key] || '').trim() ? T(F[key]) : '') + '<span class="pd"></span></span><span class="ds-btl' + (out ? ' out' : '') + '">' + role + '</span></div>';
+        h += '<div class="ds-btw ds-keep"><span class="ds-b ds-btk">ระหว่าง</span>' + BRACE + bt('plaintiff', 'โจทก์') + bt('applicant', 'ผู้ร้อง', true) + bt('defendant', 'จำเลย') + '</div>';
+        h += row(P35.me, 14);
+        P35.rows.forEach((r) => { h += row(r, 7); });
+        h += '<div style="margin-top:2pt">ขอยื่นคำร้องมีข้อความตามที่จะกล่าวต่อไปนี้</div>';
+        // ข้อ 1–3: "ข้อ ๑." ตัวหนา · ข้อความเขียนบนเส้นจุด · บรรทัดสุดท้ายเส้นจุดเติมจนสุดบรรทัด (ds-lead)
         lines(F.body).forEach((l, i) => {
             const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
-            h += '<p class="ds-j" style="margin-top:3pt;text-indent:2.5cm">' + (m ? '<b>' + T(m[1]) + '</b> ' + ED('body', i, T(m[2]), m[1] + ' ') : ED('body', i, T(l))) + '</p>';
+            h += '<p class="ds-j ds-lead" style="margin-top:' + (i ? 2 : 8) + 'pt;text-indent:' + cm(P35.itemIndent) + '">' + (m ? '<b>' + T(m[1]) + '</b> <span class="ds-dul">' + ED('body', i, T(m[2]), m[1] + ' ') + '</span>' : '<span class="ds-dul">' + ED('body', i, T(l)) + '</span>') + '</p>';
         });
-        h += '<p data-kn="1" style="margin-top:8pt;padding-left:8cm">' + ED('prayer', null, T(F.prayer)) + '</p>';
-        h += '<div class="ds-keep" style="margin-top:14pt">' + sign('ผู้ร้อง', F.signName) + '</div>';
-        const writerName = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
-        h += '<div class="ds-keep" style="margin-top:10pt"><p style="text-indent:2.5cm">คำร้องฉบับนี้ ข้าพเจ้า ' + ED('writer', null, T(F.writer || '')) + ' เป็นผู้เรียงและพิมพ์</p><div style="margin-top:12pt">' + sign('ผู้เรียงและพิมพ์', writerName) + '</div></div>';
+        h += '<p data-kn="1" style="margin-top:6pt;text-align:center">' + ED('prayer', null, T(F.prayer)) + '</p>';
+        // ลงชื่อ [ยศ] ........ ผู้ร้อง · (ชื่อจริง นามสกุล) กึ่งกลางใต้เส้นจุด
+        const sr = splitRank(F.signName);
+        const lead = 'ลงชื่อ ' + (sr[0] ? sr[0] + ' ' : '');
+        const dotsFrom = P35.signAt + realCm(th(lead)), dotsTo = 16 - realCm(' ผู้ร้อง') - 0.12;   // เส้นจุดจบก่อนคำว่า "ผู้ร้อง" ชิดขวา
+        const nameLeft = 2 * ((dotsFrom + dotsTo) / 2) - 16;
+        h += '<div class="ds-keep" style="margin-top:16pt"><div class="prow" style="padding-left:' + cm(P35.signAt) + '"><span class="pf" style="flex:1 1 auto"><span class="pl">ลงชื่อ ' +
+            (sr[0] ? ED('signName', null, T(sr[0]), '', 'rank') : '') + '</span><span class="pd" style="margin-right:.1cm"></span><span class="pl">ผู้ร้อง</span></span></div>' +
+            (sr[1] ? '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">(' + ED('signName', null, T(sr[1]), '', 'name') + ')</div>' : '') + '</div>';
+        // ผู้เรียงและพิมพ์ (ด้านหลังแบบพิมพ์ศาล) ตัวเล็กลง
+        const wr = splitRank(/[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '');
+        h += '<div class="ds-keep ds-sm" style="margin-top:12pt"><p style="text-indent:' + cm(P35.itemIndent) + '">คำร้องฉบับนี้ ข้าพเจ้า ' + ED('writer', null, T(F.writer || '')) + ' เป็นผู้เรียงและพิมพ์</p>' +
+            '<div class="prow" style="margin-top:10pt;padding-left:' + cm(P35.signAt) + '"><span class="pf" style="flex:1 1 auto"><span class="pl">ลงชื่อ ' + (wr[0] ? ED('writer', null, T(wr[0]), '', 'rank') : '') +
+            '</span><span class="pd" style="margin-right:.1cm"></span><span class="pl">ผู้เรียงและพิมพ์</span></span></div>' +
+            (wr[1] ? '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">(' + ED('writer', null, T(wr[1]), '', 'name') + ')</div>' : '') + '</div>';
         return sheet('petition', h);
     }
 
@@ -452,6 +478,7 @@
             else { if (b <= s) node.data = ''; else if (a < s) node.data = node.data.slice(s - a); }
         });
         if (keepHead) {
+            c.setAttribute('data-split', 'head');
             if (c.classList.contains('ds-j')) c.style.textAlignLast = 'justify';   // บรรทัดสุดท้ายของหน้ายังไม่จบย่อหน้า = จัดเต็มบรรทัด
             c.removeAttribute('data-kn');
         } else {
@@ -469,6 +496,21 @@
         if (f < 2 || f >= lines0.length) return null;                               // ไม่ทิ้งบรรทัดเดียวไว้ท้ายหน้า
         const s = lines0[f].start;
         return { head: cutAt(b, s, true), tail: cutAt(b, s, false) };
+    }
+    // ย่อหน้าแบบพิมพ์ศาล (ds-lead): เติมเส้นจุดจากท้ายข้อความถึงขอบขวาของบรรทัดสุดท้าย (ส่วนหัวที่ถูกตัดไปหน้าใหม่ไม่ต้องเติม)
+    function fillLeaders(root) {
+        root.querySelectorAll('.ds-lead').forEach((p) => {
+            if (p.getAttribute('data-split') === 'head' || p.querySelector('.ds-leadfill')) return;
+            const r = document.createRange(); r.selectNodeContents(p);
+            const rects = Array.from(r.getClientRects()).filter((x) => x.width > 0.5);
+            if (!rects.length) return;
+            const last = rects[rects.length - 1], pr = p.getBoundingClientRect();
+            const w = pr.right - last.right - 4;
+            if (w < 10) return;
+            const f = document.createElement('span');
+            f.className = 'ds-leadfill'; f.style.width = (w / PX_CM).toFixed(3) + 'cm';
+            p.appendChild(f);
+        });
     }
     function pageNo(i, thai) { const n = String(i + 1); return thai ? toThai(n) : n; }
     function paginate(flowHtml, opt) {
@@ -493,7 +535,7 @@
                 page.appendChild(pc);
                 host0.appendChild(page);
                 const pages = [];
-                const flush = () => { pages.push(pc.innerHTML); pc.innerHTML = ''; };
+                const flush = () => { fillLeaders(pc); pages.push(pc.innerHTML); pc.innerHTML = ''; };
                 const fits = () => pc.scrollHeight <= avail + 0.5;
                 const queue = Array.from(src.childNodes).filter((x) => x.nodeType === 1 || (x.nodeType === 3 && x.data.trim())).map((x) => x.cloneNode(true));
                 let guard = 0;
@@ -566,9 +608,13 @@
         '.ds-dotline{border-bottom:1px dotted #000;height:1.17em}.ds-fill{display:inline-block;width:6cm;border-bottom:1px dotted #000;text-indent:0}',
         '.ds-fcode{position:absolute;right:0;top:0;font-weight:700;z-index:1}.ds-hint{color:#6b7280;font-style:italic}.ds-ul{text-decoration:underline}',
         '.ds-ui{border-bottom:1px dotted #000;padding:0 .15cm;-webkit-box-decoration-break:clone;box-decoration-break:clone}',
-        '.ds-h35{position:relative;height:3.5cm}.ds-circ{position:absolute;left:0;top:0;width:.75cm;height:.75cm;border:1px solid #000;border-radius:50%}.ds-h35t{position:absolute;left:0;top:.85cm}.ds-h35n{position:absolute;left:9.6cm;top:2.1cm;line-height:1.35}',
+        '.ds-h35{position:relative;height:3.85cm}.ds-circ{position:absolute;left:0;top:0;width:.75cm;height:.75cm;border:1px solid #000;border-radius:50%}.ds-h35t{position:absolute;left:0;top:.85cm}.ds-h35n{position:absolute;left:9.6cm;top:2.1cm;line-height:1.35}',
         '.ds-btw{position:relative;margin-top:6pt;padding-left:2.5cm}.ds-btk{position:absolute;left:0;top:1.3em}.ds-brace{position:absolute;left:1.85cm;top:.15cm;width:.4cm;height:calc(100% - .3cm)}',
         '.ds-btr{display:flex;align-items:flex-end;gap:.2cm;margin:3pt 0}.ds-btv{flex:1 1 auto;text-align:left;padding-left:.25cm}.ds-btl{flex:0 0 1.4cm}',
+        '.prow{display:flex;align-items:baseline}.pf{display:flex;align-items:baseline;white-space:nowrap;flex:0 0 auto}.pf .pl{flex:0 0 auto}',
+        '.pf .pd{flex:1 1 auto;min-width:.3cm;height:.9em;margin:0 .06cm;border-bottom:1px dotted #000}.pf .ds-ed{flex:0 0 auto;padding:0 .1cm;min-width:.35cm}',
+        '.ds-btw{padding-left:0}.ds-btw .ds-btr{display:flex;align-items:baseline;position:relative;margin:13pt 0 0}.ds-btw .ds-btr:first-of-type{margin-top:4pt}.ds-btw .ds-btl{flex:0 0 auto;margin-left:.15cm}.ds-btw .ds-btl.out{position:absolute;right:0;top:0}.ds-btw .ds-btk{top:calc(1.17em + 17pt)}',
+        '.ds-dul{text-decoration:underline dotted 1px;text-underline-offset:.2em}.ds-leadfill{display:inline-block;height:.95em;vertical-align:baseline;border-bottom:1px dotted #000}.ds-sm{font-size:14pt}',
         '.ds-sheet.k-cover,.ds-page.k-cover{width:29.7cm;padding:2cm 2cm 2cm 3cm}.ds-sheet.k-cover{min-height:21cm}.ds-page.k-cover{height:20.99cm}.k-cover>.ds-c{height:16.9cm;display:flex;flex-direction:column;justify-content:space-between}'
     ].join('\n');
 
@@ -832,43 +878,50 @@
         }
         return { xml: parts.join(''), margin: [2.5, 2, 2, 3], pageNumbers: false };
     }
-    // แบบ 3-5 คำร้องให้เลิกการชุมนุมสาธารณะ (.docx) — เส้นจุดกรอกด้วยขีดเส้นใต้จุด · บรรทัด "ระหว่าง" ใช้แท็บจุดนำ
+    // แบบ 3-5 คำร้องให้เลิกการชุมนุมสาธารณะ (.docx) — ตำแหน่งเดียวกับหน้าพิมพ์ (P35) · เส้นจุดด้วยแท็บจุดนำ
     function xPetition(t, F, th) {
         const run = (s, b, pt, it) => runX(wbr(th(s)), pt || 16, b, it);
-        const U = (s, n) => runU(String(s || '').trim() ? ' ' + th(s) + ' ' : new Array((n || 12) + 1).join(' '));
-        const W = 16, gH = 3 * DX.EMU_CM, gW = Math.round(gH * 118 / 130), gX = (W - GW(3)) / 2;
-        const signX2 = (role, name) => {
-            const sr = splitRank(name);
-            return pX((sr[1] ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + tw(PET_SIGN_AT) + '"/>', run(petSignLead(sr[0]) + PET_DOTS + ' ' + role)) +
-                (sr[1] ? pX(spX(0) + '<w:ind w:left="' + tw(petSignLeft(sr[0])) + '"/><w:jc w:val="center"/>', run('(' + sr[1] + ')')) : '');
-        };
-        const ind = (c) => '<w:ind w:left="' + tw(c) + '"/>';
+        const runDU = (s) => '<w:r><w:rPr><w:u w:val="dotted"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(noHints(wbr(th(s))).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
+        const TAB = '<w:r><w:tab/></w:r>';
+        const dotTab = (c) => '<w:tab w:val="left" w:leader="dot" w:pos="' + tw(c) + '"/>';
+        const v = (k) => String(F[k] || '').trim();
+        const W = 16, gH = P35.gar.h * DX.EMU_CM, gW = Math.round(gH * 118 / 130);
+        // แถวช่องกรอก: ป้าย ค่า ....... (จุดหยุด) ป้ายถัดไป ...
+        const rowX = (segs, before) => pX(spX(before || 0) + '<w:tabs>' + segs.map((s) => dotTab(s[3])).join('') + '</w:tabs>' + (segs[0][2] ? '<w:ind w:left="' + tw(segs[0][2]) + '"/>' : ''),
+            segs.map((s) => run(s[0]) + (v(s[1]) ? run(' ' + v(s[1]) + ' ') : run(' ')) + TAB).join(''));
         const x = [];
         x.push(pX(spX(0) + '<w:tabs><w:tab w:val="right" w:pos="' + tw(W) + '"/></w:tabs>',
-            anchorX('rIdGaruda', gW, gH, gX * DX.EMU_CM, 2 * DX.EMU_CM, 1) + runX('○', 20, false) + '<w:r><w:tab/></w:r>' + run(F.formCode || '', true)));
+            anchorX('rIdGaruda', gW, gH, P35.gar.left * DX.EMU_CM, 2 * DX.EMU_CM, 1) + runX('○', 30, false) + TAB + run(F.formCode || '', true)));
         x.push(pX(spX(0), run(F.title, true)));
-        x.push(pX(spX(12) + ind(9.6), run('คดีหมายเลขดำที่ ') + U(F.blackNo, 14)));
-        x.push(pX(spX(0) + ind(9.6), run('คดีหมายเลขแดงที่ ') + U(F.redNo, 14)));
-        x.push(pX(spX(6), run('ศาล') + U(F.court, 20)));
-        x.push(pX(spX(0) + ind(6.3), run('วันที่') + U(F.day, 6) + run('เดือน') + U(F.month, 14) + run('พุทธศักราช ') + U(F.year, 8)));
-        x.push(pX(spX(10) + ind(7.3), run('ความ') + U(F.caseKind, 30)));
-        const btw = (v, role, lead) => pX('<w:keepNext/>' + spX(4) + '<w:tabs><w:tab w:val="left" w:pos="' + tw(2.5) + '"/><w:tab w:val="left" w:leader="dot" w:pos="' + tw(14.3) + '"/></w:tabs>',
-            (lead ? run('ระหว่าง', true) : '') + '<w:r><w:tab/></w:r>' + run(String(v || '').trim()) + '<w:r><w:tab/></w:r>' + run(' ' + role));
-        x.push(btw(F.plaintiff, 'โจทก์'), btw(F.applicant, 'ผู้ร้อง', true), btw(F.defendant, 'จำเลย'));
-        x.push(pX(spX(8) + '<w:ind w:firstLine="' + tw(1.27) + '"/>', run('ข้าพเจ้า') + U(F.pName, 40)));
-        x.push(pX(spX(0), run('เชื้อชาติ') + U(F.race, 8) + run('สัญชาติ') + U(F.nationality, 8) + run('อาชีพ') + U(F.occupation, 14) + run('เกิดวันที่') + U(F.birthDay, 8)));
-        x.push(pX(spX(0), run('เดือน') + U(F.birthMonth, 12) + run('พ.ศ.') + U(F.birthYear, 8) + run('อายุ') + U(F.age, 5) + run('ปี อยู่บ้านเลขที่') + U(F.houseNo, 10) + run('หมู่ที่') + U(F.moo, 4)));
-        x.push(pX(spX(0), run('ถนน') + U(F.road, 14) + run('ตรอก/ซอย') + U(F.soi, 6) + run('ใกล้เคียง') + U(F.near, 6) + run('ตำบล/แขวง') + U(F.subdistrict, 10)));
-        x.push(pX(spX(0), run('อำเภอ/เขต') + U(F.district, 10) + run('จังหวัด') + U(F.province, 14) + run('โทรศัพท์') + U(F.phone, 12)));
-        x.push(pX(spX(0), run('ขอยื่นคำร้องมีข้อความตามที่จะกล่าวต่อไปนี้')));
-        lines(F.body).forEach((l) => {
+        const caseX = (label, k, before) => pX(spX(before) + '<w:tabs>' + (v(k) ? dotTab(W) : dotTab(14.7) + dotTab(W)) + '</w:tabs><w:ind w:left="' + tw(P35.caseAt) + '"/>',
+            run(label + ' ') + (v(k) ? run(v(k) + ' ') + TAB : TAB + run('/25') + TAB));
+        x.push(caseX('คดีหมายเลขดำที่', 'blackNo', 22), caseX('คดีหมายเลขแดงที่', 'redNo', 0));
+        x.push(rowX(P35.court, 10), rowX(P35.date, 4), rowX(P35.kind, 24));
+        // ระหว่าง { (ตัวปีกกาสูง) โจทก์ / ผู้ร้อง / จำเลย
+        const btX = (k, role, mid) => pX(spX(mid ? 4 : 10) + '<w:tabs>' + (mid ? '<w:tab w:val="left" w:pos="' + tw(1.75) + '"/>' : '') + '<w:tab w:val="left" w:pos="' + tw(P35.btw.at) + '"/>' + dotTab(P35.btw.end) +
+            (mid ? '<w:tab w:val="right" w:pos="' + tw(W) + '"/>' : '') + '</w:tabs>',
+            (mid ? run('ระหว่าง', true) + TAB + runX('{', 44, false) : '') + TAB + run(v(k) ? v(k) + ' ' : '') + TAB + (mid ? TAB : run(' ')) + run(role));
+        x.push(btX('plaintiff', 'โจทก์'), btX('applicant', 'ผู้ร้อง', true), btX('defendant', 'จำเลย'));
+        x.push(rowX(P35.me, 14));
+        P35.rows.forEach((r) => x.push(rowX(r, 7)));
+        x.push(pX(spX(2), run('ขอยื่นคำร้องมีข้อความตามที่จะกล่าวต่อไปนี้')));
+        // ข้อ 1–3: ข้อความขีดเส้นใต้จุด + แท็บจุดนำเติมบรรทัดสุดท้ายจนสุดขอบขวา
+        lines(F.body).forEach((l, i) => {
             const m = l.match(/^(ข้อ\s*[0-9๐-๙]+\.?)\s*([\s\S]*)$/);
-            x.push(pX(spX(3) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', m ? run(m[1], true) + run(' ' + m[2]) : run(l)));
+            x.push(pX(spX(i ? 2 : 8) + '<w:tabs>' + dotTab(W) + '</w:tabs><w:ind w:firstLine="' + tw(P35.itemIndent) + '"/><w:jc w:val="thaiDistribute"/>',
+                (m ? run(m[1], true) + run(' ') + runDU(m[2]) : runDU(l)) + TAB));
         });
-        x.push(pX('<w:keepNext/>' + spX(8) + ind(8), run(F.prayer)));
-        x.push(signX2('ผู้ร้อง', F.signName).replace(spX(0), spX(14)));
-        const writerName = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
-        x.push(pX('<w:keepNext/>' + spX(10) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์')) + signX2('ผู้เรียงและพิมพ์', writerName).replace(spX(0), spX(12)));
+        x.push(pX('<w:keepNext/>' + spX(6) + '<w:jc w:val="center"/>', run(F.prayer)));
+        const signRow = (name, role, pt, before) => {
+            const sr = splitRank(name), lead = 'ลงชื่อ ' + (sr[0] ? sr[0] + ' ' : '');
+            const k = pt / 16, from = P35.signAt + realCm(th(lead)) * k, end = W - realCm(' ' + role) * k - 0.12;   // จุดจบก่อนคำบทบาทชิดขวา
+            const left = 2 * ((from + end) / 2) - W;
+            return pX((sr[1] ? '<w:keepNext/>' : '') + spX(before) + '<w:tabs>' + dotTab(end) + '</w:tabs><w:ind w:left="' + tw(P35.signAt) + '"/>', run(lead, false, pt) + TAB + run(' ' + role, false, pt)) +
+                (sr[1] ? pX(spX(0) + '<w:ind w:left="' + tw(left) + '"/><w:jc w:val="center"/>', run('(' + sr[1] + ')', false, pt)) : '');
+        };
+        x.push(signRow(F.signName, 'ผู้ร้อง', 16, 16));
+        const writer = /[ก-๙A-Za-z]/.test(F.writer || '') ? F.writer : '';
+        x.push(pX('<w:keepNext/>' + spX(12) + '<w:ind w:firstLine="' + tw(P35.itemIndent) + '"/>', run('คำร้องฉบับนี้ ข้าพเจ้า ' + (F.writer || '') + ' เป็นผู้เรียงและพิมพ์', false, 14)) + signRow(writer, 'ผู้เรียงและพิมพ์', 14, 10));
         return { xml: x.join(''), margin: [2, 2, 2, 3], pageNumbers: false };
     }
         function docxBlob(t, k) {
@@ -1578,6 +1631,17 @@
             el.addEventListener('keydown', onEdKey);     // แก้บนกระดาษ A4
             el.addEventListener('paste', onEdPaste);
             el.addEventListener('focusout', onEdBlur);
+            // ย้อนกลับ/ไปข้างหน้า (nav.js): มุมมองในแท็บนี้ — ลำดับปฏิบัติ/คู่มือ/หนังสือ · หนังสือที่เปิด · บท/หัวข้อ · กลุ่ม · ช่วง/รายคน
+            if (window.LamhinNav) window.LamhinNav.register('docs', () => {
+                if (!host || !host.offsetParent) return null;
+                const M = window.LAMHIN_MANUAL, ch = ui.ch || (M && M.chapters[0] ? M.chapters[0].id : '');
+                return { view: ui.view, doc: ui.view === 'docs' ? (ui.doc || '') : '', planBy: ui.planBy, pphase: Number(ui.pphase) || 0, pperson: ui.pperson || '',
+                    ch: ch, sec: (ui.sec || {})[ch] || '', grp: ui.grp || '', q: ui.q || '' };
+            }, (v) => {
+                ui.view = v.view; ui.doc = v.doc; ui.planBy = v.planBy; ui.pphase = v.pphase; ui.pperson = v.pperson; ui.grp = v.grp; ui.q = v.q; ui.ch = v.ch;
+                ui.sec = ui.sec || {}; if (v.ch && v.sec) ui.sec[v.ch] = v.sec;
+                saveUi(); render();
+            }, 30);
             el.addEventListener('change', (e) => {   // เลือกชื่อ ผช.พงส. (รายคน)
                 const sl = e.target.closest('[data-d="ops-slot"]');
                 if (sl && window.LamhinOps) { window.LamhinOps.setSlot(ev(), Number(sl.dataset.slot), sl.value); render(); }
