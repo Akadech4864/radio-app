@@ -1,0 +1,159 @@
+/* =====================================================================
+   คู่มือปฏิบัติงาน + ศูนย์หนังสือราชการ (cmd/cmddocs.js)
+   - สไตล์อยู่ใต้ .cmdd (แท็บ) / .cmdd-tp (โหมดอ่านหน้างาน) / .cmdd-* เท่านั้น · กระดาษ A4 (.ds-*) อยู่ใน cmddocs.js
+   - ใช้ตัวแปรสีของกระดาน (#pane-cmd)
+   ===================================================================== */
+@font-face { font-family: 'THSarabunDoc'; src: url('fonts/THSarabunPSK.woff') format('woff'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'THSarabunDoc'; src: url('fonts/THSarabunPSK-Bold.woff') format('woff'); font-weight: 700; font-display: swap; }
+
+.cmdd { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cmdd-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cmdd .spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--cmd-line2); border-top-color: var(--cmd-gold); border-radius: 50%; animation: cmddSpin 0.8s linear infinite; vertical-align: -3px; margin-right: 6px; }
+@keyframes cmddSpin { to { transform: rotate(360deg); } }
+.cmdd u { text-decoration: none; color: var(--cmd-gold); font-weight: 800; }
+
+/* แถบบน: คู่มือ / หนังสือราชการ */
+.cmdd-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px; }
+.cmdd-seg { display: flex; gap: 4px; flex: 1 1 260px; padding: 4px; border-radius: 14px; background: var(--cmd-card2); border: 1px solid var(--cmd-line); }
+.cmdd-seg button, .cmdd-mseg button {
+    flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 6px 10px;
+    border: 0; border-radius: 11px; background: transparent; color: var(--cmd-mute); font: inherit; font-weight: 800; font-size: 0.86rem; cursor: pointer; white-space: nowrap;
+}
+.cmdd-seg button.on, .cmdd-mseg button.on { color: var(--cmd-bg); background: linear-gradient(135deg, #F3D774, var(--cmd-gold)); }
+
+/* ---------- คู่มือ ---------- */
+.cmdd-mhead { display: flex; flex-direction: column; gap: 10px; }
+.cmdd-mhead > div:first-child b { display: block; font-size: 1.05rem; font-weight: 800; color: var(--cmd-gold); }
+.cmdd-mhead small { display: block; font-size: 0.78rem; color: var(--cmd-mute); line-height: 1.5; }
+.cmdd-mtools, .cmdd-ltools, .cmdd-edtools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cmdd-search { flex: 1 1 240px; display: flex; align-items: center; gap: 8px; padding: 0 12px; min-height: 40px; border-radius: 12px; background: rgba(10, 22, 40, 0.7); border: 1px solid var(--cmd-line2); }
+.cmdd-search i { color: var(--cmd-mute); }
+.cmdd-search input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--cmd-ink); font: inherit; font-size: 16px; }
+.cmdd-hits { font-size: 0.8rem; color: var(--cmd-neon); font-weight: 700; }
+
+.cmdd-ch { padding: 0; overflow: hidden; }
+.cmdd-ch-h { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; border: 0; background: transparent; color: var(--cmd-ink); font: inherit; text-align: left; cursor: pointer; }
+.cmdd-ch-h > i:first-child { flex: 0 0 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: var(--cmd-gold); background: rgba(212, 175, 55, 0.12); }
+.cmdd-ch-h span { flex: 1 1 auto; min-width: 0; }
+.cmdd-ch-h small { display: block; font-size: 0.72rem; color: var(--cmd-gold); font-weight: 800; letter-spacing: 0.3px; }
+.cmdd-ch-h b { display: block; font-size: 0.95rem; font-weight: 800; line-height: 1.35; }
+.cmdd-ch-h em { font-style: normal; font-size: 0.72rem; color: var(--cmd-mute); white-space: nowrap; }
+.cmdd-chev { color: var(--cmd-mute); transition: transform 0.2s; }
+.cmdd-ch.open .cmdd-chev { transform: rotate(180deg); }
+.cmdd-secs { display: flex; flex-direction: column; gap: 10px; padding: 0 12px 12px; }
+.cmdd-sec { padding: 12px; border-radius: 16px; background: rgba(10, 22, 40, 0.45); border: 1px solid var(--cmd-line); }
+.cmdd-sec > header { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.cmdd-sec h4 { flex: 1 1 220px; margin: 0; font-size: 0.92rem; font-weight: 800; color: #F3D774; line-height: 1.45; }
+.cmdd-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.cmdd-editbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(0, 210, 255, 0.08); border: 1px solid rgba(0, 210, 255, 0.4); font-size: 0.8rem; color: var(--cmd-neon); }
+.cmdd-editbar span { flex: 1 1 auto; }
+
+/* เนื้อหาคู่มือ */
+.cmdd-md { font-size: 0.9rem; line-height: 1.65; color: #D5E0F0; overflow-x: auto; }
+.cmdd-md.editing { outline: 2px dashed var(--cmd-neon); outline-offset: 4px; border-radius: 8px; background: rgba(0, 210, 255, 0.04); }
+.cmdd-md p { margin: 0 0 8px; }
+.cmdd-md ol, .cmdd-md ul { margin: 0 0 8px; padding-left: 22px; }
+.cmdd-md li { margin-bottom: 5px; }
+.cmdd-md ol.big li { margin-bottom: 9px; }
+.cmdd-md ul.ck, .cmdd-md ol.ck { list-style: none; padding-left: 4px; }
+.cmdd-md b, .cmdd-md strong { color: #fff; }
+.cmdd-md a { color: var(--cmd-neon); text-decoration: none; font-weight: 700; }
+.cmdd-md table { width: 100%; border-collapse: collapse; font-size: 0.84rem; margin: 2px 0 8px; min-width: 520px; }
+.cmdd-md th, .cmdd-md td { border: 1px solid var(--cmd-line2); padding: 7px 9px; vertical-align: top; text-align: left; }
+.cmdd-md table.mt tbody th { width: 26%; background: rgba(212, 175, 55, 0.08); color: #F3D774; font-weight: 800; }
+.cmdd-md thead th { background: rgba(212, 175, 55, 0.14); color: #F3D774; font-weight: 800; }
+.cmdd-md table.mt:not(.grid) { min-width: 0; }
+.cmdd-md .note { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.1); margin: 6px 0; }
+.cmdd-md .note.danger { border-color: rgba(220, 38, 38, 0.55); background: rgba(220, 38, 38, 0.1); }
+
+/* ---------- รายการหนังสือ ---------- */
+.cmdd-lhead { display: flex; flex-direction: column; gap: 10px; }
+.cmdd-lhead > div:first-child b { display: block; font-size: 1.02rem; font-weight: 800; color: var(--cmd-gold); }
+.cmdd-lhead > div:first-child small { display: block; font-size: 0.78rem; color: var(--cmd-mute); line-height: 1.5; }
+.cmdd-warn { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 9px 11px; border-radius: 12px; font-size: 0.8rem; line-height: 1.5; color: #FCD34D; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.45); }
+.cmdd-cards { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.cmdd-doc {
+    display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; border-radius: 16px; text-align: left; cursor: pointer;
+    background: rgba(148, 178, 222, 0.06); border: 1px solid var(--cmd-line); color: var(--cmd-ink); font: inherit; transition: border-color 0.15s, transform 0.12s;
+}
+.cmdd-doc:hover { border-color: rgba(212, 175, 55, 0.6); }
+.cmdd-doc:active { transform: scale(0.985); }
+.cmdd-doc > i:first-child { flex: 0 0 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: var(--cmd-neon); background: rgba(0, 210, 255, 0.1); }
+.cmdd-doc > i:last-child { color: var(--cmd-faint); }
+.cmdd-doc span { flex: 1 1 auto; min-width: 0; }
+.cmdd-doc b { display: block; font-size: 0.86rem; font-weight: 800; line-height: 1.4; }
+.cmdd-doc small { display: block; font-size: 0.74rem; color: var(--cmd-mute); line-height: 1.4; }
+.cmdd-doc em { display: block; font-style: normal; font-size: 0.7rem; color: var(--cmd-faint); margin-top: 2px; }
+
+/* ---------- ตัวแก้ไข ---------- */
+.cmdd-edhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; position: sticky; top: 64px; z-index: 15; }
+.cmdd-edtitle { flex: 1 1 220px; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cmdd-edtitle > i { color: var(--cmd-gold); }
+.cmdd-edtitle b { display: block; font-size: 0.9rem; font-weight: 800; line-height: 1.35; }
+.cmdd-edtitle small { display: block; font-size: 0.72rem; color: var(--cmd-mute); }
+.cmdd-edtools .cmd-btn[disabled] { opacity: 0.4; pointer-events: none; }
+.cmdd-mseg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--cmd-card2); border: 1px solid var(--cmd-line); }
+.cmdd-ed { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.cmdd-ed.show-form .cmdd-pvwrap { display: none; }
+.cmdd-ed.show-pv .cmdd-form { display: none; }
+@media (min-width: 1000px) {
+    .cmdd-mseg { display: none; }
+    .cmdd-ed { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); }
+    .cmdd-ed.show-form .cmdd-pvwrap, .cmdd-ed.show-pv .cmdd-form { display: block; }
+    .cmdd-pvwrap { position: sticky; top: 140px; }
+}
+.cmdd-form textarea { font-family: inherit; line-height: 1.55; }
+.cmdd-bodyf textarea { min-height: 260px; }
+.cmdd-form .cmd-f > span u { font-size: 0.68rem; }
+.cmdd-partlist { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.cmdd-partlist label { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(148, 178, 222, 0.06); border: 1px solid var(--cmd-line); font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.cmdd-partlist input { width: 18px; height: 18px; accent-color: #D4AF37; flex: 0 0 auto; }
+.cmdd-vars { grid-column: 1 / -1; padding: 10px; border-radius: 14px; border: 1px solid rgba(0, 210, 255, 0.4); background: rgba(0, 210, 255, 0.05); display: flex; flex-direction: column; gap: 8px; }
+.cmdd-vars-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.8rem; font-weight: 800; color: var(--cmd-neon); }
+.cmdd-vars-h .cmd-btn { margin-left: auto; }
+
+/* หน้าตัวอย่าง A4 */
+.cmdd-pvwrap { min-width: 0; }
+.cmdd-pvbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px; font-size: 0.76rem; color: var(--cmd-mute); }
+.cmdd-pvbar i { color: var(--cmd-gold); }
+.cmdd-pv { position: relative; overflow: hidden; border-radius: 6px; background: #8a94a6; box-shadow: 0 10px 30px rgba(3, 10, 22, 0.5); }
+.cmdd-pv-in { transform-origin: 0 0; display: flex; flex-direction: column; gap: 14px; }
+.cmdd-pv .ds-page { box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35); }
+.cmdd-pv .ds-ph { background: #fde68a; border-radius: 2px; }
+.cmdd-pv-in { padding: 14px 0; align-items: center; }
+.cmdd-pvwait { padding: 40px; color: #fff; font: 700 15px 'Sarabun', sans-serif; text-align: center; }
+
+/* ---------- เมนูอ่านหน้างาน / ช่องเลือก ---------- */
+.cmdd-pmenu { display: grid; gap: 8px; }
+.cmdd-pmenu .cmd-btn { justify-content: flex-start; text-align: left; min-height: 46px; }
+.cmdd-checks { display: grid; gap: 6px; }
+.cmdd-checks label { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 12px; background: rgba(148, 178, 222, 0.06); border: 1px solid rgba(148, 178, 222, 0.18); cursor: pointer; }
+.cmdd-checks input { width: 20px; height: 20px; margin-top: 2px; accent-color: #D4AF37; }
+.cmdd-checks span { font-size: 0.86rem; font-weight: 700; line-height: 1.4; }
+.cmdd-checks small { display: block; font-weight: 400; font-size: 0.74rem; color: #93A7C4; }
+
+/* ---------- โหมดอ่านหน้างาน (เต็มจอ) ---------- */
+.cmdd-tp { position: fixed; inset: 0; z-index: 420; display: flex; flex-direction: column; background: #050B16; color: #F8FAFC; font-family: 'Sarabun', system-ui, sans-serif; }
+.cmdd-tp-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; background: #0A1628; border-bottom: 1px solid rgba(212, 175, 55, 0.35); }
+.cmdd-tp-bar b { flex: 1 1 200px; font-size: 1rem; font-weight: 800; color: #D4AF37; }
+.cmdd-tp-bar span { display: flex; gap: 6px; flex-wrap: wrap; }
+.cmdd-tp button { min-height: 42px; padding: 6px 13px; border-radius: 12px; border: 1px solid rgba(148, 178, 222, 0.3); background: rgba(148, 178, 222, 0.1); color: #F8FAFC; font: inherit; font-weight: 800; cursor: pointer; }
+.cmdd-tp-vars { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; padding: 10px 14px; background: rgba(0, 210, 255, 0.06); border-bottom: 1px solid rgba(0, 210, 255, 0.3); }
+.cmdd-tp-vars label { display: flex; flex-direction: column; gap: 3px; flex: 1 1 calc(33% - 8px); min-width: 96px; font-size: 0.74rem; color: #93A7C4; font-weight: 700; }
+.cmdd-tp-vars input { min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(148, 178, 222, 0.35); background: #0A1628; color: #fff; font: inherit; font-size: 16px; }
+.cmdd-tp-scroll { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 18px calc(40px + env(safe-area-inset-bottom)); }
+.cmdd-tp-text { max-width: 980px; margin: 0 auto; line-height: 1.65; font-weight: 600; }
+.cmdd-tp-text p, .cmdd-tp-text li { margin: 0 0 0.7em; }
+.cmdd-tp-text ol, .cmdd-tp-text ul { padding-left: 1.3em; margin: 0 0 0.7em; }
+.cmdd-tp-text b { color: #FDE68A; }
+.cmdd-tp-text .cmdd-tp-hd { text-align: center; color: #FDE68A; font-weight: 800; }
+.cmdd-tp-text table { border-collapse: collapse; width: 100%; font-size: 0.8em; }
+.cmdd-tp-text td, .cmdd-tp-text th { border: 1px solid rgba(255, 255, 255, 0.25); padding: 6px; vertical-align: top; }
+
+@media (max-width: 560px) {
+    .cmdd-edhead { position: static; padding: 8px; }
+    .cmdd-edtools { width: 100%; }
+    .cmdd-edtools .cmd-btn { flex: 1 1 auto; }
+    .cmdd-ch-h em { display: none; }
+    .cmdd-cards { grid-template-columns: minmax(0, 1fr); }
+}

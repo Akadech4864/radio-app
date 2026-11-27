@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="dash/dash.css?v=113">
     <link rel="stylesheet" href="style.css?v=113">
+    <link rel="stylesheet" href="cmd/cmd.css?v=3">
+    <link rel="stylesheet" href="cmd/cmdlog.css?v=2">
+    <link rel="stylesheet" href="cmd/cmddocs.css?v=1">
 </head>
 <body>
     <!--
@@ -22,9 +25,9 @@
         <nav class="rtabs" id="rtabs">
             <button type="button" data-tab="station" class="on"><i class="fa-solid fa-building-shield"></i><span>เวร สน.</span></button>
             <button type="button" data-tab="duty"><i class="fa-solid fa-user-shield"></i><span>เวรสอบสวน</span></button>
-            <button type="button" data-tab="crew"><i class="fa-solid fa-sitemap"></i><span>กำลังพล</span></button>
-            <button type="button" data-tab="cases"><i class="fa-solid fa-scale-balanced"></i><span>สถิติคดี</span></button>
-            <button type="button" data-tab="work"><i class="fa-solid fa-list-ol"></i><span>ภาระงาน</span></button>
+            <!-- งานสอบสวน = กำลังพล / สถิติคดี / ภาระงาน (แท็บย่อยด้านบนแผง · invtabs.js) -->
+            <button type="button" data-tab="crew" data-inv="1"><i class="fa-solid fa-briefcase"></i><span>งานสอบสวน</span></button>
+            <button type="button" data-tab="cmd"><i class="fa-solid fa-tower-broadcast"></i><span>เหตุการณ์</span></button>
         </nav>
 
         <!-- ===== 1) เวรสอบสวน / ภารกิจ ===== -->
@@ -165,6 +168,9 @@
         <!-- ===== 5) ภาระงาน & คดีค้าง ===== -->
         <section class="rpane" id="pane-work" hidden></section>
 
+        <!-- ===== 6) กระดานสถานการณ์ & บริหารเหตุการณ์ (Smart Command Board · cmd/cmd.js) ===== -->
+        <section class="rpane" id="pane-cmd" hidden></section>
+
         <footer class="foot">ข้อมูลจากระบบงานสอบสวน สน.ลำหิน · อัปเดตอัตโนมัติทุก 5 นาที · <span id="lastSync">-</span></footer>
     </div>
 
@@ -177,5 +183,10 @@
     <script src="stationcheck.js?v=113"></script>
     <script src="app.js?v=113"></script>
     <script src="stationedit.js?v=113"></script>
+    <script src="invtabs.js?v=1"></script>
+    <script src="cmd/cmd.js?v=3"></script>
+    <script src="cmd/cmd3d.js?v=1"></script>
+    <script src="cmd/cmdlog.js?v=3"></script>
+    <script src="cmd/cmddocs.js?v=1"></script>
 </body>
 </html>
