@@ -770,6 +770,8 @@
         follow();
         // ลิงก์ตรง .../radio-app/#cmd (app.js รู้จักเฉพาะแท็บเดิม จึงเปิดแท็บนี้เอง)
         const openFromHash = () => { if ((location.hash || '').slice(1) === 'cmd' && typeof window.showTab === 'function' && root.hidden) window.showTab('cmd'); };
+        // หน้าเริ่มต้นของเว็บ = แท็บ "เหตุการณ์" (ลิงก์ที่ระบุ #แท็บอื่น เช่น #station ยังเปิดแท็บนั้นตามเดิม)
+        if (!(location.hash || '').slice(1) && typeof window.showTab === 'function' && root.hidden) window.showTab('cmd');
         openFromHash();
         window.addEventListener('hashchange', openFromHash);
     }
