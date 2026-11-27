@@ -5,6 +5,9 @@
    - เก็บข้อมูลใน localStorage (LamhinCmd.KEY) + Export/Import JSON + คัดลอกสรุปส่ง LINE
    - ผู้ใช้ยืนยันให้แสดงข้อมูลผู้จัด/ผู้ประสานงานบนเว็บได้ (เลขบัตรประชาชนแสดงแบบปิดบางส่วน)
    - โมดูลเสริม (แผนที่ 3 มิติ / คู่มือและหนังสือราชการ) เสียบผ่าน LamhinCmd.registerSection({ id, order, mount, update, visible })
+     · host: 'overview' | '<id แท็บอื่น>' = ไม่มีแท็บของตัวเอง แสดงต่อท้ายแท็บนั้น (แท็บเจ้าของกำหนดได้ด้วย shows(id) / reveal(id))
+     · host: 'overview' + top: true = วางบนสุดของหน้าภาพรวม ก่อนการ์ดสรุป
+   - แท็บหลักเหลือ 4 แท็บ: ภาพรวม (แผนที่ 3 มิติบนสุด → การ์ดสรุป → ติดต่อ) · ขั้นตอน & กฎหมาย · บันทึก ศปก. · คู่มือ & เอกสาร (+สายงาน)
      การ์ดของโมดูลเสริมสร้างครั้งเดียวและคงอยู่ (ไม่ถูกวาดทับเมื่อกระดานหลักวาดใหม่)
    ===================================================================== */
 (function () {
@@ -100,7 +103,7 @@
     let head = null;    // แถบบน + แถบเหตุการณ์ (วาดใหม่ทุกครั้ง)
     let tabsEl = null;  // แท็บย่อย (ติดขอบบนเมื่อเลื่อน)
     let core = null;    // เนื้อหาแท็บหลัก (วาดใหม่ทุกครั้ง)
-    let ext = null;     // การ์ดโมดูลเสริม (สร้างครั้งเดียว)
+    let ext = null, tail, topBox;     // การ์ดโมดูลเสริม (สร้างครั้งเดียว) · topBox = บนสุดหน้าภาพรวม (แผนที่ 3 มิติ)
     let timer = 0;
     let lastPhaseKey = '';
     const plugins = [];
@@ -255,27 +258,48 @@
     /* ---------------- แท็บย่อยของกระดาน ---------------- */
     const TAB_KEY = 'lamhin_cmd_tab';
     const CORE_TABS = [
-        { id: 'overview', label: 'ภาพรวม', icon: 'fa-gauge-high', order: 10 },
-        { id: 'legal', label: 'ข้อกฎหมาย', icon: 'fa-scale-balanced', order: 20 },
-        { id: 'contact', label: 'ติดต่อ & นำทาง', icon: 'fa-phone-volume', order: 25 }
+        { id: 'overview', label: 'ภาพรวม', icon: 'fa-gauge-high', order: 10 }
     ];
+    // แท็บเดิมที่รวมเข้าแท็บใหญ่แล้ว — ปุ่ม/ลิงก์/ค่าที่จำไว้เดิมยังพาไปถูกที่
+    //   ข้อกฎหมาย → ท้ายแท็บ "ขั้นตอน & กฎหมาย" · ติดต่อ & นำทาง → การ์ดปุ่มลัดในหน้าภาพรวม
+    const MERGED = { legal: { anchor: '.cmd-tail' }, contact: { to: 'overview', anchor: '.cmd-quick' } };
     let curSub = (function () { try { return localStorage.getItem(TAB_KEY) || 'overview'; } catch (e) { return 'overview'; } })();
+    const findPlugin = (id) => plugins.find((x) => x.id === id);
+    // โมดูลที่ฝากไว้ในแท็บอื่น (host) — ถ้าแท็บเจ้าของโหลดไม่ขึ้น ให้กลับมามีแท็บของตัวเอง
+    function hostOf(p) {
+        if (!p.host) return '';
+        if (p.host === 'overview') return 'overview';
+        const h = findPlugin(p.host);
+        return h && !h.host ? p.host : '';
+    }
+    // ข้อกฎหมายชี้ขาดฉบับเต็ม อยู่ท้ายแท็บบันได 7 ขั้น (ถ้าไม่มีแท็บนั้น → ท้ายหน้าภาพรวม)
+    function legalHost() { const l = findPlugin('ladder'); return l && !hostOf(l) ? 'ladder' : 'overview'; }
     function allTabs() {
-        return CORE_TABS.concat(plugins.map((p) => ({ id: p.id, label: p.label || p.id, icon: p.icon || 'fa-puzzle-piece', order: p.order || 50 })))
+        return CORE_TABS.concat(plugins.filter((p) => !hostOf(p)).map((p) => ({ id: p.id, label: p.label || p.id, icon: p.icon || 'fa-puzzle-piece', order: p.order || 50 })))
             .sort((a, b) => a.order - b.order);
     }
+    function resolveTab(id) {
+        if (MERGED[id]) return { tab: MERGED[id].to || legalHost(), anchor: MERGED[id].anchor };
+        const p = findPlugin(id), h = p ? hostOf(p) : '';
+        return h ? { tab: h, child: p } : { tab: id };
+    }
     function setSub(id) {
-        if (!allTabs().some((t) => t.id === id)) return;
-        curSub = id;
-        try { localStorage.setItem(TAB_KEY, id); } catch (e) { /* ไม่จำก็ได้ */ }
+        const r = resolveTab(id);
+        if (!allTabs().some((t) => t.id === r.tab)) return;
+        const hp = r.child ? findPlugin(r.child.host) : null;   // ให้แท็บเจ้าของเปิดมุมมองที่มีโมดูลนี้ (เช่น คู่มือ › ลำดับปฏิบัติ › สายงาน)
+        if (hp && hp.reveal) { try { hp.reveal(r.child.id, API); } catch (e) { console.error('[cmd] reveal ' + hp.id, e); } }
+        curSub = r.tab;
+        try { localStorage.setItem(TAB_KEY, r.tab); } catch (e) { /* ไม่จำก็ได้ */ }
         render();
+        const target = r.child ? r.child._el : r.anchor && shell ? shell.querySelector(r.anchor) : null;
+        if (target && target.offsetParent) { window.scrollTo({ top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - 64), behavior: 'smooth' }); return; }
         // เลื่อนอยู่ลึกในเนื้อหา → กลับไปต้นเนื้อหาของแท็บใหม่ (ใต้แถบเหตุการณ์)
         const y = head ? head.getBoundingClientRect().bottom + window.scrollY - 4 : 0;
         if (head && window.scrollY > y) window.scrollTo({ top: y, behavior: 'smooth' });
     }
 
     /* ---------------- โมดูลเสริม (แท็บของตัวเอง) ---------------- */
-    // p = { id, label, icon, order, mount(el, api), update(ev, api), visible(on, api) }
+    // p = { id, label, icon, order, host?, mount(el, api), update(ev, api), visible(on, api), shows?(childId), reveal?(childId) }
     function registerSection(p) {
         if (!p || !p.id || plugins.some((x) => x.id === p.id) || CORE_TABS.some((t) => t.id === p.id)) return;
         plugins.push(p);
@@ -297,11 +321,18 @@
         const shown = !!root && !root.hidden && !document.hidden;
         plugins.forEach((p) => {
             if (!p._el) return;
-            const on = shown && curSub === p.id;
-            p._el.hidden = curSub !== p.id;
+            const h = hostOf(p), hp = h && h !== 'overview' ? findPlugin(h) : null;
+            if (hp && hp._el && hp._el.nextElementSibling !== p._el) hp._el.after(p._el);   // วางต่อท้ายแท็บเจ้าของ
+            if (h === 'overview' && p.top && topBox && p._el.parentNode !== topBox) topBox.appendChild(p._el);   // บนสุดของหน้าภาพรวม (ก่อนการ์ดสรุป)
+            let here = curSub === (h || p.id);
+            if (here && hp && hp.shows) { try { here = !!hp.shows(p.id, API); } catch (e) { here = false; } }
+            const on = shown && here;
+            p._el.hidden = !here;
             try { if (p.update) p.update(active(), API); } catch (e) { console.error('[cmd] update ' + p.id, e); }
             if (on !== p._on) { p._on = on; try { if (p.visible) p.visible(on, API); } catch (e) { console.error('[cmd] visible ' + p.id, e); } }
         });
+        // กล่องที่ไม่มีแผงแสดงอยู่ → ซ่อน (ไม่เหลือช่องว่างระหว่างการ์ด)
+        [topBox, ext].forEach((box) => { if (box) box.hidden = ![...box.children].some((c) => !c.hidden); });
     }
 
     /* ---------------- วาดหน้าจอ ---------------- */
@@ -310,7 +341,7 @@
         const ev = active();
         const now = Date.now();
         const tabs = allTabs();
-        if (!tabs.some((t) => t.id === curSub)) curSub = 'overview';
+        if (!tabs.some((t) => t.id === curSub)) { const r = resolveTab(curSub); curSub = tabs.some((t) => t.id === r.tab) ? r.tab : 'overview'; }
         const events = state.events.slice().sort((a, b) => (startOf(a) || 0) - (startOf(b) || 0));
         const chips = events.map((e) => {
             const s = startOf(e), past = (endOf(e) || s || Infinity) < now;
@@ -333,20 +364,20 @@
         const onTab = tabsEl.querySelector('.cmd-tab.on');   // มือถือ: เลื่อนแถบให้เห็นแท็บที่เปิดอยู่
         if (onTab && tabsEl.scrollWidth > tabsEl.clientWidth) tabsEl.scrollLeft = Math.max(0, onTab.offsetLeft - (tabsEl.clientWidth - onTab.offsetWidth) / 2);
 
-        const isCore = CORE_TABS.some((t) => t.id === curSub);
+        const isCore = curSub === 'overview';
         core.hidden = !isCore;
         if (!isCore) core.innerHTML = '';
         else if (!ev) core.innerHTML = '<div class="cmd-grid cmd-g-one"><section class="cmd-card"><div class="cmd-empty"><i class="fa-solid fa-calendar-plus"></i>ยังไม่มีเหตุการณ์ — กด <b>+ เพิ่มเหตุการณ์ใหม่</b> เพื่อเริ่มต้น</div></section></div>';
-        else if (curSub === 'overview') core.innerHTML = '<div class="cmd-grid cmd-g-overview">' + heroHtml(ev) + countHtml(ev, now) + levelHtml(ev) + alertsMiniHtml(ev, now) + '</div>';
-        else if (curSub === 'legal') core.innerHTML = '<div class="cmd-grid cmd-g-one">' + alertsHtml(ev, now) + '</div>';
-        else core.innerHTML = '<div class="cmd-grid cmd-g-one">' + quickHtml(ev) + '</div>';
+        else core.innerHTML = '<div class="cmd-grid cmd-g-overview">' + heroHtml(ev) + countHtml(ev, now) + levelHtml(ev) + alertsMiniHtml(ev, now) + quickHtml(ev) + '</div>';
+        // ข้อกฎหมายชี้ขาดฉบับเต็ม — ต่อท้ายแท็บบันได 7 ขั้น
+        tail.innerHTML = ev && curSub === legalHost() ? '<div class="cmd-grid cmd-g-one">' + alertsHtml(ev, now) + '</div>' : '';
 
         lastPhaseKey = ev ? phase(ev, now).key : '';
         syncPlugins();
         tick();
     }
 
-    // ข้อกฎหมายชี้ขาดแบบย่อในหน้าภาพรวม (รายละเอียดเต็มอยู่แท็บ "ข้อกฎหมาย")
+    // ข้อกฎหมายชี้ขาดแบบย่อในหน้าภาพรวม (รายละเอียดเต็มอยู่ท้ายแท็บ "ขั้นตอน & กฎหมาย")
     function alertsMiniHtml(ev, now) {
         const rows = ev.alerts.map((a) => {
             const st = alertStatus(ev, a, now);
@@ -754,12 +785,14 @@
         root = document.getElementById('pane-cmd');
         if (!root) return;
         state = load();
-        root.innerHTML = '<div class="cmd-root"><div class="cmd-head"></div><nav class="cmd-tabs" role="tablist" aria-label="หัวข้อในกระดาน"></nav><div class="cmd-core"></div><div class="cmd-ext"></div></div>';
+        root.innerHTML = '<div class="cmd-root"><div class="cmd-head"></div><nav class="cmd-tabs" role="tablist" aria-label="หัวข้อในกระดาน"></nav><div class="cmd-top"></div><div class="cmd-core"></div><div class="cmd-ext"></div><div class="cmd-tail"></div></div>';
         shell = root.querySelector('.cmd-root');
         head = root.querySelector('.cmd-head');
         tabsEl = root.querySelector('.cmd-tabs');
         core = root.querySelector('.cmd-core');
         ext = root.querySelector('.cmd-ext');
+        tail = root.querySelector('.cmd-tail');
+        topBox = root.querySelector('.cmd-top');
         root.addEventListener('click', onClick);
         mountPlugins();
         render();
@@ -780,7 +813,7 @@
     const API = {
         KEY: KEY,
         get state() { return state; },
-        active: active, save: save, render: render, openTab: setSub, lineSummary: lineSummary,
+        active: active, save: save, render: render, openTab: setSub, syncSections: syncPlugins, lineSummary: lineSummary,
         toast: toast, copyText: copyText, modal: modal, showText: showText, field: field, formVal: formVal, esc: esc, uid: uid,
         thDateLong: thDateLong, thDateShort: thDateShort, hmTh: hmTh, hmStr: hmStr, pad: pad,
         startOf: startOf, endOf: endOf, musterOf: musterOf, phase: phase, LEVELS: LEVELS, STATION_NAME: STATION_NAME

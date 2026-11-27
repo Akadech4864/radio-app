@@ -1,6 +1,6 @@
 /* =====================================================================
    กระดานบริหารเหตุการณ์ครบทุกสายงาน (Step 2 · All-Division Operations Board)
-   - แท็บ "สายงาน" เสียบผ่าน LamhinCmd.registerSection (ไม่แก้ cmd.js)
+   - "สายงาน" อยู่ในแท็บ คู่มือ & เอกสาร › ลำดับปฏิบัติ › สายงาน (registerSection host: 'docs')
    - การ์ด 6 สายงาน: เช็กลิสต์กดแล้วลงเวลา · แถบ % ความคืบหน้า · สถานะ ยังไม่เริ่ม / กำลังปฏิบัติ / เสร็จสิ้น
    - งานสอบสวน: ผังกำลังพลที่สั่งการจริง (ชื่อทางการตามข้อมูลกำลังพล สน.ลำหิน 2569) + รายงานตัว
      และสลับดู "คณะพนักงานสอบสวน 6 ชุด" กรณีสถานการณ์ขยายตัว (แนวทาง บช.น.)
@@ -319,7 +319,11 @@
             commit(); return;
         }
         if (op === 'att') { const id = b.dataset.item; if (o.checks[id]) delete o.checks[id]; else o.checks[id] = now; commit(); return; }
-        if (op === 'tab') { api.openTab(b.dataset.tab); return; }
+        if (op === 'tab') {   // เปิดร่างคำร้องศาลในแท็บเดียวกัน (มุมมองหนังสือ)
+            if (b.dataset.tab === 'docs' && window.LamhinDocs && window.LamhinDocs.open) window.LamhinDocs.open('petition');
+            else api.openTab(b.dataset.tab);
+            return;
+        }
         if (op === 'grpline') { api.copyText(groupLine(ev)); return; }
         if (op === 'in') { const id = b.dataset.person; if (o.roster[id]) delete o.roster[id]; else o.roster[id] = now; commit(); return; }
         if (op === 'team') { const t = o.teams[b.dataset.team] = o.teams[b.dataset.team] || {}; if (t.lead === undefined) t.lead = (TEAMS.find((x) => x.id === b.dataset.team) || {}).def || ''; t.on = t.on ? '' : now; commit(); return; }
@@ -416,7 +420,7 @@
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({
-        id: 'ops', label: 'สายงาน', icon: 'fa-sitemap', order: 15,
+        id: 'ops', label: 'สายงาน', icon: 'fa-sitemap', order: 15, host: 'docs',
         mount: function (el, A) {
             api = A; host = el;
             el.addEventListener('click', onClick);

@@ -90,9 +90,9 @@
 .cmd-dot.yellow { background: var(--cmd-amber); color: var(--cmd-amber); }
 .cmd-dot.red { background: var(--cmd-red); color: var(--cmd-red); }
 
-.cmd-head, .cmd-core, .cmd-ext { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.cmd-core[hidden], .cmd-ext-pane[hidden] { display: none !important; }
-.cmd-ext:empty { display: none; }
+.cmd-head, .cmd-top, .cmd-core, .cmd-ext, .cmd-tail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cmd-core[hidden], .cmd-top[hidden], .cmd-ext[hidden], .cmd-ext-pane[hidden] { display: none !important; }
+.cmd-ext:empty, .cmd-tail:empty { display: none; }
 .cmd-ext-pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
 /* ---------- แท็บย่อยในกระดาน (ติดขอบบนเมื่อเลื่อน) ---------- */
@@ -112,22 +112,30 @@
 }
 .cmd-tab:hover { color: var(--cmd-ink); background: rgba(148, 178, 222, 0.08); }
 .cmd-tab.on { color: var(--cmd-bg); background: linear-gradient(135deg, #F3D774, var(--cmd-gold)); box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35); }
+/* มือถือ: 4 แท็บใหญ่เห็นครบในจอเดียว (ไอคอนบน ชื่อล่าง) */
+@media (max-width: 560px) {
+    .cmd-tabs { gap: 4px; padding: 4px; }
+    .cmd-tab { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 3px; min-height: 50px; padding: 6px 2px; font-size: 0.7rem; line-height: 1.2; white-space: normal; text-align: center; }
+    .cmd-tab i { font-size: 0.98rem; }
+    .cmd-tab span { font-size: 0.74rem; line-height: 1.2; }
+}
 
 /* ---------- กริดการ์ด (Mobile-First → 2 คอลัมน์ → 3 คอลัมน์) ---------- */
 .cmd-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
-.cmd-g-overview { grid-template-areas: "hero" "count" "level" "alerts"; }
+.cmd-g-overview { grid-template-areas: "hero" "count" "level" "alerts" "quick"; }
 .cmd-g-overview .cmd-hero { grid-area: hero; }
 .cmd-g-overview .cmd-count { grid-area: count; }
 .cmd-g-overview .cmd-level { grid-area: level; }
 .cmd-g-overview .cmd-alerts { grid-area: alerts; }
+.cmd-g-overview .cmd-quick { grid-area: quick; }
 @media (min-width: 860px) {
-    .cmd-root, .cmd-head, .cmd-core, .cmd-ext, .cmd-ext-pane { gap: 14px; }
+    .cmd-root, .cmd-head, .cmd-top, .cmd-core, .cmd-ext, .cmd-tail, .cmd-ext-pane { gap: 14px; }
     .cmd-root { padding: 18px; }
     .cmd-grid { gap: 14px; }
-    .cmd-g-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "hero hero" "count level" "alerts alerts"; }
+    .cmd-g-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "hero hero" "count level" "alerts alerts" "quick quick"; }
 }
 @media (min-width: 1200px) {
-    .cmd-g-overview { grid-template-columns: 1.05fr 0.95fr 1fr; grid-template-areas: "hero hero hero" "count level alerts"; }
+    .cmd-g-overview { grid-template-columns: 1.05fr 0.95fr 1fr; grid-template-areas: "hero hero hero" "count level alerts" "quick quick quick"; }
 }
 
 /* ข้อกฎหมายแบบย่อ (หน้าภาพรวม) */

@@ -103,20 +103,3 @@
 .m3-fact code { font-family: ui-monospace, Menlo, Consolas, monospace; color: #00D2FF; font-size: 0.82rem; word-break: break-all; }
 .m3-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
-/* ---------- แผนที่นำทาง ---------- */
-.m3-nav-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 980px) { .m3-nav-grid { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } }
-.m3-svgwrap { border-radius: 16px; overflow: hidden; border: 1px solid rgba(148, 178, 222, 0.18); background: #0d1d36; }
-.m3-svgwrap svg { display: block; width: 100%; height: auto; font-family: 'Sarabun', system-ui, sans-serif; }
-.m3-sum { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-.m3-sum div { flex: 1 1 110px; padding: 9px 11px; border-radius: 12px; background: rgba(0, 210, 255, 0.07); border: 1px solid rgba(0, 210, 255, 0.25); }
-.m3-sum b { display: block; font-size: 1.25rem; font-weight: 800; color: #00D2FF; line-height: 1.1; }
-.m3-sum small { font-size: 0.72rem; color: #93A7C4; }
-.m3-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; counter-reset: m3s; }
-.m3-steps li { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 12px; background: rgba(148, 178, 222, 0.06); border: 1px solid rgba(148, 178, 222, 0.14); font-size: 0.84rem; line-height: 1.45; }
-.m3-steps li i { flex: 0 0 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(212, 175, 55, 0.14); color: #D4AF37; }
-.m3-steps li.end i { background: rgba(220, 38, 38, 0.18); color: #F87171; }
-.m3-steps li span { flex: 1 1 auto; min-width: 0; }
-.m3-steps li small { display: block; color: #93A7C4; font-size: 0.74rem; }
-.m3-steps li em { flex: 0 0 auto; font-style: normal; font-weight: 800; color: #00D2FF; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
-.m3-src { margin-top: 8px; font-size: 0.7rem; color: #5F7594; }

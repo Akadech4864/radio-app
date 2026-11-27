@@ -857,7 +857,8 @@
         else renderPlan(body, k);
     }
 
-    /* ---------------- ลำดับปฏิบัติ: ใคร ทำอะไร เมื่อไร (เรียงเวลา / รายคน) ---------------- */
+    /* ---------------- ลำดับปฏิบัติ: ใคร ทำอะไร เมื่อไร (เรียงเวลา / รายคน / สายงาน) ----------------
+       "สายงาน" = แผงของ cmdops.js (host: 'docs') ที่ cmd.js วางต่อท้ายแท็บนี้ — ที่นี่แสดงแค่แถบเลือก แล้วบอกให้ cmd.js เปิดแผง (shows) */
     function planData(k) {
         const L = window.LAMHIN_PLAN, e = ev();
         const steps = L.build(e);
@@ -883,7 +884,17 @@
             (t ? '<button type="button" class="cmdd-pdoc" data-d="plan-doc" data-id="' + esc(s.doc) + '" title="เปิดหนังสือ: ' + esc(t.title) + '" aria-label="เปิดหนังสือ ' + esc(t.title) + '"><i class="fa-solid fa-file-lines"></i></button>' : '<span class="cmdd-pdoc0"></span>') +
             '</div>';
     }
+    function planSeg(by) {
+        const b = (v, ic, t) => '<button type="button" role="tab" class="' + (by === v ? 'on' : '') + '" data-d="plan-by" data-v="' + v + '"><i class="fa-solid ' + ic + '"></i> ' + t + '</button>';
+        return '<div class="cmdd-seg" role="tablist" aria-label="มุมมองลำดับปฏิบัติ">' + b('time', 'fa-clock', 'เรียงเวลา') + b('person', 'fa-users', 'รายคน') + (opsReady() ? b('ops', 'fa-sitemap', 'สายงาน') : '') + '</div>';
+    }
+    const opsReady = () => !!(window.LamhinCmd && document.querySelector('.cmd-ext-pane[data-ext="ops"]'));
     function renderPlan(body, k) {
+        if (ui.planBy === 'ops' && opsReady()) {
+            body.innerHTML = '<div class="cmdd-ptools cmd-card">' + planSeg('ops') +
+                '<small class="cmdd-psum">ความพร้อม 6 สายงาน · ผังกำลังชื่อทางการ · เช็กลิสต์เอกสารแนบคำร้องศาล — ติ๊กแล้วบันทึกในเครื่องนี้</small></div>';
+            return;
+        }
         const D = planData(k), byPerson = ui.planBy === 'person';
         let html = '';
         if (!byPerson) {
@@ -913,9 +924,7 @@
                     mine.map((s) => planRow(D, s, { who: false, me: p.id, day: true })).join('') + '</section>';
             }).join('');
         }
-        body.innerHTML = '<div class="cmdd-ptools cmd-card"><div class="cmdd-seg" role="tablist" aria-label="มุมมองลำดับปฏิบัติ">' +
-            '<button type="button" role="tab" class="' + (byPerson ? '' : 'on') + '" data-d="plan-by" data-v="time"><i class="fa-solid fa-clock"></i> เรียงเวลา</button>' +
-            '<button type="button" role="tab" class="' + (byPerson ? 'on' : '') + '" data-d="plan-by" data-v="person"><i class="fa-solid fa-users"></i> รายคน</button></div>' +
+        body.innerHTML = '<div class="cmdd-ptools cmd-card">' + planSeg(byPerson ? 'person' : 'time') +
             '<button type="button" class="cmd-btn sm gold" data-d="print-plan"><i class="fa-solid fa-print"></i> พิมพ์</button>' +
             '<small class="cmdd-psum">' + D.steps.length + ' ขั้นตอน ตั้งแต่รับแจ้งจนปิดภารกิจ · ชื่อแรก = ผู้รับผิดชอบหลัก · <i class="fa-solid fa-file-lines"></i> เปิดหนังสือที่ใช้ในขั้นนั้น</small></div>' + html;
     }
@@ -1285,10 +1294,10 @@
         if (!b || !host.contains(b) || b.tagName === 'INPUT') return;
         const d = b.dataset.d, k = kit();
         const t = ui.doc ? tplById(k, ui.doc) : null;
-        if (d === 'view') { ui.view = b.dataset.v; saveUi(); render(); }
-        else if (d === 'plan-by') { ui.planBy = b.dataset.v; saveUi(); render(); }
+        if (d === 'view') { ui.view = b.dataset.v; saveUi(); render(); syncOps(); }
+        else if (d === 'plan-by') { ui.planBy = b.dataset.v; saveUi(); render(); syncOps(); }
         else if (d === 'print-plan') printPlan(k);
-        else if (d === 'plan-doc') { ui.view = 'docs'; ui.doc = b.dataset.id; saveUi(); render(); window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' }); }
+        else if (d === 'plan-doc') { ui.view = 'docs'; ui.doc = b.dataset.id; saveUi(); render(); syncOps(); window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' }); }
         else if (d === 'chapter') { const id = b.dataset.id; if (ui.open[id]) delete ui.open[id]; else ui.open[id] = 1; saveUi(); render(); }
         else if (d === 'expand') { const all = Object.keys(ui.open).length >= window.LAMHIN_MANUAL.chapters.length; ui.open = {}; if (!all) window.LAMHIN_MANUAL.chapters.forEach((c) => { ui.open[c.id] = 1; }); saveUi(); render(); }
         else if (d === 'edit-sec') editSection(b.dataset.id);
@@ -1340,10 +1349,16 @@
         }, 180);
     }
 
+    // แผง "สายงาน" (cmdops.js) แสดงเฉพาะ ลำดับปฏิบัติ › สายงาน — แจ้ง cmd.js ให้ซ่อน/แสดงทันทีที่สลับมุมมอง
+    const showsOps = () => ui.view === 'plan' && ui.planBy === 'ops';
+    function syncOps() { if (api && api.syncSections) api.syncSections(); }
+
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     let ro = null;
     window.LamhinCmd.registerSection({
         id: 'docs', label: 'คู่มือ & เอกสาร', icon: 'fa-book', order: 40,
+        shows: function (childId) { return childId === 'ops' ? showsOps() : true; },
+        reveal: function (childId) { if (childId === 'ops') { ui.view = 'plan'; ui.planBy = 'ops'; saveUi(); if (built) render(); } },
         mount: function (el, a) {
             api = a; host = el;
             el.classList.add('cmdd');
@@ -1372,6 +1387,14 @@
     // ใช้ร่วมกับโมดูลอื่น (เช่น บันทึก ศปก.) และใช้ทดสอบ: ได้ HTML หน้าพิมพ์ / ไฟล์ Word ของหนังสือตามรหัส
     window.LamhinDocs = {
         ready: deps,
+        // เปิดหนังสือตามรหัสในมุมมอง "หนังสือ" (เช่น ปุ่มเปิดร่างคำร้องในสายงาน)
+        open: (id) => {
+            ui.view = 'docs'; ui.doc = id; saveUi();
+            if (api && api.openTab) api.openTab('docs');
+            if (built) render();
+            syncOps();
+            if (host) window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' });
+        },
         templates: () => (api && window.LAMHIN_DOC_KIT ? kit().templates.map((t) => ({ id: t.id, kind: t.kind, title: t.title })) : []),
         printHtml: (ids) => { const k = kit(); const list = ids.map((id) => tplById(k, id)).filter(Boolean); return pagedDocs(list, k).then((b) => printDocument(b, { title: list.length === 1 ? list[0].title : 'ชุดเอกสาร', paged: true })); },
         paginate: paginate,

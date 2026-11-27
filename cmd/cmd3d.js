@@ -1,6 +1,6 @@
 /* =====================================================================
    แผนที่ 3 มิติจุดชุมนุม + แผนที่นำทาง (โมดูลเสริมของกระดานสถานการณ์)
-   - แท็บ "แผนที่ 3 มิติ" เสียบผ่าน LamhinCmd.registerSection (ไม่แก้ cmd.js)
+   - การ์ดแรกบนสุดของหน้าภาพรวม (registerSection host: 'overview', top: true) — วาดเฉพาะตอนเห็นบนจอ
    - ผังถนน/คลองจริงจาก OpenStreetMap (cmd3d-data.js) · อาคารวางตามภาพดาวเทียมที่ผู้ใช้ส่งมา (อ้างอิงเท่านั้น ไม่ฝังภาพ Google)
    - หน่วย 1 = 1 เมตร · แผน: x = ตะวันออก, y = เหนือ · Three.js: X = x, Z = -y, Y = ความสูง
    - จุด (0,0) = จุดชุมนุม 13.883804945497769, 100.80997853378307 (เหนือซอยคู้คลองสิบ 4 ~10 ม. ห่างถนนคู้-คลองสิบ ~43 ม.)
@@ -15,7 +15,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const BUILD = '5';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
+    const BUILD = '6';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
     const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.' + BUILD;
 
     const LAT = 13.883804945497769, LON = 100.80997853378307;
@@ -61,7 +61,7 @@
     function rng(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
     /* =====================================================================
-       ส่วนหน้าจอ (การ์ด + แถบเครื่องมือ + เวที + ข้อมูลพิกัด + แผนที่นำทาง)
+       ส่วนหน้าจอ (การ์ด + แถบเครื่องมือ + เวที + ข้อมูลพิกัด)
        ===================================================================== */
     function mount(el, A) {
         api = A; host = el;
@@ -115,8 +115,7 @@
                     '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=map&center=' + LAT + ',' + LON + '&zoom=18&basemap=satellite"><i class="fa-solid fa-satellite"></i> เปิดแผนที่ดาวเทียม</a>' +
                     '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + LAT + ',' + LON + '"><i class="fa-solid fa-map-pin"></i> ปักหมุด Google Maps</a>' +
                 '</div>' +
-            '</section>' +
-            '<section class="cmd-card m3-navcard" data-m3="nav"><div class="cmd-empty"><i class="fa-solid fa-route"></i>กำลังโหลดเส้นทาง…</div></section>';
+            '</section>';
 
         ui = {};
         el.querySelectorAll('[data-m3]').forEach((n) => { ui[n.getAttribute('data-m3')] = n; });
@@ -124,9 +123,12 @@
         el.addEventListener('click', onUiClick);
         ui.count.addEventListener('input', () => { crowdN = Math.max(1, Math.min(MAX_CROWD, Number(ui.count.value) || 100)); ui.countv.textContent = crowdN; applyCrowd(); });
 
-        loadData().then((d) => { D = d; buildNav(); }).catch((e) => {
+        // อยู่ในหน้าภาพรวมที่เลื่อนยาว → หยุดวาดเมื่อเลื่อนพ้นจอ (ประหยัดแบตมือถือ)
+        if ('IntersectionObserver' in window) {
+            new IntersectionObserver((es) => { inView = es[es.length - 1].isIntersecting; if (built) syncRun(); }, { rootMargin: '160px 0px' }).observe(ui.stage);
+        }
+        loadData().then((d) => { D = d; }).catch((e) => {
             console.error('[cmd3d]', e);
-            ui.nav.innerHTML = '<div class="cmd-empty">โหลดข้อมูลผังไม่สำเร็จ</div>';
             ui.loading.innerHTML = '<span>โหลดข้อมูลผังไม่สำเร็จ — ลองรีเฟรชหน้า</span>';
         });
     }
@@ -143,7 +145,6 @@
         else if (k === 'compass') { want.az = 0; idleAt = Date.now(); }
         else if (k === 'max') toggleMax();
         else if (k === 'copyll') api.copyText(LAT + ', ' + LON);
-        else if (k === 'navcopy') api.copyText(navText());
     }
 
     function toDms(v, pos) {
@@ -178,9 +179,12 @@
         applyLevel();
     }
 
+    let shown = false, inView = true;
+    function syncRun() { if (shown && inView && host && !host.hidden) start(); else stop(); }
     function visible(on) {
+        shown = on;
         if (on) {
-            ensureBuilt().then(() => { if (host && !host.hidden) start(); }).catch((e) => {
+            ensureBuilt().then(syncRun).catch((e) => {
                 console.error('[cmd3d]', e);
                 if (ui.loading) ui.loading.innerHTML = '<span>เปิดแผนที่ 3 มิติไม่ได้บนอุปกรณ์นี้ (WebGL)</span>';
             });
@@ -1190,101 +1194,9 @@
     function start() { if (running || !built) return; running = true; lastT = 0; idleAt = Date.now(); resize(); raf = requestAnimationFrame(frame); }
     function stop() { running = false; cancelAnimationFrame(raf); }
 
-    /* =====================================================================
-       แผนที่นำทาง สน.ลำหิน → จุดชุมนุม (SVG จากเส้นทาง OSRM ที่ฝังไว้)
-       ===================================================================== */
-    const ROAD_TH = { '': '', 'คลองสิบ-คลองสิบสี่': 'ถนนคลองสิบ-คลองสิบสี่', 'ซอยคู้ คลองสิบ 4': 'ซอยคู้คลองสิบ 4' };
-    function roadName(n, i) { if (!n && i === 0) return 'ซอยหน้า สน.ลำหิน (ซอยคลองสิบ-สิบสี่ 7)'; return ROAD_TH[n] !== undefined ? ROAD_TH[n] : n; }
-    function stepText(s, i) {
-        const turn = { left: 'เลี้ยวซ้าย', right: 'เลี้ยวขวา', 'slight left': 'เบี่ยงซ้าย', 'slight right': 'เบี่ยงขวา', straight: 'ตรงไป', 'sharp left': 'เลี้ยวซ้ายหักศอก', 'sharp right': 'เลี้ยวขวาหักศอก', uturn: 'กลับรถ' }[s.mod] || '';
-        const name = roadName(s.n, i);
-        if (s.type === 'depart') return { ic: 'fa-building-shield', main: 'ออกจาก สน.ลำหิน ' + turn, sub: 'ไปตาม' + name };
-        if (s.type === 'arrive') return { ic: 'fa-flag-checkered', main: 'ถึงจุดชุมนุม (อยู่ทาง' + (s.mod === 'right' ? 'ขวา' : 'ซ้าย') + 'มือ)', sub: 'ที่ว่างปากซอยคู้คลองสิบ 4 ห่างปากซอยราว 10 ม.', end: true };
-        const pre = s.type === 'end of road' ? 'สุดถนน ' : '';
-        return { ic: s.mod && s.mod.indexOf('left') > -1 ? 'fa-arrow-turn-up fa-flip-horizontal' : s.mod && s.mod.indexOf('right') > -1 ? 'fa-arrow-turn-up' : 'fa-arrow-up', main: pre + turn + ' เข้า' + name, sub: '' };
-    }
-    function fmtDist(m) { return m >= 1000 ? (m / 1000).toFixed(m >= 10000 ? 0 : 1) + ' กม.' : Math.round(m / 10) * 10 + ' ม.'; }
-    function buildNav() {
-        const R = D.route, ST = D.station;
-        const steps = R.steps.map((s, i) => Object.assign({ d: s.d }, stepText(s, i)));
-        const mins = Math.max(1, Math.round(R.duration / 60));
-        const gmaps = 'https://www.google.com/maps/dir/?api=1&origin=' + ST.lat + ',' + ST.lon + '&destination=' + LAT + ',' + LON + '&travelmode=driving';
-        ui.nav.innerHTML =
-            '<div class="cmd-card-h"><i class="fa-solid fa-route"></i><h4>แผนที่นำทาง สน.ลำหิน → จุดชุมนุม</h4><small>ทางรถยนต์</small></div>' +
-            '<div class="m3-nav-grid">' +
-                '<div class="m3-svgwrap">' + navSvg() + '</div>' +
-                '<div>' +
-                    '<div class="m3-sum">' +
-                        '<div><b>' + fmtDist(R.distance) + '</b><small>ระยะทางตามถนน</small></div>' +
-                        '<div><b>~' + mins + ' นาที</b><small>เวลาขับรถ (ถนนโล่ง)</small></div>' +
-                        '<div><b>' + fmtDist(Math.hypot(ST.x, ST.y)) + '</b><small>ระยะเส้นตรง</small></div>' +
-                    '</div>' +
-                    '<ol class="m3-steps">' + steps.map((s) =>
-                        '<li class="' + (s.end ? 'end' : '') + '"><i class="fa-solid ' + s.ic + '"></i><span>' + esc(s.main) + (s.sub ? '<small>' + esc(s.sub) + '</small>' : '') + '</span>' + (s.d ? '<em>' + fmtDist(s.d) + '</em>' : '') + '</li>').join('') + '</ol>' +
-                    '<div class="m3-links">' +
-                        '<a class="cmd-btn sm gold" target="_blank" rel="noopener" href="' + esc(gmaps) + '"><i class="fa-solid fa-diamond-turn-right"></i> นำทางด้วย Google Maps</a>' +
-                        '<button type="button" class="cmd-btn sm line" data-m3="navcopy"><i class="fa-brands fa-line"></i> คัดลอกเส้นทางส่ง LINE</button>' +
-                    '</div>' +
-                    '<div class="m3-fact" style="margin-top:10px"><b>กำลังสนับสนุน</b>คฝ. บก.น.3 จำนวน 1 หมวด สแตนด์บายที่ สน.ลำหิน (จุดรวมพล) — เส้นทางนี้ใช้เวลาขับราว ' + mins + ' นาที พร้อมหนุนภายใน 30 นาที</div>' +
-                    '<div class="m3-src">' + esc(D.source) + '</div>' +
-                '</div>' +
-            '</div>';
-        ui.navcopy = ui.nav.querySelector('[data-m3="navcopy"]');
-    }
-    function navText() {
-        const R = D.route, ST = D.station;
-        const L = ['🧭 เส้นทาง สน.ลำหิน → จุดชุมนุม ปากซอยคู้คลองสิบ 4', '📏 ' + fmtDist(R.distance) + ' · ~' + Math.max(1, Math.round(R.duration / 60)) + ' นาที (ทางรถยนต์)'];
-        R.steps.forEach((s, i) => { const t = stepText(s, i); L.push((i + 1) + ') ' + t.main + (t.sub ? ' — ' + t.sub : '') + (s.d ? ' (' + fmtDist(s.d) + ')' : '')); });
-        L.push('📍 พิกัดจุดชุมนุม ' + LAT + ', ' + LON);
-        L.push('🗺 https://www.google.com/maps/dir/?api=1&origin=' + ST.lat + ',' + ST.lon + '&destination=' + LAT + ',' + LON + '&travelmode=driving');
-        return L.join('\n');
-    }
-    function navSvg() {
-        const R = D.route, ST = D.station, P = R.p;
-        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-        P.forEach((p) => { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); });
-        const pad = 70, W = 640, sc = (W - pad * 2) / Math.max(1, x1 - x0), H = Math.round((y1 - y0) * sc + pad * 2);
-        const X = (x) => (pad + (x - x0) * sc).toFixed(1), Y = (y) => (pad + (y1 - y) * sc).toFixed(1);
-        const path = P.map((p, i) => (i ? 'L' : 'M') + X(p[0]) + ' ' + Y(p[1])).join(' ');
-        // ป้ายชื่อถนนแต่ละช่วง (กลางช่วงระหว่างจุดเลี้ยว)
-        const near = (pt) => { let bi = 0, bd = Infinity; P.forEach((p, i) => { const d = Math.hypot(p[0] - pt[0], p[1] - pt[1]); if (d < bd) { bd = d; bi = i; } }); return bi; };
-        const idx = R.steps.map((s) => near(s.at));
-        let names = '';
-        R.steps.forEach((s, i) => {
-            if (i >= R.steps.length - 1 || !s.d || s.d < 400) return;
-            const m = P[Math.round((idx[i] + idx[i + 1]) / 2)];
-            const t = roadName(s.n, i).replace(' (ซอยคลองสิบ-สิบสี่ 7)', '');
-            const tw = t.length * 7.4 + 16;
-            names += '<g transform="translate(' + X(m[0]) + ',' + Y(m[1]) + ')"><rect x="' + (-tw / 2).toFixed(0) + '" y="-12" width="' + tw.toFixed(0) + '" height="22" rx="7" fill="#ffffff" opacity="0.94"/><text x="0" y="4" text-anchor="middle" font-size="12.5" font-weight="800" fill="#102340">' + esc(t) + '</text></g>';
-        });
-        let turns = '';
-        R.steps.forEach((s, i) => { if (i === 0 || i === R.steps.length - 1) return; turns += '<g transform="translate(' + X(s.at[0]) + ',' + Y(s.at[1]) + ')"><circle r="11" fill="#D4AF37" stroke="#0A1628" stroke-width="2"/><text y="4" text-anchor="middle" font-size="11" font-weight="800" fill="#0A1628">' + (i + 1) + '</text></g>'; });
-        const canal = (D.water || []).map((w) => '<path d="' + w.p.map((p, i) => (i ? 'L' : 'M') + X(p[0]) + ' ' + Y(p[1])).join(' ') + '" fill="none" stroke="#2f6f95" stroke-width="' + Math.max(3, 22 * sc).toFixed(1) + '" stroke-linecap="round" opacity="0.8"/>').join('');
-        // มาตราส่วน 500 ม. + ทิศเหนือ
-        const bar = 500 * sc;
-        let grid = '';
-        for (let gx = Math.ceil(x0 / 250) * 250; gx < x1 + 1; gx += 250) grid += '<line x1="' + X(gx) + '" y1="0" x2="' + X(gx) + '" y2="' + H + '" stroke="#1d3355" stroke-width="1"/>';
-        for (let gy = Math.ceil(y0 / 250) * 250; gy < y1 + 1; gy += 250) grid += '<line x1="0" y1="' + Y(gy) + '" x2="' + W + '" y2="' + Y(gy) + '" stroke="#1d3355" stroke-width="1"/>';
-        return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="แผนที่เส้นทางจาก สน.ลำหิน ไปจุดชุมนุม">' +
-            '<rect width="' + W + '" height="' + H + '" fill="#0d1d36"/>' + grid + canal +
-            '<path d="' + path + '" fill="none" stroke="#00D2FF" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" opacity="0.22"/>' +
-            '<path d="' + path + '" fill="none" stroke="#00D2FF" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>' +
-            '<path d="' + path + '" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-dasharray="6 10" stroke-linecap="round" opacity="0.9"/>' +
-            names + turns +
-            '<g transform="translate(' + X(ST.x) + ',' + Y(ST.y) + ')"><circle r="15" fill="#1e3a8a" stroke="#93c5fd" stroke-width="3"/><text y="5" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">ตร.</text>' +
-                '<text x="0" y="-24" text-anchor="middle" font-size="14" font-weight="800" fill="#ffffff" stroke="#0A1628" stroke-width="4" paint-order="stroke">สน.ลำหิน (ต้นทาง)</text>' +
-                '<text x="18" y="34" text-anchor="end" font-size="11" font-weight="700" fill="#93c5fd" stroke="#0A1628" stroke-width="3" paint-order="stroke">คฝ. บก.น.3 1 หมวด สแตนด์บาย</text></g>' +
-            '<g transform="translate(' + X(0) + ',' + Y(0) + ')"><path d="M0 0 C -10 -14 -14 -20 -14 -28 A 14 14 0 1 1 14 -28 C 14 -20 10 -14 0 0 Z" fill="#DC2626" stroke="#fff" stroke-width="2.5"/><circle cy="-28" r="5.5" fill="#fff"/>' +
-                '<text x="0" y="22" text-anchor="middle" font-size="14" font-weight="800" fill="#F3D774" stroke="#0A1628" stroke-width="4" paint-order="stroke">จุดชุมนุม (ปลายทาง)</text></g>' +
-            '<g transform="translate(' + (W - 40) + ',44)"><circle r="22" fill="#0A1628" stroke="#D4AF37" stroke-width="2"/><path d="M0 -15 L6 4 L0 0 L-6 4 Z" fill="#DC2626"/><text y="16" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">N</text></g>' +
-            '<g transform="translate(20,' + (H - 22) + ')"><rect width="' + bar.toFixed(1) + '" height="6" fill="#fff"/><rect width="' + (bar / 2).toFixed(1) + '" height="6" fill="#0A1628" stroke="#fff"/><text y="-6" font-size="11" font-weight="800" fill="#fff">500 ม.</text></g>' +
-            '<text x="' + (W - 10) + '" y="' + (H - 8) + '" text-anchor="end" font-size="10" fill="#93A7C4">© OpenStreetMap contributors · OSRM</text>' +
-            '</svg>';
-    }
-
     // สถานะสำหรับตรวจสอบ (อ่านอย่างเดียว)
     window.LamhinCmd3D = { get running() { return running; }, get built() { return built; }, focus: focus, setTime: setTime };
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
-    CMD.registerSection({ id: 'map3d', label: 'แผนที่ 3 มิติ', icon: 'fa-cube', order: 30, mount: mount, update: update, visible: visible });
+    CMD.registerSection({ id: 'map3d', label: 'แผนที่ 3 มิติ', icon: 'fa-cube', order: 30, host: 'overview', top: true, mount: mount, update: update, visible: visible });
 })();

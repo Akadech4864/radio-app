@@ -1,6 +1,6 @@
 /* =====================================================================
    4 ระยะการดูแลการชุมนุม + บันได 7 ขั้นตอนบังคับใช้กฎหมาย (พ.ร.บ.การชุมนุมสาธารณะฯ ม.21–24) + ทางลัดฉุกเฉิน ม.25
-   (Step 3 · แท็บ "4 ระยะ · 7 ขั้น" เสียบผ่าน LamhinCmd.registerSection — ไม่แก้ cmd.js)
+   (Step 3 · แท็บ "ขั้นตอน & กฎหมาย" = 4 ระยะ · 7 ขั้น + ข้อกฎหมายชี้ขาดต่อท้าย (cmd.js วาดให้))
    - ข้อมูลชุดเดียวกับแท็บ "บันทึก ศปก." (ev.log) — กดบันทึกที่นี่จะขึ้นใน timeline และเติมคำร้องศาลในแท็บเอกสารเอง
      รูปแบบรายการตรงกับ cmdlog.js: { id, at, kind, title, detail, crowd, vehicles, law, unit, place, by, level, evidence,
      deadlineAt, refId, ann, minutes, outcome } + ladder ('L1'–'L7' / 'S25') / phase (1–4) ของโมดูลนี้
@@ -405,7 +405,7 @@
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({
-        id: 'ladder', label: '4 ระยะ · 7 ขั้น', icon: 'fa-stairs', order: 18,
+        id: 'ladder', label: 'ขั้นตอน & กฎหมาย', icon: 'fa-stairs', order: 18,
         mount: function (el, A) { api = A; host = el; el.addEventListener('click', onClick); render(); },
         update: function (ev) {   // บันทึกจากแท็บอื่น (เช่น บันทึก ศปก.) → วาดใหม่เมื่อเห็นอยู่
             const L = ev && Array.isArray(ev.log) ? ev.log : [];
