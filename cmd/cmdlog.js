@@ -40,9 +40,7 @@
         { k: 'deploy', label: 'แยกประจำจุด', icon: 'fa-route' },
         { k: 'sitrep', label: 'รายงานสถานการณ์', icon: 'fa-tower-broadcast' },
         { k: 'risk', label: 'เสี่ยง / ฝ่าฝืน', icon: 'fa-triangle-exclamation' },
-        { k: 'negotiate', label: 'เจรจา', icon: 'fa-handshake' },
-        { k: 'announce', label: 'ประกาศ', icon: 'fa-bullhorn' },
-        { k: 'court', label: 'ศาล', icon: 'fa-scale-balanced' },
+        { k: 'ladder', label: 'เจรจา/ประกาศ/ศาล', icon: 'fa-stairs', go: 'ladder' },   // บันทึกผ่านบันได 7 ขั้น (ที่เดียว บังคับลำดับ)
         { k: 'end', label: 'สิ้นสุด', icon: 'fa-flag-checkered' },
         { k: 'note', label: 'อื่น ๆ', icon: 'fa-plus' }
     ];
@@ -190,7 +188,7 @@
                     '<button type="button" class="cl-ic" data-cl="print" title="พิมพ์ตารางแนบคำร้องศาล" aria-label="พิมพ์ตารางแนบคำร้องศาล"><i class="fa-solid fa-print"></i></button>' +
                 '</div></div>' +
                 '<div class="cl-alerts">' + alertHtml(ev) + '</div>' +
-                '<div class="cl-quick">' + QUICK.map((q) => '<button type="button" class="cl-q t-' + (KINDS[q.k] || KINDS.note).tone + '" data-cl="new" data-k="' + q.k + '"><i class="fa-solid ' + q.icon + '"></i><span>' + q.label + '</span></button>').join('') + '</div>' +
+                '<div class="cl-quick">' + QUICK.map((q) => '<button type="button" class="cl-q t-' + (KINDS[q.k] || KINDS.negotiate).tone + '" ' + (q.go ? 'data-cl="go" data-tab="' + q.go + '"' : 'data-cl="new" data-k="' + q.k + '"') + '><i class="fa-solid ' + q.icon + '"></i><span>' + q.label + '</span></button>').join('') + '</div>' +
             '</section>' +
             '<section class="cmd-card cl-tl-card">' + timelineHtml(ev) + '</section>' +
         '</div>';
@@ -554,6 +552,7 @@
         const ev = api.active(); if (!ev) return;
         const act = b.dataset.cl;
         if (act === 'new') openSheet(freshS(ev, b.dataset.k));
+        else if (act === 'go') api.openTab(b.dataset.tab);
         else if (act === 'edit') { const x = logOf(ev).find((y) => y.id === b.dataset.id); if (x) openSheet(fromEntry(x)); }
         else if (act === 'order') { newestFirst = !newestFirst; try { localStorage.setItem(ORDER_KEY, newestFirst ? 'new' : 'old'); } catch (er) { /* ไม่จำก็ได้ */ } render(); }
         else if (act === 'line') api.copyText(lineText(ev));

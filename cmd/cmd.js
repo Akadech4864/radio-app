@@ -24,17 +24,18 @@
     const CATEGORIES = ['ชุมนุมสาธารณะ', 'งานพิธี / อารักขา', 'จราจร / อุบัติเหตุใหญ่', 'อาชญากรรม / ปิดล้อมตรวจค้น', 'สาธารณภัย', 'อื่นๆ'];
 
     const LEVELS = {
-        green: { name: 'ระดับสีเขียว', short: 'สีเขียว', emoji: '🟢', icon: 'fa-check', desc: 'ชุมนุมโดยสงบตามข้อตกลง' },
-        yellow: { name: 'ระดับสีเหลือง', short: 'สีเหลือง', emoji: '🟡', icon: 'fa-eye', desc: 'เฝ้าระวัง / เริ่มฝ่าฝืนเงื่อนไข (ปิดถนน/ขัดขวาง/เกินเวลา)' },
-        red: { name: 'ระดับสีแดง', short: 'สีแดง', emoji: '🔴', icon: 'fa-triangle-exclamation', desc: 'ยกระดับ / ยื่นคำร้องศาลแพ่งมีนบุรี / พื้นที่ควบคุม ม.23–25' }
+        green: { name: 'ระดับสีเขียว', short: 'สีเขียว', emoji: '🟢', icon: 'fa-check', desc: 'ชุมนุมโดยสงบ' },
+        yellow: { name: 'ระดับสีเหลือง', short: 'สีเหลือง', emoji: '🟡', icon: 'fa-eye', desc: 'เริ่มฝ่าฝืนเงื่อนไข · เฝ้าระวัง' },
+        red: { name: 'ระดับสีแดง', short: 'สีแดง', emoji: '🔴', icon: 'fa-triangle-exclamation', desc: 'ยื่นศาล / พื้นที่ควบคุม ม.23–25' }
     };
 
     const TONES = { gold: 'ทอง (เส้นตาย)', blue: 'ฟ้า (ข้อห้ามช่วงเวลา)', red: 'แดง (บทหนัก)', amber: 'เหลือง (เฝ้าระวัง)', green: 'เขียว (แนวปฏิบัติ)' };
 
     /* ---------------- ข้อมูลตั้งต้น (Seed) ---------------- */
+    const SEED_ID = 'ev-20261128-lamjedee';
     function seedEvent() {
         return {
-            id: 'ev-20261128-lamjedee',
+            id: SEED_ID,
             category: 'ชุมนุมสาธารณะ',
             title: 'การชุมนุมสาธารณะคัดค้านการปักเสาไฟฟ้าและยับยั้งการจั้มไฟ (ชุมชนลำเจดีย์)',
             date: '2026-11-28',
@@ -43,10 +44,10 @@
             start: '05:00',
             end: '18:00',
             place: 'พื้นที่ว่างสาธารณะ ปากทางเข้าซอยคู้คลอง 10 ซอย 4',
-            distance: 'จาก สน.ลำหิน ทางรถ ~2.8 กม. (~5 นาที) · เส้นตรง ~1.9 กม.',
+            distance: 'ทางรถ 2.8 กม. (~5 นาที)',
             mapQuery: 'ซอยคู้คลองสิบ 4 ถนนคู้-คลองสิบ หนองจอก กรุงเทพมหานคร',
             latlng: '13.883804945497769, 100.80997853378307',
-            crowd: 'มวลชนประมาณ 100–200 คน · รถยนต์ ~10 คัน · ไม่เดินขบวน · ไม่ตั้งเวที · ใช้โทรโข่ง',
+            crowd: 'มวลชน 100–200 คน · รถ ~10 คัน · ไม่เดินขบวน/ไม่ตั้งเวที · ใช้โทรโข่ง',
             organizer: 'นายภูเบศ โพธิ์โซ๊ะ อายุ 65 ปี (ตัวแทนชุมชนลำเจดีย์) เลขประจำตัวประชาชน 3-1003-xxxxx-xx-4 · ที่อยู่ 63/2636 ซอยราษฎร์พัฒนา 5 แขวงราษฎร์พัฒนา เขตสะพานสูง กรุงเทพฯ · โทร. 086-983-6599',
             coordinators: '1) นายสมาน มาลี โทร. 084-002-0480 · 2) นายสิทธิศักดิ์ โห้วตู โทร. 086-071-5943',
             ref: 'หนังสือแจ้ง 26 พ.ย. 69 เวลา 14.00 น. · ปจว.ข้อ 3 ลง 26 พ.ย. 69 เวลา 14.44 น. · เลขรับ EV60026256900637SJ',
@@ -55,21 +56,21 @@
             levelLog: [],
             alerts: [
                 {
-                    id: 'al-m11', tone: 'gold', icon: 'fa-hourglass-half', law: 'เส้นตาย ม.11 · ม.19 ว.1 · ม.20',
-                    title: 'ส่งหนังสือสรุปสาระสำคัญและเงื่อนไขให้ผู้แจ้ง',
-                    detail: 'ส่งมอบให้ผู้แจ้งภายใน 27 พ.ย. 69 เวลา 14.00 น. พร้อมเก็บหลักฐานการส่งมอบ/เซ็นรับ และแจ้งสำนักงานเขตท้องที่กับหน่วยงานประชาสัมพันธ์ตาม ม.19 วรรคหนึ่ง และ ม.20',
+                    id: 'al-m11', tone: 'gold', icon: 'fa-hourglass-half', law: 'ม.11 · ม.19–20',
+                    title: 'ส่งหนังสือเงื่อนไข ม.11 ให้ผู้แจ้ง',
+                    detail: 'ภายใน 27 พ.ย. 69 14.00 น. · เก็บหลักฐานเซ็นรับ · แจ้งเขตและประชาสัมพันธ์',
                     kind: 'due', due: '2026-11-27T14:00', from: '', to: '', done: false, doneAt: ''
                 },
                 {
-                    id: 'al-m15-6', tone: 'blue', icon: 'fa-volume-xmark', law: 'ข้อห้าม ม.15 (6) · โทษ ม.31 ว.1',
-                    title: 'ห้ามใช้โทรโข่ง/เครื่องขยายเสียง 05.00 – 06.00 น.',
-                    detail: 'ม.15 (6) ห้ามผู้จัดการชุมนุมใช้เครื่องขยายเสียงระหว่างเวลา 24.00 – 06.00 น. ฝ่าฝืนจำคุกไม่เกิน 6 เดือน หรือปรับไม่เกิน 10,000 บาท หรือทั้งจำทั้งปรับ (ม.31 วรรคหนึ่ง)',
+                    id: 'al-m15-6', tone: 'blue', icon: 'fa-volume-xmark', law: 'ม.15 (6) · โทษ ม.31 ว.1',
+                    title: 'ห้ามโทรโข่ง 05.00–06.00 น.',
+                    detail: 'ห้ามเครื่องขยายเสียง 24.00–06.00 น. · จำคุกไม่เกิน 6 เดือน หรือปรับไม่เกิน 10,000 บาท',
                     kind: 'window', due: '', from: '05:00', to: '06:00', done: false, doneAt: ''
                 },
                 {
-                    id: 'al-m31-2', tone: 'red', icon: 'fa-bolt', law: 'บทหนัก ม.31 วรรคสอง',
-                    title: 'ห้ามกระทำการให้ระบบส่งกระแสไฟฟ้า/สาธารณูปโภคใช้การไม่ได้',
-                    detail: 'หากฝ่าฝืน ม.15 (4)–(7) หรือ ม.16 (3)–(8) จนระบบผลิตหรือส่งกระแสไฟฟ้า หรือสาธารณูปโภคอื่นใดใช้การไม่ได้ (ชั่วคราวหรือถาวร) ผู้จัดการชุมนุมระวางโทษจำคุกไม่เกิน 10 ปี หรือปรับไม่เกิน 200,000 บาท หรือทั้งจำทั้งปรับ',
+                    id: 'al-m31-2', tone: 'red', icon: 'fa-bolt', law: 'ม.31 ว.2 (บทหนัก)',
+                    title: 'ห้ามทำให้ไฟฟ้า/สาธารณูปโภคใช้การไม่ได้',
+                    detail: 'ฝ่าฝืน ม.15 (4)–(7) / ม.16 (3)–(8) จนใช้การไม่ได้ · จำคุกไม่เกิน 10 ปี หรือปรับไม่เกิน 200,000 บาท',
                     kind: 'static', due: '', from: '', to: '', done: false, doneAt: ''
                 }
             ],
@@ -87,9 +88,9 @@
         if (isAssembly) {
             list.push(
                 { id: 'ct-org', name: 'นายภูเบศ โพธิ์โซ๊ะ', role: 'ผู้จัดการชุมนุม', phone: '086-983-6599' },
-                { id: 'ct-co1', name: 'นายสมาน มาลี', role: 'ผู้ประสานงาน ลำดับ 1', phone: '084-002-0480' },
-                { id: 'ct-co2', name: 'นายสิทธิศักดิ์ โห้วตู', role: 'ผู้ประสานงาน ลำดับ 2', phone: '086-071-5943' },
-                { id: 'ct-court', name: 'เวรไต่สวนฉุกเฉิน ศาลแพ่งมีนบุรี', role: 'ยื่นคำร้องขอคำสั่งเลิกการชุมนุม', phone: '' },
+                { id: 'ct-co1', name: 'นายสมาน มาลี', role: 'ผู้ประสานงาน 1', phone: '084-002-0480' },
+                { id: 'ct-co2', name: 'นายสิทธิศักดิ์ โห้วตู', role: 'ผู้ประสานงาน 2', phone: '086-071-5943' },
+                { id: 'ct-court', name: 'เวรไต่สวนฉุกเฉิน ศาลแพ่งมีนบุรี', role: 'ยื่นคำร้อง ม.21 ว.2', phone: '' },
                 { id: 'ct-mea', name: 'การไฟฟ้านครหลวง เขตมีนบุรี', role: 'ผู้ประสานงานหน้างาน / นิติกร', phone: '' }
             );
         }
@@ -103,7 +104,8 @@
     let head = null;    // แถบบน + แถบเหตุการณ์ (วาดใหม่ทุกครั้ง)
     let tabsEl = null;  // แท็บย่อย (ติดขอบบนเมื่อเลื่อน)
     let core = null;    // เนื้อหาแท็บหลัก (วาดใหม่ทุกครั้ง)
-    let ext = null, tail, topBox;     // การ์ดโมดูลเสริม (สร้างครั้งเดียว) · topBox = บนสุดหน้าภาพรวม (แผนที่ 3 มิติ)
+    let ext = null, topBox;     // การ์ดโมดูลเสริม (สร้างครั้งเดียว) · topBox = บนสุดหน้าภาพรวม (แผนที่ 3 มิติ)
+    const alOpen = new Set();   // ข้อกฎหมายที่กางรายละเอียดอยู่ (หน้าภาพรวม)
     let timer = 0;
     let lastPhaseKey = '';
     const plugins = [];
@@ -116,11 +118,24 @@
         const seed = seedEvent();
         s.events = s.events.map((e) => {
             if (!e || e.id !== seed.id) return e;
-            if (e.distance === 'ห่าง สน.ลำหิน ประมาณ 1.5 กม.') e.distance = seed.distance;   // ระยะเดิมคลาดเคลื่อน (ทางรถจริง 2.8 กม.)
+            // ข้อความรุ่นก่อน (ยาว/คลาดเคลื่อน) → รุ่นกระชับ เฉพาะช่องที่ผู้ใช้ยังไม่ได้แก้เอง
+            const OLD = { distance: ['ห่าง สน.ลำหิน ประมาณ 1.5 กม.', 'จาก สน.ลำหิน ทางรถ ~2.8 กม. (~5 นาที) · เส้นตรง ~1.9 กม.'], crowd: ['มวลชนประมาณ 100–200 คน · รถยนต์ ~10 คัน · ไม่เดินขบวน · ไม่ตั้งเวที · ใช้โทรโข่ง'] };
+            Object.keys(OLD).forEach((k) => { if (OLD[k].indexOf(e[k]) !== -1) e[k] = seed[k]; });
+            const OLD_AL = {
+                'al-m11': ['เส้นตาย ม.11 · ม.19 ว.1 · ม.20', 'ส่งหนังสือสรุปสาระสำคัญและเงื่อนไขให้ผู้แจ้ง', 'ส่งมอบให้ผู้แจ้งภายใน 27 พ.ย. 69 เวลา 14.00 น. พร้อมเก็บหลักฐานการส่งมอบ/เซ็นรับ และแจ้งสำนักงานเขตท้องที่กับหน่วยงานประชาสัมพันธ์ตาม ม.19 วรรคหนึ่ง และ ม.20'],
+                'al-m15-6': ['ข้อห้าม ม.15 (6) · โทษ ม.31 ว.1', 'ห้ามใช้โทรโข่ง/เครื่องขยายเสียง 05.00 – 06.00 น.', 'ม.15 (6) ห้ามผู้จัดการชุมนุมใช้เครื่องขยายเสียงระหว่างเวลา 24.00 – 06.00 น. ฝ่าฝืนจำคุกไม่เกิน 6 เดือน หรือปรับไม่เกิน 10,000 บาท หรือทั้งจำทั้งปรับ (ม.31 วรรคหนึ่ง)'],
+                'al-m31-2': ['บทหนัก ม.31 วรรคสอง', 'ห้ามกระทำการให้ระบบส่งกระแสไฟฟ้า/สาธารณูปโภคใช้การไม่ได้', 'หากฝ่าฝืน ม.15 (4)–(7) หรือ ม.16 (3)–(8) จนระบบผลิตหรือส่งกระแสไฟฟ้า หรือสาธารณูปโภคอื่นใดใช้การไม่ได้ (ชั่วคราวหรือถาวร) ผู้จัดการชุมนุมระวางโทษจำคุกไม่เกิน 10 ปี หรือปรับไม่เกิน 200,000 บาท หรือทั้งจำทั้งปรับ']
+            };
+            (e.alerts || []).forEach((a) => {
+                const o = OLD_AL[a.id], n = seed.alerts.find((x) => x.id === a.id);
+                if (o && n) ['law', 'title', 'detail'].forEach((f, i) => { if (a[f] === o[i]) a[f] = n[f]; });
+            });
+            const OLD_ROLE = { 'ct-co1': 'ผู้ประสานงาน ลำดับ 1', 'ct-co2': 'ผู้ประสานงาน ลำดับ 2', 'ct-court': 'ยื่นคำร้องขอคำสั่งเลิกการชุมนุม' };
             Object.keys(seed).forEach((k) => { if (typeof seed[k] === 'string' && !String(e[k] || '').trim()) e[k] = seed[k]; });
             (e.contacts || []).forEach((c) => {
                 const sc = seed.contacts.find((x) => x.id === c.id);
                 if (sc && !String(c.phone || '').trim()) c.phone = sc.phone;
+                if (sc && OLD_ROLE[c.id] && c.role === OLD_ROLE[c.id]) c.role = sc.role;
                 if (sc) delete c.local;
             });
             return e;
@@ -230,27 +245,30 @@
     function phase(ev, now) {
         const m = musterOf(ev), s = startOf(ev), e = endOf(ev);
         if (s == null) return { key: 'nodate', mode: 'nodate' };
-        if (m != null && now < m) return { key: 'pre', mode: 'pre', label: 'นับถอยหลังสู่ <b>' + esc(ev.musterLabel || 'รวมพล/ปล่อยแถว') + ' ' + hmStr(ev.muster) + '</b>', target: m };
-        if (now < s) return { key: 'muster', mode: 'pre', label: 'นับถอยหลังสู่ <b>เวลาเริ่มเหตุการณ์ ' + hmStr(ev.start) + '</b>', target: s };
-        if (e != null && now < e) return { key: 'live', mode: 'live', label: '<b>เหตุการณ์กำลังดำเนินอยู่</b> · เหลือเวลาถึง ' + hmStr(ev.end), target: e, note: 'เริ่มไปแล้ว ' + human(now - s) };
-        if (e != null) return { key: 'over', mode: 'over', label: '<b>เลยเวลาสิ้นสุดตามแจ้ง ' + hmStr(ev.end) + '</b>', target: e, note: ev.category === 'ชุมนุมสาธารณะ' ? 'หากยังไม่เลิก (ม.18) พิจารณาประกาศให้เลิกการชุมนุม ม.21 (1) โดยกำหนดเวลาที่ได้สัดส่วน' : 'ตรวจสอบสถานะปิดเหตุการณ์' };
-        return { key: 'live-open', mode: 'live', label: '<b>เหตุการณ์กำลังดำเนินอยู่</b>', target: s, note: 'ไม่ได้กำหนดเวลาสิ้นสุด' };
+        if (m != null && now < m) return { key: 'pre', mode: 'pre', label: 'ถึง <b>' + esc(musterShort(ev)) + ' ' + hmStr(ev.muster) + '</b>', target: m };
+        if (now < s) return { key: 'muster', mode: 'pre', label: 'ถึง <b>เริ่ม ' + hmStr(ev.start) + '</b>', target: s };
+        if (e != null && now < e) return { key: 'live', mode: 'live', label: '<b>กำลังดำเนินอยู่</b> · ถึง ' + hmStr(ev.end), target: e, note: 'เริ่มแล้ว ' + human(now - s) };
+        if (e != null) return { key: 'over', mode: 'over', label: '<b>เลยเวลาเลิก ' + hmStr(ev.end) + '</b>', target: e, note: ev.category === 'ชุมนุมสาธารณะ' ? 'ยังไม่เลิก (ม.18) → พิจารณาประกาศ ม.21 (1)' : 'ตรวจสอบการปิดเหตุการณ์' };
+        return { key: 'live-open', mode: 'live', label: '<b>กำลังดำเนินอยู่</b>', target: s, note: 'ไม่ได้กำหนดเวลาสิ้นสุด' };
     }
+
+    // "รวมพล/ปล่อยแถว หน้า สน.ลำหิน" → "รวมพล/ปล่อยแถว" (ใช้แสดงผลแบบย่อ)
+    function musterShort(ev) { return String(ev.musterLabel || 'รวมพล/ปล่อยแถว').replace(/\s+(หน้า|ที่|ณ)\s.*$/, '') || 'รวมพล'; }
 
     function alertStatus(ev, a, now) {
         if (a.kind === 'due') {
             const due = parseLocal(a.due);
-            if (a.done) return { cls: 'ok', text: '✓ ดำเนินการแล้ว' + (a.doneAt ? ' (' + thDateShort(Date.parse(a.doneAt)) + ' ' + hmTh(Date.parse(a.doneAt)) + ')' : '') };
+            if (a.done) return { cls: 'ok', text: '✓ ดำเนินการแล้ว' + (a.doneAt ? ' ' + hmTh(Date.parse(a.doneAt)) : '') };
             if (due == null) return { cls: '', text: 'ไม่ได้กำหนดเส้นตาย' };
-            if (now < due) return { cls: due - now < 6 * 3600000 ? 'warn' : '', text: 'เหลือ ' + human(due - now) + ' (ภายใน ' + thDateShort(due) + ' ' + hmTh(due) + ')' };
-            return { cls: 'bad', text: 'เลยกำหนดแล้ว ' + human(now - due) + ' — ตรวจหลักฐานการส่ง/เซ็นรับ' };
+            if (now < due) return { cls: due - now < 6 * 3600000 ? 'warn' : '', text: 'เหลือ ' + human(due - now) };
+            return { cls: 'bad', text: 'เลยกำหนด ' + human(now - due) };
         }
         if (a.kind === 'window') {
             const f = at(ev.date, a.from), t = at(ev.date, a.to);
             if (f == null || t == null) return { cls: '', text: 'ไม่ได้กำหนดช่วงเวลา' };
-            if (now < f) return { cls: f - now < 3600000 ? 'warn' : '', text: 'เริ่มช่วงห้าม ' + hmStr(a.from) + ' (อีก ' + human(f - now) + ')' };
-            if (now < t) return { cls: 'live', text: '● ขณะนี้อยู่ในช่วงห้าม — เหลือ ' + human(t - now) };
-            return { cls: 'ok', text: 'พ้นช่วงห้ามแล้ว (' + hmStr(a.to) + ')' };
+            if (now < f) return { cls: f - now < 3600000 ? 'warn' : '', text: 'อีก ' + human(f - now) };
+            if (now < t) return { cls: 'live', text: '● อยู่ในช่วงห้าม · เหลือ ' + human(t - now) };
+            return { cls: 'ok', text: 'พ้นช่วงห้ามแล้ว' };
         }
         return null;
     }
@@ -261,8 +279,8 @@
         { id: 'overview', label: 'ภาพรวม', icon: 'fa-gauge-high', order: 10 }
     ];
     // แท็บเดิมที่รวมเข้าแท็บใหญ่แล้ว — ปุ่ม/ลิงก์/ค่าที่จำไว้เดิมยังพาไปถูกที่
-    //   ข้อกฎหมาย → ท้ายแท็บ "ขั้นตอน & กฎหมาย" · ติดต่อ & นำทาง → การ์ดปุ่มลัดในหน้าภาพรวม
-    const MERGED = { legal: { anchor: '.cmd-tail' }, contact: { to: 'overview', anchor: '.cmd-quick' } };
+    //   ข้อกฎหมาย → การ์ดข้อกฎหมายชี้ขาดในหน้าภาพรวม · ติดต่อ & นำทาง → การ์ดปุ่มลัดในหน้าภาพรวม
+    const MERGED = { legal: { to: 'overview', anchor: '.cmd-alerts' }, contact: { to: 'overview', anchor: '.cmd-quick' } };
     let curSub = (function () { try { return localStorage.getItem(TAB_KEY) || 'overview'; } catch (e) { return 'overview'; } })();
     const findPlugin = (id) => plugins.find((x) => x.id === id);
     // โมดูลที่ฝากไว้ในแท็บอื่น (host) — ถ้าแท็บเจ้าของโหลดไม่ขึ้น ให้กลับมามีแท็บของตัวเอง
@@ -272,14 +290,12 @@
         const h = findPlugin(p.host);
         return h && !h.host ? p.host : '';
     }
-    // ข้อกฎหมายชี้ขาดฉบับเต็ม อยู่ท้ายแท็บบันได 7 ขั้น (ถ้าไม่มีแท็บนั้น → ท้ายหน้าภาพรวม)
-    function legalHost() { const l = findPlugin('ladder'); return l && !hostOf(l) ? 'ladder' : 'overview'; }
     function allTabs() {
         return CORE_TABS.concat(plugins.filter((p) => !hostOf(p)).map((p) => ({ id: p.id, label: p.label || p.id, icon: p.icon || 'fa-puzzle-piece', order: p.order || 50 })))
             .sort((a, b) => a.order - b.order);
     }
     function resolveTab(id) {
-        if (MERGED[id]) return { tab: MERGED[id].to || legalHost(), anchor: MERGED[id].anchor };
+        if (MERGED[id]) return { tab: MERGED[id].to, anchor: MERGED[id].anchor };
         const p = findPlugin(id), h = p ? hostOf(p) : '';
         return h ? { tab: h, child: p } : { tab: id };
     }
@@ -369,64 +385,68 @@
         if (!isCore) core.innerHTML = '';
         else if (!ev) core.innerHTML = '<div class="cmd-grid cmd-g-one"><section class="cmd-card"><div class="cmd-empty"><i class="fa-solid fa-calendar-plus"></i>ยังไม่มีเหตุการณ์ — กด <b>+ เพิ่มเหตุการณ์ใหม่</b> เพื่อเริ่มต้น</div></section></div>';
         else core.innerHTML = '<div class="cmd-grid cmd-g-overview">' + heroHtml(ev) + countHtml(ev, now) + levelHtml(ev) + alertsMiniHtml(ev, now) + quickHtml(ev) + '</div>';
-        // ข้อกฎหมายชี้ขาดฉบับเต็ม — ต่อท้ายแท็บบันได 7 ขั้น
-        tail.innerHTML = ev && curSub === legalHost() ? '<div class="cmd-grid cmd-g-one">' + alertsHtml(ev, now) + '</div>' : '';
 
         lastPhaseKey = ev ? phase(ev, now).key : '';
         syncPlugins();
         tick();
     }
 
-    // ข้อกฎหมายชี้ขาดแบบย่อในหน้าภาพรวม (รายละเอียดเต็มอยู่ท้ายแท็บ "ขั้นตอน & กฎหมาย")
+    // ข้อกฎหมายชี้ขาด (ที่เดียวของกระดาน) — แตะหัวข้อเพื่อดูรายละเอียด · งานที่มีเส้นตายติ๊ก "ดำเนินการแล้ว" ได้ทันที
     function alertsMiniHtml(ev, now) {
         const rows = ev.alerts.map((a) => {
-            const st = alertStatus(ev, a, now);
-            return '<div class="cmd-almini" data-tone="' + esc(a.tone) + '"><i class="fa-solid ' + esc(a.icon || 'fa-scale-balanced') + '"></i>' +
-                '<span><b>' + esc(a.title) + '</b><small>' + esc(a.law) + '</small>' +
-                (st ? '<em class="st ' + st.cls + '" data-tick="al" data-id="' + esc(a.id) + '">' + esc(st.text) + '</em>' : '') + '</span></div>';
+            const st = alertStatus(ev, a, now), open = alOpen.has(a.id);
+            return '<div class="cmd-almini' + (open ? ' open' : '') + '" data-tone="' + esc(a.tone) + '">' +
+                '<button type="button" class="cmd-almini-h" data-act="almore" data-id="' + esc(a.id) + '" aria-expanded="' + open + '"><i class="fa-solid ' + esc(a.icon || 'fa-scale-balanced') + '"></i>' +
+                    '<span><b>' + esc(a.title) + '</b><small>' + esc(a.law) + '</small>' +
+                    (st ? '<em class="st ' + st.cls + '" data-tick="al" data-id="' + esc(a.id) + '">' + esc(st.text) + '</em>' : '') + '</span>' +
+                    (a.detail ? '<i class="fa-solid fa-chevron-down cmd-almini-chev"></i>' : '') + '</button>' +
+                (a.kind === 'due' ? '<button type="button" class="cmd-al-ck' + (a.done ? ' on' : '') + '" data-act="aldone" data-id="' + esc(a.id) + '"><i class="fa-' + (a.done ? 'solid fa-square-check' : 'regular fa-square') + '"></i> ดำเนินการแล้ว</button>' : '') +
+                (open && a.detail ? '<div class="cmd-almini-more">' + esc(a.detail) + '</div>' : '') +
+                '</div>';
         }).join('');
         return '<section class="cmd-card cmd-alerts">' +
-            '<div class="cmd-card-h"><i class="fa-solid fa-thumbtack"></i><h4>ข้อกฎหมายชี้ขาด</h4>' +
-            '<button type="button" class="cmd-btn sm" data-act="subtab" data-tab="legal">ดูรายละเอียด <i class="fa-solid fa-chevron-right"></i></button></div>' +
-            (rows ? '<div class="cmd-almini-list">' + rows + '</div>' : '<div class="cmd-empty" style="padding:14px">ยังไม่มีแถบแจ้งเตือน</div>') +
+            '<div class="cmd-card-h"><i class="fa-solid fa-thumbtack"></i><h4>ข้อกฎหมายชี้ขาด</h4><small>แตะเพื่อดูรายละเอียด</small></div>' +
+            (rows ? '<div class="cmd-almini-list">' + rows + '</div>' : '<div class="cmd-empty" style="padding:14px">ยังไม่มีแถบแจ้งเตือน — เพิ่มได้ที่ "แก้ไข"</div>') +
             '</section>';
     }
 
     function heroHtml(ev) {
-        const s = startOf(ev), lv = LEVELS[ev.level];
-        const lastLv = ev.levelLog[ev.levelLog.length - 1];
+        const s = startOf(ev);
         const rows = [];
-        rows.push('<li><i class="fa-regular fa-calendar"></i><span><b>' + (s ? thDateLong(s) : 'ยังไม่กำหนดวัน') + '</b></span></li>');
-        rows.push('<li><i class="fa-regular fa-clock"></i><span>เวลา <b>' + hmStr(ev.start) + ' – ' + hmStr(ev.end) + '</b>' + (ev.muster ? ' · ' + esc(ev.musterLabel || 'รวมพล') + ' <b>' + hmStr(ev.muster) + '</b>' : '') + '</span></li>');
-        if (ev.place) rows.push('<li><i class="fa-solid fa-location-dot"></i><span>' + esc(ev.place) + (ev.distance ? ' <span style="color:var(--cmd-mute)">(' + esc(ev.distance) + ')</span>' : '') + '</span></li>');
+        const DOW = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+        rows.push('<li><i class="fa-regular fa-calendar"></i><span><b>' + (s ? DOW[new Date(s).getDay()] + ' ' + thDateShort(s) : 'ยังไม่กำหนดวัน') + ' · ' + hmStr(ev.start).replace(/\s*น\.$/, '') + '–' + hmStr(ev.end) + '</b>' +
+            (ev.muster ? ' <span class="cmd-mute">(' + esc(musterShort(ev)) + ' ' + hmStr(ev.muster) + ')</span>' : '') + '</span></li>');
+        if (ev.place) rows.push('<li><i class="fa-solid fa-location-dot"></i><span>' + esc(ev.place) + (ev.distance ? ' <span class="cmd-mute">· ' + esc(ev.distance) + '</span>' : '') + '</span></li>');
         if (ev.crowd) rows.push('<li><i class="fa-solid fa-people-group"></i><span>' + esc(ev.crowd) + '</span></li>');
-        if (ev.organizer) rows.push('<li><i class="fa-solid fa-user-tie"></i><span><b>ผู้จัด:</b> ' + esc(ev.organizer) + '</span></li>');
-        if (ev.coordinators) rows.push('<li><i class="fa-solid fa-user-group"></i><span><b>ผู้ประสานงาน:</b> ' + esc(ev.coordinators) + '</span></li>');
-        if (ev.ref) rows.push('<li><i class="fa-solid fa-file-signature"></i><span>' + esc(ev.ref) + '</span></li>');
-        if (ev.court) rows.push('<li><i class="fa-solid fa-scale-balanced"></i><span>' + esc(ev.court) + '</span></li>');
+        // ผู้จัด: แสดงชื่อ + เบอร์ (อายุ/เลขบัตร/ที่อยู่ ดูได้ใน "แก้ไข") · ผู้ประสานงาน: ชื่ออย่างเดียว (เบอร์อยู่ในการ์ดปุ่มลัด)
+        const org = String(ev.organizer || ''), orgName = org.split(/\s+อายุ|\s*\(|\s+เลขประจำตัว|\s*·/)[0].trim();
+        const orgTel = (org.match(/0\d{1,2}-?\d{3}-?\d{4}/g) || []).pop() || '';
+        const coNames = String(ev.coordinators || '').split(/\s*·\s*|\s*,\s*/).map((x) => x.replace(/^\d+\)\s*/, '').replace(/\s*โทร\.?.*$/, '').trim()).filter(Boolean);
+        if (orgName || coNames.length) rows.push('<li><i class="fa-solid fa-user-tie"></i><span>' +
+            (orgName ? '<b>ผู้จัด</b> ' + esc(orgName) + (orgTel ? ' <span class="cmd-mute">' + esc(orgTel) + '</span>' : '') : '') +
+            (coNames.length ? (orgName ? '<br>' : '') + '<b>ผู้ประสาน</b> ' + esc(coNames.join(', ')) : '') + '</span></li>');
         return '<section class="cmd-card cmd-hero">' +
             '<div class="cmd-hero-top"><div class="cmd-hero-txt">' +
                 '<span class="cmd-tag"><i class="fa-solid fa-bullhorn"></i>' + esc(ev.category) + '</span>' +
                 '<h2>' + esc(ev.title) + '</h2>' +
-            '</div>' +
-            '<div class="cmd-lvpill" title="ระดับสถานการณ์"><i class="cmd-dot ' + esc(ev.level) + '"></i><b>' + lv.short + '</b><small>' + (lastLv ? 'ปรับ ' + hmTh(Date.parse(lastLv.at)) : 'ระดับปัจจุบัน') + '</small></div></div>' +
+            '</div></div>' +
             '<ul class="cmd-meta">' + rows.join('') + '</ul>' +
             '<div class="cmd-tools">' +
-                '<button type="button" class="cmd-btn line" data-act="line"><i class="fa-brands fa-line"></i> คัดลอกสรุปส่ง LINE</button>' +
-                '<button type="button" class="cmd-btn" data-act="edit"><i class="fa-solid fa-pen-to-square"></i> แก้ไขเหตุการณ์</button>' +
-                '<button type="button" class="cmd-btn" data-act="export"><i class="fa-solid fa-file-export"></i> Export JSON</button>' +
-                '<button type="button" class="cmd-btn" data-act="import"><i class="fa-solid fa-file-import"></i> Import JSON</button>' +
+                '<button type="button" class="cmd-btn line" data-act="line"><i class="fa-brands fa-line"></i> ส่ง LINE</button>' +
+                '<button type="button" class="cmd-btn" data-act="edit"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>' +
+                '<button type="button" class="cmd-btn ic" data-act="export" title="Export JSON" aria-label="Export JSON"><i class="fa-solid fa-file-export"></i><span> Export</span></button>' +
+                '<button type="button" class="cmd-btn ic" data-act="import" title="Import JSON" aria-label="Import JSON"><i class="fa-solid fa-file-import"></i><span> Import</span></button>' +
             '</div></section>';
     }
 
     function countHtml(ev, now) {
         const ms = [];
-        if (ev.muster) ms.push({ k: 'muster', ic: 'fa-flag', t: ev.musterLabel || 'รวมพล/ปล่อยแถว', hm: ev.muster, at: musterOf(ev) });
-        if (ev.start) ms.push({ k: 'start', ic: 'fa-play', t: 'เริ่มเหตุการณ์', hm: ev.start, at: startOf(ev) });
-        if (ev.end) ms.push({ k: 'end', ic: 'fa-flag-checkered', t: 'ครบกำหนดสิ้นสุด/เลิก', hm: ev.end, at: endOf(ev) });
+        if (ev.muster) ms.push({ k: 'muster', ic: 'fa-flag', t: musterShort(ev), hm: ev.muster, at: musterOf(ev) });
+        if (ev.start) ms.push({ k: 'start', ic: 'fa-play', t: 'เริ่ม', hm: ev.start, at: startOf(ev) });
+        if (ev.end) ms.push({ k: 'end', ic: 'fa-flag-checkered', t: 'สิ้นสุดตามแจ้ง', hm: ev.end, at: endOf(ev) });
         const nextIdx = ms.findIndex((x) => x.at != null && x.at > now);
         return '<section class="cmd-card cmd-count">' +
-            '<div class="cmd-card-h"><i class="fa-solid fa-stopwatch"></i><h4>นับถอยหลัง (Real-time)</h4><small data-tick="evdate">' + (startOf(ev) ? thDateShort(startOf(ev)) : '') + '</small></div>' +
+            '<div class="cmd-card-h"><i class="fa-solid fa-stopwatch"></i><h4>นับถอยหลัง</h4><small data-tick="evdate">' + (startOf(ev) ? thDateShort(startOf(ev)) : '') + '</small></div>' +
             '<div class="cmd-main" data-tick="main"></div>' +
             '<div class="cmd-ms">' + ms.map((x, i) =>
                 '<div class="cmd-ms-row' + (x.at != null && x.at <= now ? ' done' : '') + (i === nextIdx ? ' next' : '') + '">' +
@@ -439,7 +459,7 @@
     function levelHtml(ev) {
         const log = ev.levelLog.slice(-4).reverse();
         return '<section class="cmd-card cmd-level">' +
-            '<div class="cmd-card-h"><i class="fa-solid fa-traffic-light"></i><h4>ระดับสถานการณ์</h4><small>แตะเพื่อสลับทันที</small></div>' +
+            '<div class="cmd-card-h"><i class="fa-solid fa-traffic-light"></i><h4>ระดับสถานการณ์</h4><small>แตะเพื่อเปลี่ยน</small></div>' +
             '<div class="cmd-lvlist">' + Object.keys(LEVELS).map((k) => {
                 const L = LEVELS[k];
                 return '<button type="button" class="cmd-lv' + (ev.level === k ? ' on' : '') + '" data-act="level" data-lv="' + k + '" aria-pressed="' + (ev.level === k) + '">' +
@@ -449,24 +469,6 @@
             '</section>';
     }
 
-    function alertsHtml(ev, now) {
-        const items = ev.alerts.map((a) => {
-            const st = alertStatus(ev, a, now);
-            return '<div class="cmd-al" data-tone="' + esc(a.tone) + '">' +
-                '<div class="cmd-al-h"><div class="cmd-al-ic"><i class="fa-solid ' + esc(a.icon || 'fa-scale-balanced') + '"></i></div><span class="cmd-al-law">' + esc(a.law) + '</span></div>' +
-                '<b>' + esc(a.title) + '</b>' +
-                (a.detail ? '<p>' + esc(a.detail) + '</p>' : '') +
-                (st || a.kind === 'due' ? '<div class="cmd-al-st">' +
-                    (st ? '<span class="st ' + st.cls + '" data-tick="al" data-id="' + esc(a.id) + '">' + esc(st.text) + '</span>' : '') +
-                    (a.kind === 'due' ? '<button type="button" class="cmd-al-ck' + (a.done ? ' on' : '') + '" data-act="aldone" data-id="' + esc(a.id) + '"><i class="fa-' + (a.done ? 'solid fa-square-check' : 'regular fa-square') + '"></i> ดำเนินการแล้ว</button>' : '') +
-                    '</div>' : '') +
-                '</div>';
-        }).join('');
-        return '<section class="cmd-card cmd-alerts">' +
-            '<div class="cmd-card-h"><i class="fa-solid fa-thumbtack"></i><h4>ข้อกฎหมายชี้ขาด (Pinned Legal Alerts)</h4><small>' + ev.alerts.length + ' รายการ</small></div>' +
-            (items ? '<div class="cmd-allist">' + items + '</div>' : '<div class="cmd-empty" style="padding:14px">ยังไม่มีแถบแจ้งเตือน — เพิ่มได้ที่ "แก้ไขเหตุการณ์"</div>') +
-            '</section>';
-    }
 
     function quickHtml(ev) {
         const calls = ev.contacts.map((c) => {
@@ -479,13 +481,13 @@
                 '<button type="button" class="cmd-call-ed" data-act="contact" data-id="' + esc(c.id) + '" title="แก้ไข" aria-label="แก้ไขเบอร์ ' + esc(c.name) + '"><i class="fa-solid fa-pen"></i></button></div>';
         }).join('');
         return '<section class="cmd-card cmd-quick">' +
-            '<div class="cmd-card-h"><i class="fa-solid fa-bolt"></i><h4>ปุ่มลัดภาคสนาม</h4><small>Quick Actions</small></div>' +
+            '<div class="cmd-card-h"><i class="fa-solid fa-bolt"></i><h4>ปุ่มลัด & เบอร์โทร</h4></div>' +
             '<div class="cmd-maps">' +
-                '<a class="cmd-map" href="' + esc(mapUrl(ev)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-map-location-dot"></i><span><b>แผนที่จุดเหตุ</b><small>' + (ev.latlng ? 'ตามพิกัดที่ปักไว้' : 'ค้นหาใน Google Maps') + '</small></span></a>' +
+                (ev.id === SEED_ID && findPlugin('map3d') ? '' : '<a class="cmd-map" href="' + esc(mapUrl(ev)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-map-location-dot"></i><span><b>แผนที่จุดเหตุ</b><small>Google Maps</small></span></a>') +
                 '<a class="cmd-map" href="' + esc(dirUrl(ev)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-route"></i><span><b>นำทางจาก สน.</b><small>' + esc(ev.distance || 'เส้นทางขับรถ') + '</small></span></a>' +
             '</div>' +
             '<div class="cmd-calls">' + calls + '<button type="button" class="cmd-call add" data-act="contact" data-id=""><i class="fa-solid fa-plus"></i> เพิ่มเบอร์ติดต่อ</button></div>' +
-            (ev.contacts.some((c) => c.local) ? '<div class="cmd-note"><i class="fa-solid fa-shield-halved"></i><span>เบอร์ของประชาชน (ผู้จัด/ผู้ประสานงาน) ไม่ฝังในโค้ดเว็บสาธารณะ — กรอกครั้งเดียว ระบบเก็บไว้เฉพาะในเครื่องนี้</span></div>' : '') +
+            (ev.contacts.some((c) => c.local) ? '<div class="cmd-note"><i class="fa-solid fa-shield-halved"></i><span>เบอร์ประชาชนเก็บเฉพาะในเครื่องนี้</span></div>' : '') +
             '</section>';
     }
 
@@ -541,6 +543,7 @@
         if (!ev) return;
         if (act === 'edit') eventForm(ev);
         else if (act === 'level') setLevel(ev, b.dataset.lv);
+        else if (act === 'almore') { const id = b.dataset.id; if (alOpen.has(id)) alOpen.delete(id); else alOpen.add(id); render(); }
         else if (act === 'aldone') {
             const a = ev.alerts.find((x) => x.id === b.dataset.id); if (!a) return;
             a.done = !a.done; a.doneAt = a.done ? new Date().toISOString() : '';
@@ -566,7 +569,7 @@
         const L = [];
         L.push('📢 สรุปสถานการณ์ | ' + ev.title);
         L.push('🗓 ' + (s ? thDateLong(s) : 'ยังไม่กำหนดวัน') + ' เวลา ' + hmStr(ev.start) + '–' + hmStr(ev.end) + (ev.muster ? ' (' + (ev.musterLabel || 'รวมพล') + ' ' + hmStr(ev.muster) + ')' : ''));
-        if (ev.place) L.push('📍 ' + ev.place + (ev.distance ? ' (' + ev.distance + ')' : ''));
+        if (ev.place) L.push('📍 ' + ev.place + (ev.distance ? ' · ' + ev.distance : ''));
         if (ev.crowd) L.push('👥 ' + ev.crowd);
         L.push('🚦 ระดับสถานการณ์: ' + lv.emoji + ' ' + lv.name + ' — ' + lv.desc + (last ? ' (ปรับเมื่อ ' + hmTh(Date.parse(last.at)) + ')' : ''));
         if (ph.mode === 'pre') L.push('⏱ อีก ' + human(ph.target - now) + ' ถึง' + (ph.key === 'pre' ? (ev.musterLabel || 'เวลารวมพล') + ' ' + hmStr(ev.muster) : 'เวลาเริ่ม ' + hmStr(ev.start)));
@@ -785,13 +788,12 @@
         root = document.getElementById('pane-cmd');
         if (!root) return;
         state = load();
-        root.innerHTML = '<div class="cmd-root"><div class="cmd-head"></div><nav class="cmd-tabs" role="tablist" aria-label="หัวข้อในกระดาน"></nav><div class="cmd-top"></div><div class="cmd-core"></div><div class="cmd-ext"></div><div class="cmd-tail"></div></div>';
+        root.innerHTML = '<div class="cmd-root"><div class="cmd-head"></div><nav class="cmd-tabs" role="tablist" aria-label="หัวข้อในกระดาน"></nav><div class="cmd-top"></div><div class="cmd-core"></div><div class="cmd-ext"></div></div>';
         shell = root.querySelector('.cmd-root');
         head = root.querySelector('.cmd-head');
         tabsEl = root.querySelector('.cmd-tabs');
         core = root.querySelector('.cmd-core');
         ext = root.querySelector('.cmd-ext');
-        tail = root.querySelector('.cmd-tail');
         topBox = root.querySelector('.cmd-top');
         root.addEventListener('click', onClick);
         mountPlugins();

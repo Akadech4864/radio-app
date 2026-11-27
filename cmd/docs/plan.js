@@ -23,9 +23,9 @@ window.LAMHIN_PLAN = (function () {
 
     const PHASES = {
         1: { label: 'เตรียมการ', icon: 'fa-clipboard-check' },
-        2: { label: 'วันชุมนุม · เฝ้าระวัง', icon: 'fa-eye' },
-        3: { label: 'หากฝ่าฝืน · ทำตามลำดับ (บันได 7 ขั้น ม.21–25)', icon: 'fa-stairs' },
-        4: { label: 'ปิดการชุมนุมและหลังเหตุ', icon: 'fa-flag-checkered' }
+        2: { label: 'เผชิญเหตุ · วันชุมนุม', icon: 'fa-eye' },
+        3: { label: 'ใช้กำลังคลี่คลาย · หากฝ่าฝืน (บันได 7 ขั้น)', icon: 'fa-stairs' },
+        4: { label: 'หลังชุมนุม / ฟื้นฟู', icon: 'fa-flag-checkered' }
     };
 
     /* ขั้นตอน

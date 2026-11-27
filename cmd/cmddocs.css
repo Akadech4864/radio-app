@@ -200,3 +200,20 @@
     .cmdd-ph small { flex: 1 1 100%; margin-left: 32px; }
     .cmdd-pph em { display: none; }
 }
+
+/* ลำดับปฏิบัติ: ช่วงหากฝ่าฝืน → พาไปบันได 7 ขั้น */
+.cmdd-pjump { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--cmd-line); }
+.cmdd-pjump span { flex: 1 1 260px; min-width: 0; }
+.cmdd-pjump b { display: block; font-size: 0.88rem; font-weight: 800; }
+.cmdd-pjump small { display: block; font-size: 0.76rem; line-height: 1.5; color: var(--cmd-mute); }
+/* รายคน: รายงานตัว + ผช.พงส. */
+.cmdd-pin { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 5px 11px; border-radius: 11px; border: 1px solid var(--cmd-line2, rgba(148, 178, 222, 0.3)); background: transparent; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+.cmdd-pin.on { color: #86EFAC; border-color: rgba(22, 163, 74, 0.6); background: rgba(22, 163, 74, 0.12); }
+.cmdd-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px; padding: 0 14px 10px; }
+.cmdd-slots > div { display: flex; gap: 6px; align-items: center; }
+.cmdd-slots input { flex: 1 1 auto; min-width: 0; min-height: 36px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--cmd-line); background: rgba(10, 22, 40, 0.5); color: inherit; font: inherit; font-size: 0.82rem; }
+@media (max-width: 640px) {
+    .cmdd-pph { flex-wrap: wrap; }
+    .cmdd-pin { order: 5; flex: 1 1 100%; justify-content: center; }   /* ปุ่มรายงานตัวลงบรรทัดใหม่ ชื่อไม่ถูกบีบ */
+    .cmdd-slots input { font-size: 16px; }   /* กัน iPhone ซูมเมื่อแตะช่อง */
+}

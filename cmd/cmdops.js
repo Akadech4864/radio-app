@@ -28,70 +28,70 @@
     // item: [id, ข้อความ, คำอธิบายย่อย, ป้ายกำกับ (เช่น เส้นตาย), id แถบแจ้งเตือนที่ผูกกัน]
     const ASSEMBLY = [
         {
-            id: 'cmd', short: 'ศปก.', name: 'ศูนย์ควบคุม / บังคับบัญชา (ศปก.)', icon: 'fa-tower-broadcast',
+            id: 'cmd', short: 'ศปก.', name: 'ศปก. / บังคับบัญชา', icon: 'fa-tower-broadcast',
             head: { name: 'พ.ต.อ.สุขสันต์ แสนสวัสดิ์', pos: 'รรท.ผกก.สน.ลำหิน · ผบ.เหตุการณ์', phone: '084-881-5353' },
             items: [
-                ['cmd-1', 'นัดรวมพลปล่อยแถว 04.30 น. หน้า สน.ลำหิน', 'ชี้แจงภารกิจและกรอบกฎหมายให้ทุกสายงาน', '04.30 น.'],
-                ['cmd-2', 'ตั้ง ศปก.ส่วนหน้า ที่ลานจอดรถมัสยิดดารุ้ลมุกร้อดรอบีน', 'ฝั่งตรงข้ามจุดชุมนุม มองเห็นพื้นที่ทั้งหมด'],
-                ['cmd-3', 'กำหนดช่องทางสื่อสาร (วิทยุ / กลุ่ม LINE) และผู้ประสานของแต่ละสายงาน'],
-                ['cmd-4', 'พบผู้จัด (นายภูเบศ โพธิ์โซ๊ะ) และผู้ประสานงาน 2 ท่านหน้างาน', 'ย้ำเงื่อนไข ม.11 / ห้ามโทรโข่ง 05.00–06.00 น. / เลิก 18.00 น.'],
-                ['cmd-5', 'รายงานสถานการณ์ บก.น.3 เป็นระยะ'],
-                ['cmd-6', 'สรุปผลการปฏิบัติ / ปิดภารกิจ', 'หลังเลิกชุมนุมตามแจ้ง 18.00 น.']
+                ['cmd-1', 'ปล่อยแถวหน้า สน.', 'ชี้แจงภารกิจ/ข้อกฎหมาย', '04.30 น.'],
+                ['cmd-2', 'ตั้ง ศปก.ส่วนหน้า ลานจอดรถมัสยิด', 'ตรงข้ามจุดชุมนุม'],
+                ['cmd-3', 'ช่องทางสื่อสาร: วิทยุ / LINE'],
+                ['cmd-4', 'พบผู้จัดและผู้ประสานงาน', 'ย้ำ ม.11 · ห้ามโทรโข่ง 05–06 น. · เลิก 18.00 น.'],
+                ['cmd-5', 'รายงาน บก.น.3 เป็นระยะ'],
+                ['cmd-6', 'สรุปผล / ปิดภารกิจ', 'หลัง 18.00 น.']
             ]
         },
         {
-            id: 'pro', short: 'ป./คฝ.', name: 'งานป้องกันปราบปราม (ป.) / คฝ.', icon: 'fa-shield-halved',
+            id: 'pro', short: 'ป./คฝ.', name: 'ป้องกันปราบปราม / คฝ.', icon: 'fa-shield-halved',
             head: { name: 'พ.ต.ท.รัติศัย นิลน้อย', pos: 'รอง ผกก.ป.สน.ลำหิน · ผู้รับกำลัง คฝ.', phone: '088-553-2610' },
             items: [
-                ['pro-1', 'ทำหนังสือเรียน บก.น.3 ตาม พ.ร.บ.การชุมนุมสาธารณะฯ'],
-                ['pro-2', 'ส่งหนังสือสรุปสาระสำคัญและเงื่อนไข ม.11 ให้ผู้แจ้ง พร้อมหลักฐานเซ็นรับ', '', 'ก่อน 27 พ.ย. 14.00 น.', 'al-m11'],
-                ['pro-3', 'หนังสือแจ้งสำนักงานเขต / หน่วยงานประชาสัมพันธ์', 'ม.19 วรรคหนึ่ง และ ม.20'],
-                ['pro-4', 'คำสั่งจัดกำลังทุกสายงาน'],
-                ['pro-5', 'จัด คฝ. สน.ลำหิน 1 หมู่ ดูแลการชุมนุม'],
-                ['pro-6', 'รับกำลัง คฝ. บก.น.3 1 หมวด', 'สแตนด์บายที่ สน.ลำหิน พร้อมหนุนภายใน 30 นาที (ทางรถ ~2.8 กม.)']
+                ['pro-1', 'หนังสือเรียน บก.น.3'],
+                ['pro-2', 'ส่งหนังสือเงื่อนไข ม.11 ให้ผู้แจ้ง (มีเซ็นรับ)', '', 'ก่อน 27 พ.ย. 14.00 น.', 'al-m11'],
+                ['pro-3', 'แจ้งเขต / ประชาสัมพันธ์', 'ม.19 ว.1 · ม.20'],
+                ['pro-4', 'คำสั่งจัดกำลัง'],
+                ['pro-5', 'คฝ. สน.ลำหิน 1 หมู่ ดูแลการชุมนุม'],
+                ['pro-6', 'รับ คฝ. บก.น.3 1 หมวด', 'สแตนด์บายที่ สน. หนุนใน 30 นาที']
             ]
         },
         {
             id: 'inv', short: 'สืบสวน', name: 'งานสืบสวน', icon: 'fa-user-secret',
             head: { name: 'พ.ต.ท.ไพโรจน์ รุกขพันธ์', pos: 'รอง ผกก.สส.สน.ลำหิน', phone: '081-816-8637' },
             items: [
-                ['inv-1', 'เกาะติดสถานการณ์ หาข่าวเชิงลึก ก่อน–ขณะ–หลังชุมนุม'],
-                ['inv-2', 'เก็บภาพ/คลิปครบ 3 ช่วง (ก่อน–ขณะ–หลัง)', 'มุมกว้างเห็นผิวจราจร/จำนวนมวลชน + มุมเจาะรายบุคคล'],
-                ['inv-3', 'ถ่ายคลิป Uncut มีเสียงและเวลาจริง ขณะเจรจา/อ่านประกาศ ม.21 / ม.23', 'เห็นผู้อ่านประกาศและกลุ่มผู้ชุมนุมในเฟรมเดียวกัน'],
-                ['inv-4', 'รักษาไฟล์ Original (ห้ามลบ ห้ามส่งเฉพาะทาง LINE)'],
-                ['inv-5', 'รายงานผู้บังคับบัญชาเป็นระยะ / ส่งแฟ้มรายงานสืบสวนให้งานสอบสวน']
+                ['inv-1', 'หาข่าว ก่อน–ขณะ–หลังชุมนุม'],
+                ['inv-2', 'ภาพ/คลิปครบ 3 ช่วง', 'มุมกว้าง (ผิวจราจร/จำนวนคน) + มุมเจาะรายบุคคล'],
+                ['inv-3', 'คลิป Uncut ขณะเจรจา/อ่านประกาศ', 'มีเสียง-เวลาจริง เห็นผู้อ่านกับผู้ชุมนุมในเฟรมเดียว'],
+                ['inv-4', 'เก็บไฟล์ Original (ห้ามลบ ห้ามส่งแค่ LINE)'],
+                ['inv-5', 'รายงานเป็นระยะ · ส่งรายงานสืบสวนให้ พงส.']
             ]
         },
         {
             id: 'tra', short: 'จราจร', name: 'งานจราจร', icon: 'fa-traffic-light',
             head: { name: 'พ.ต.ท.สุจิตร ศิริราช', pos: 'รอง ผกก.จร.สน.ลำหิน', phone: '081-782-9997' },
             items: [
-                ['tra-1', 'อำนวยการจราจรแยกปากซอยคู้คลองสิบ 4 / ถนนคู้-คลองสิบ'],
-                ['tra-2', 'ดูแลรถผู้ชุมนุม ~10 คัน (ลานจอดรถมัสยิด) ไม่ให้กีดขวางผิวจราจร'],
-                ['tra-3', 'รายงานสภาพจราจรเป็นระยะจนจบภารกิจ'],
-                ['tra-4', 'เป็นพยานยืนยันผลกระทบการสัญจร', 'กรณีต้องยื่นคำร้องศาลแพ่งมีนบุรี']
+                ['tra-1', 'อำนวยการจราจรปากซอย / ถนนคู้-คลองสิบ'],
+                ['tra-2', 'รถผู้ชุมนุม ~10 คัน ไม่กีดขวางผิวจราจร'],
+                ['tra-3', 'รายงานสภาพจราจรเป็นระยะ'],
+                ['tra-4', 'พยานผลกระทบการสัญจร', 'ใช้ประกอบคำร้องศาล']
             ]
         },
         {
             id: 'adm', short: 'อำนวยการ', name: 'งานอำนวยการ', icon: 'fa-utensils',
             head: { name: 'พ.ต.ท.เอกพล สุทธิรักษ์', pos: 'สว.อก.สน.ลำหิน', phone: '081-645-7484' },
             items: [
-                ['adm-1', 'อาหาร/เครื่องดื่มชุดปล่อยแถว 04.30 น.'],
-                ['adm-2', 'อาหารกลางวันและน้ำดื่มกำลังพลหน้างาน'],
-                ['adm-3', 'สวัสดิการกำลังพลจนเสร็จสิ้นภารกิจ'],
-                ['adm-4', 'ตรวจทะเบียนทรัพย์สินราชการที่นำออกปฏิบัติ', 'รถสายตรวจ / อุปกรณ์ คฝ.']
+                ['adm-1', 'อาหาร/น้ำ ชุดปล่อยแถว', '', '04.30 น.'],
+                ['adm-2', 'อาหารกลางวัน/น้ำดื่มหน้างาน'],
+                ['adm-3', 'สวัสดิการกำลังพลจนจบภารกิจ'],
+                ['adm-4', 'ตรวจทรัพย์สินราชการที่นำออก', 'รถสายตรวจ / อุปกรณ์ คฝ.']
             ],
-            note: 'กรณีทรัพย์สินราชการของ สน. เสียหาย ให้ สว.อก. เป็นผู้กล่าวหา (ผู้ควบคุมพัสดุ) ส่วนพลขับ/เจ้าหน้าที่ในเหตุการณ์สอบเป็นพยาน'
+            note: 'ทรัพย์สินราชการเสียหาย: สว.อก. เป็นผู้กล่าวหา · พลขับ/จนท. เป็นพยาน'
         },
         {
             id: 'qa', short: 'สอบสวน', name: 'งานสอบสวน', icon: 'fa-scale-balanced', wide: true,
             head: { name: 'พ.ต.ท.อัคเดช ลัดดาวัลย์', pos: 'รอง ผกก.(สอบสวน)สน.ลำหิน · ที่ปรึกษากฎหมาย ผบ.เหตุการณ์', phone: '085-556-3955' },
             items: [
-                ['qa-1', 'ปล่อยแถว 04.30 น. ชี้แจงข้อกฎหมายและการเก็บพยานหลักฐาน'],
-                ['qa-2', 'เตรียมแฟ้มเอกสารแนบคำร้องศาลแพ่งมีนบุรี 6 รายการ'],
-                ['qa-3', 'ตรวจเบอร์เวรไต่สวนฉุกเฉินศาลแพ่งมีนบุรี (วันเสาร์)'],
-                ['qa-4', 'ตรวจรถธุรการสำหรับเดินทางไปศาล + โน้ตบุ๊ก / เครื่องพิมพ์ / Flash Drive'],
-                ['qa-5', 'ส่งมอบเวร 08.00 น.', 'ร.ต.ท.สัญญา พนมกุล → ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', '08.00 น.']
+                ['qa-1', 'ชี้แจงข้อกฎหมาย/การเก็บพยานหลักฐาน', '', '04.30 น.'],
+                ['qa-2', 'แฟ้มเอกสารแนบคำร้องศาล 6 รายการ'],
+                ['qa-3', 'ตรวจเบอร์เวรไต่สวนฉุกเฉินศาล (วันเสาร์)'],
+                ['qa-4', 'รถไปศาล + โน้ตบุ๊ก / เครื่องพิมพ์ / Flash Drive'],
+                ['qa-5', 'ส่งมอบเวร', 'ร.ต.ท.สัญญา พนมกุล → ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', '08.00 น.']
             ]
         }
     ];
@@ -107,12 +107,12 @@
 
     // ผังกำลังงานสอบสวนที่สั่งการไว้ (ยศ ชื่อ-สกุล ตำแหน่ง ตามข้อมูลกำลังพล สน.ลำหิน 2569)
     const ROSTER = [
-        { id: 'r1', name: 'พ.ต.ท.อัคเดช ลัดดาวัลย์', pos: 'รอง ผกก.(สอบสวน)สน.ลำหิน', phone: '085-556-3955', role: 'หัวหน้างานสอบสวน / ที่ปรึกษากฎหมาย ผบ.เหตุการณ์', time: '04.30 น. เป็นต้นไป', duty: 'ปล่อยแถวชี้แจงข้อกฎหมาย อำนวยการทีมสอบสวน ตรวจทานถ้อยคำประกาศ ม.21/23/25 พิจารณาความได้สัดส่วน ประสานศาล/อัยการ' },
-        { id: 'r2', name: 'ร.ต.ท.สัญญา พนมกุล', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '084-511-2120', role: 'พนักงานสอบสวนเวรช่วงเช้า', time: '04.30–08.00 น.', duty: 'ร่วมปล่อยแถว เฝ้าระวังช่วงห้ามโทรโข่ง 05.00–06.00 น. (ม.15(6)) บันทึกเหตุการณ์ช่วงเช้า ส่งมอบเวร 08.00 น.' },
-        { id: 'r3', name: 'ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '083-087-2512', role: 'พนักงานสอบสวนเวรหลัก / ชุดตรวจที่เกิดเหตุส่วนหน้า', time: '08.00 น. จนเสร็จภารกิจ', duty: 'ดูคดีเวรปกติ ตรวจที่เกิดเหตุ/ดำเนินการทันทีเมื่อมีเหตุเกี่ยวกับการชุมนุม (ตรวจที่เกิดเหตุควบคู่สอบผู้กล่าวหาเป็นชุดเดียวกัน)' },
-        { id: 'r4', name: 'ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '086-396-9161', role: 'ชุดสนับสนุนเอกสารและสอบปากคำ', time: 'ตลอดภารกิจ (ประจำ สน.)', duty: 'จัดทำเอกสารทั้งหมด (ประกาศ / คำร้องศาล / รายงานเหตุ) และช่วยสอบปากคำพยาน ผู้กล่าวหา ผู้ต้องหา' },
-        { id: 'r5', name: 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '085-290-1659', role: 'ชุดสแตนด์บายเสริมกำลัง (เจ้าของเรื่อง ปจว.ข้อ 3)', time: 'พร้อมเรียกตัวตลอด', duty: 'เข้าช่วยทันทีเมื่อสถานการณ์ยกระดับ มีเหตุรุนแรง มีการจับกุม หรือต้องระดมสอบปากคำจำนวนมาก' },
-        { id: 'r6', group: true, name: 'ผบ.หมู่(ผช.พงส.)สน.ลำหิน 4 นาย', pos: 'ชุดธุรการ ยานพาหนะ และประสานศาล', role: 'สแตนด์บายสนับสนุน', time: 'ตลอดภารกิจ', duty: 'ขับรถไปยื่นคำร้องศาลแพ่งมีนบุรี เดินเอกสาร เตรียมแฟ้ม/อุปกรณ์ และภารกิจสนับสนุนตามสั่งการ' }
+        { id: 'r1', plan: 'akd', name: 'พ.ต.ท.อัคเดช ลัดดาวัลย์', pos: 'รอง ผกก.(สอบสวน)สน.ลำหิน', phone: '085-556-3955', role: 'หัวหน้างานสอบสวน · ที่ปรึกษากฎหมาย', time: '04.30 น. เป็นต้นไป', duty: 'ชี้แจงข้อกฎหมาย · ตรวจถ้อยคำประกาศ ม.21/23/25 · ประสานศาล/อัยการ' },
+        { id: 'r2', plan: 'sny', name: 'ร.ต.ท.สัญญา พนมกุล', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '084-511-2120', role: 'พงส.เวรเช้า', time: '04.30–08.00 น.', duty: 'เฝ้าช่วงห้ามโทรโข่ง 05–06 น. · บันทึกเหตุการณ์ · ส่งเวร 08.00 น.' },
+        { id: 'r3', plan: 'pnc', name: 'ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '083-087-2512', role: 'พงส.เวรหลัก · ตรวจที่เกิดเหตุ', time: '08.00 น. จนเสร็จภารกิจ', duty: 'ตรวจที่เกิดเหตุคู่กับสอบผู้กล่าวหา (ชุดเดียวกัน) · ดูคดีเวรปกติ' },
+        { id: 'r4', plan: 'npn', name: 'ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '086-396-9161', role: 'เอกสาร · สอบปากคำ', time: 'ตลอดภารกิจ (ประจำ สน.)', duty: 'ประกาศ / คำร้องศาล / รายงานเหตุ · ช่วยสอบปากคำ' },
+        { id: 'r5', plan: 'cyc', name: 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์', pos: 'รอง สว.(สอบสวน)สน.ลำหิน', phone: '085-290-1659', role: 'สแตนด์บายเสริม (เจ้าของเรื่อง ปจว.ข้อ 3)', time: 'พร้อมเรียกตัว', duty: 'เข้าช่วยเมื่อยกระดับ มีเหตุรุนแรง หรือมีการจับกุม' },
+        { id: 'r6', plan: 'asst', group: true, name: 'ผบ.หมู่(ผช.พงส.)สน.ลำหิน 4 นาย', pos: 'ธุรการ · ยานพาหนะ · ประสานศาล', role: 'สแตนด์บาย', time: 'ตลอดภารกิจ', duty: 'ขับรถไปศาล เดินเอกสาร เตรียมแฟ้ม/อุปกรณ์' }
     ];
     const ASSISTANTS = [
         ['ส.ต.ท.นนทิวัฒน์ สิงห์อ่อน', '092-380-9962'], ['ส.ต.ท.สุทัศน์ ขุนทอง', '094-358-1786'], ['ส.ต.ต.กิตติศักดิ์ บุญสม', '062-129-4010'],
@@ -121,28 +121,28 @@
     const INVESTIGATORS = ['พ.ต.ท.อัคเดช ลัดดาวัลย์', 'พ.ต.ท.สุวเมธ เนื่องขันตรี', 'ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ', 'ร.ต.อ.คิมหันฐ์ ศรีสุพรรณ์', 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์', 'ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์', 'ร.ต.ท.สัญญา พนมกุล', 'ขอกำลังเสริมจาก บก.น.3'];
     // คณะพนักงานสอบสวน 6 ชุด (แนวทาง บช.น. กรณีสถานการณ์ขยายตัว)
     const TEAMS = [
-        { id: 't1', name: 'ตรวจสถานที่เกิดเหตุ + สอบปากคำผู้กล่าวหา', sub: 'ต้องเป็นชุดเดียวกัน ให้ผู้กล่าวหาชี้จุดได้สอดคล้อง', def: 'ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ' },
-        { id: 't2', name: 'สอบพยานบุคคลภายนอก', sub: 'กฟน.มีนบุรี เขต แพทย์ กู้ภัย สื่อมวลชน ประชาชนผู้ใช้เส้นทาง', def: '' },
-        { id: 't3', name: 'ยื่นคำร้องศาล ผัดฟ้อง-ฝากขัง ประกันตัว ฟ้องวาจา ประสานทนายความ', sub: 'ติดตามกำหนดผัดฟ้องฝากขังทุกผลัด', def: 'ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์' },
-        { id: 't4', name: 'ถอดเทป วิเคราะห์คลิป ควบคุมของกลาง/รถตรวจยึด', sub: 'ปรับบทรายบุคคล ตรวจประวัติ บัญชีรถ 3 กลุ่ม', def: '' },
-        { id: 't5', name: 'รายงานเหตุและธุรการคดี', sub: 'รายงาน บก.น.3 / บช.น. · คุมเอกสารแนบคำร้องศาล 6 รายการ', def: '' },
-        { id: 't6', name: 'สรุปสำนวนและประสานอัยการ', sub: 'เตรียมแผนกรณีผู้ต้องหากลับคำให้การ', def: 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์' }
+        { id: 't1', name: 'ตรวจที่เกิดเหตุ + สอบผู้กล่าวหา', sub: 'ชุดเดียวกัน ให้ชี้จุดสอดคล้อง', def: 'ร.ต.อ.ภาณุเชษฐ์ บุญชูดำ' },
+        { id: 't2', name: 'สอบพยานภายนอก', sub: 'กฟน. เขต แพทย์ กู้ภัย สื่อ ประชาชน', def: '' },
+        { id: 't3', name: 'ศาล: ผัดฟ้อง-ฝากขัง ประกัน ฟ้องวาจา', sub: 'ติดตามกำหนดทุกผลัด', def: 'ร.ต.ท.หญิงนภัสร์นันท์ จันทร์พเนาว์' },
+        { id: 't4', name: 'คลิป / ของกลาง / รถตรวจยึด', sub: 'ปรับบทรายบุคคล · ตรวจประวัติ', def: '' },
+        { id: 't5', name: 'รายงานเหตุ / ธุรการคดี', sub: 'บก.น.3 / บช.น. · คุมเอกสารแนบศาล', def: '' },
+        { id: 't6', name: 'สรุปสำนวน / ประสานอัยการ', sub: 'เตรียมแผนกรณีกลับคำให้การ', def: 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์' }
     ];
     const ST = { todo: 'ยังไม่เริ่ม', doing: 'กำลังปฏิบัติ', done: 'เสร็จสิ้น' };
     // เอกสารแนบท้ายคำร้องศาลแพ่งมีนบุรี 6 รายการ (เลขตรงกับคำร้องในแท็บ "คู่มือ & เอกสาร")
     const ATTACH = [
-        ['att-1', 'สำเนาคำสั่งแต่งตั้ง รรท.ผกก.สน.ลำหิน', 'ยืนยันฐานะเจ้าพนักงานดูแลการชุมนุมสาธารณะ (ม.19) · เอกสารแนบหมายเลข 1'],
-        ['att-2', 'สำเนาหนังสือแจ้งการชุมนุมสาธารณะ ลงวันที่ 26 พ.ย. 69', 'เอกสารแนบหมายเลข 2'],
-        ['att-3', 'สำเนา ปจว.ข้อ 3 ลง 26 พ.ย. 69 เลขรับ EV60026256900637SJ', 'เอกสารแนบหมายเลข 3'],
-        ['att-4', 'สำเนาหนังสือแจ้งเงื่อนไข ม.11 พร้อมหลักฐานเซ็นรับ และหนังสือแจ้งเขต ม.19', 'เอกสารแนบหมายเลข 4'],
-        ['att-5', 'ภาพถ่ายสี A4 (ระบุวันเวลา/คำบรรยาย) แผนที่สังเขป และ Flash Drive/CD คลิปเหตุการณ์', 'เอกสารแนบหมายเลข 5'],
-        ['att-6', 'ต้นฉบับประกาศ ม.21 และคลิป Uncut ขณะอ่านประกาศ', 'เห็นเวลาเริ่มและเวลาครบกำหนดชัดเจน · เอกสารแนบหมายเลข 6']
+        ['att-1', 'สำเนาคำสั่งแต่งตั้ง รรท.ผกก.', 'ฐานะเจ้าพนักงานดูแลฯ (ม.19)'],
+        ['att-2', 'สำเนาหนังสือแจ้งการชุมนุม 26 พ.ย. 69', ''],
+        ['att-3', 'สำเนา ปจว.ข้อ 3 (EV60026256900637SJ)', ''],
+        ['att-4', 'สำเนาหนังสือเงื่อนไข ม.11 + เซ็นรับ · หนังสือแจ้งเขต', ''],
+        ['att-5', 'ภาพถ่ายสี A4 · แผนที่สังเขป · คลิป (Flash Drive/CD)', ''],
+        ['att-6', 'ต้นฉบับประกาศ ม.21 + คลิป Uncut', 'เห็นเวลาประกาศและเวลาครบกำหนด']
     ];
 
     /* ---------------- สถานะ ---------------- */
     let api = null, host = null, lastKey = '';
     let ui = (function () { try { return JSON.parse(localStorage.getItem(UI_KEY) || 'null') || {}; } catch (e) { return {}; } })();
-    ui.open = ui.open || {}; ui.view = ui.view || 'roster';
+    ui.open = ui.open || {};
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ไม่จำก็ได้ */ } }
     const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const tel = (p) => 'tel:' + String(p || '').replace(/[^0-9+]/g, '');
@@ -167,7 +167,7 @@
                 it.at = o.checks[it.id] || (al && al.done ? (al.doneAt || 'yes') : '');
                 if (it.id === 'qa-2' && asm) {
                     const got = ATTACH.filter((a) => o.checks[a[0]]);
-                    it.sub = 'เอกสารแนบ ' + got.length + '/6 · ติ๊กรายการย่อยในหัวข้อด้านล่าง';
+                    it.sub = 'ครบ ' + got.length + '/6 · ติ๊กที่หัวข้อเอกสารแนบ';
                     if (!it.at && got.length === ATTACH.length) it.at = got.map((a) => o.checks[a[0]]).sort().pop();
                 }
             });
@@ -194,10 +194,9 @@
             '<div class="ops-sum">' +
                 '<div class="ops-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(148,178,222,.15)" stroke-width="10"/>' +
                 '<circle cx="50" cy="50" r="42" fill="none" stroke="#D4AF37" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + (C * pct / 100).toFixed(1) + ' ' + C.toFixed(1) + '"/></svg><b>' + pct + '%</b></div>' +
-                '<div class="ops-sum-txt"><h4>ความพร้อมทุกสายงาน</h4><p>' + done + ' จาก ' + total + ' รายการ · แตะรายการเพื่อติ๊กพร้อมลงเวลาอัตโนมัติ</p>' +
+                '<div class="ops-sum-txt"><h4>ความพร้อมทุกสายงาน</h4><p>' + done + '/' + total + ' รายการ · แตะเพื่อติ๊ก (ลงเวลาให้)</p>' +
                     '<div class="ops-counts"><span><i style="background:#16A34A"></i>เสร็จสิ้น ' + cnt.done + '</span><span><i style="background:#F59E0B"></i>กำลังปฏิบัติ ' + cnt.doing + '</span><span><i style="background:#5F7594"></i>ยังไม่เริ่ม ' + cnt.todo + '</span></div></div>' +
                 '<div class="ops-sum-btns">' +
-                    '<button type="button" class="cmd-btn line sm" data-op="line"><i class="fa-brands fa-line"></i> คัดลอกสรุปส่ง LINE</button>' +
                     '<button type="button" class="cmd-btn sm" data-op="expand"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> ' + (divs.every((d) => isOpen(d.id, mobile)) ? 'ย่อทั้งหมด' : 'ขยายทั้งหมด') + '</button>' +
                     '<button type="button" class="cmd-btn sm danger" data-op="reset"><i class="fa-solid fa-rotate-left"></i> ล้างการติ๊ก</button>' +
                 '</div>' +
@@ -234,59 +233,39 @@
             '<div class="ops-body">' + body + '</div></section>';
     }
     function qaExtra(o) {
-        const view = ui.view === 'teams' ? 'teams' : 'roster';
         const got = ATTACH.filter((a) => o.checks[a[0]]).length;
         let h = '<div class="ops-sub">' +
             '<div class="ops-sub-h"><i class="fa-brands fa-line"></i><b>แจ้งกลุ่ม LINE งานสอบสวน</b></div>' +
-            '<p class="ops-hint">ข้อความสรุปเหตุการณ์ + ผังกำลัง (ชื่อทางการ) + การเตรียมตัวก่อนเริ่มภารกิจ — กดแล้ววางในกลุ่มได้ทันที</p>' +
-            '<button type="button" class="cmd-btn line sm" data-op="grpline"><i class="fa-brands fa-line"></i> คัดลอกข้อความแจ้งกลุ่ม LINE</button></div>';
+            '<p class="ops-hint">สรุปเหตุการณ์ + ผังกำลัง พร้อมวางในกลุ่ม</p>' +
+            '<button type="button" class="cmd-btn line sm" data-op="grpline"><i class="fa-brands fa-line"></i> คัดลอกข้อความ</button></div>';
         h += '<div class="ops-sub">' +
-            '<div class="ops-sub-h"><i class="fa-solid fa-folder-open"></i><b>เอกสารแนบคำร้องศาลแพ่งมีนบุรี 6 รายการ</b><em>' + got + '/6</em>' +
-            '<button type="button" class="cmd-btn sm" data-op="tab" data-tab="docs"><i class="fa-solid fa-gavel"></i> เปิดร่างคำร้อง</button></div>' +
-            '<ul class="ops-list">' + ATTACH.map((a) => {
+            '<div class="ops-sub-h"><i class="fa-solid fa-folder-open"></i><b>เอกสารแนบคำร้องศาล</b><em>' + got + '/6</em>' +
+            '<button type="button" class="cmd-btn sm" data-op="tab" data-tab="docs"><i class="fa-solid fa-gavel"></i> ร่างคำร้อง</button></div>' +
+            '<ul class="ops-list">' + ATTACH.map((a, i) => {
                 const at = o.checks[a[0]];
                 return '<li><button type="button" class="ops-item' + (at ? ' on' : '') + '" data-op="att" data-item="' + a[0] + '" aria-pressed="' + (!!at) + '">' +
-                    '<span class="ops-box"><i class="fa-solid fa-check"></i></span><span class="ops-item-txt">' + esc(a[1]) + '<small>' + esc(a[2]) + '</small></span>' +
+                    '<span class="ops-box"><i class="fa-solid fa-check"></i></span><span class="ops-item-txt">' + (i + 1) + '. ' + esc(a[1]) + (a[2] ? '<small>' + esc(a[2]) + '</small>' : '') + '</span>' +
                     (at ? '<span class="ops-when">' + esc(when(at)) + '</span>' : '') + '</button></li>';
             }).join('') + '</ul></div>';
-        h += '<div style="margin-top:14px"><div class="ops-seg">' +
-            '<button type="button" data-op="view" data-view="roster" class="' + (view === 'roster' ? 'on' : '') + '"><i class="fa-solid fa-id-badge"></i> ผังกำลังวันนี้</button>' +
-            '<button type="button" data-op="view" data-view="teams" class="' + (view === 'teams' ? 'on' : '') + '"><i class="fa-solid fa-people-group"></i> คณะทำงาน 6 ชุด (กรณีขยายตัว)</button></div>';
-        if (view === 'roster') {
-            const inCount = ROSTER.filter((p) => o.roster[p.id]).length;
-            h += '<p class="ops-hint">ผังกำลังตามที่สั่งการ (ปล่อยแถว 04.30 น. หน้า สน.ลำหิน) — กด "รายงานตัว" เมื่อพร้อมปฏิบัติ · รายงานตัวแล้ว ' + inCount + '/' + ROSTER.length + '</p>';
-            h += '<datalist id="ops-assist">' + ASSISTANTS.map((a) => '<option value="' + esc(a[0]) + '">').join('') + '</datalist>';
-            h += '<div class="ops-roster">' + ROSTER.map((p) => {
-                const at = o.roster[p.id];
-                let extra = '';
-                if (p.group) {
-                    extra = '<div style="display:grid;gap:5px">' + [0, 1, 2, 3].map((i) => {
-                        const nm = o.slots[i] || '', ph = (ASSISTANTS.find((a) => a[0] === nm) || [])[1];
-                        return '<div class="ops-slot"><input type="text" list="ops-assist" data-op="slot" data-slot="' + i + '" value="' + esc(nm) + '" placeholder="' + (i + 1) + ') เลือก/พิมพ์ชื่อ ผช.พงส." aria-label="ผช.พงส. คนที่ ' + (i + 1) + '">' +
-                            (ph ? '<a class="ops-call" href="' + esc(tel(ph)) + '"><i class="fa-solid fa-phone"></i></a>' : '') + '</div>';
-                    }).join('') + '</div>';
-                }
-                return '<div class="ops-person' + (at ? ' in' : '') + '">' +
-                    '<div class="ops-person-h"><i class="fa-solid ' + (p.group ? 'fa-users' : 'fa-user-shield') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(p.pos) + '</small></span></div>' +
-                    '<div class="ops-role">' + esc(p.role) + '</div>' +
-                    '<div class="ops-time"><i class="fa-regular fa-clock"></i> ' + esc(p.time) + '</div>' +
-                    '<div class="ops-duty">' + esc(p.duty) + '</div>' + extra +
-                    '<div class="ops-person-f"><button type="button" class="ops-in" data-op="in" data-person="' + p.id + '"><i class="fa-' + (at ? 'solid fa-circle-check' : 'regular fa-circle') + '"></i> ' + (at ? 'รายงานตัวแล้ว ' + esc(when(at)) : 'รายงานตัว') + '</button>' +
-                    (p.phone ? '<a class="ops-call" href="' + esc(tel(p.phone)) + '"><i class="fa-solid fa-phone"></i> ' + esc(p.phone) + '</a>' : '') + '</div></div>';
-            }).join('') + '</div>';
-        } else {
-            h += '<p class="ops-hint">คดีชุมนุมไม่ควรทำโดยลำพัง หากเหตุการณ์เกินกำลังเวรปกติ ให้รายงานขอตั้งคณะพนักงานสอบสวนระดับ สน./บก.น.3 แบ่ง 6 ชุด — เลือกหัวหน้าชุด แล้วติ๊กเมื่อตั้งชุดแล้ว</p>';
-            h += '<div class="ops-teams">' + TEAMS.map((t, i) => {
-                const st = o.teams[t.id] || {}, lead = st.lead !== undefined ? st.lead : t.def;
-                const opts = [''].concat(INVESTIGATORS);
-                if (lead && opts.indexOf(lead) === -1) opts.push(lead);
-                return '<div class="ops-team' + (st.on ? ' on' : '') + '">' +
-                    '<div class="ops-team-h"><b>' + (i + 1) + '</b><span>' + esc(t.name) + '<small>' + esc(t.sub) + '</small></span></div>' +
-                    '<select data-op="lead" data-team="' + t.id + '" aria-label="หัวหน้าชุดที่ ' + (i + 1) + '">' + opts.map((n) => '<option value="' + esc(n) + '"' + (n === lead ? ' selected' : '') + '>' + (n ? esc(n) : '— ยังไม่กำหนดหัวหน้าชุด —') + '</option>').join('') + '</select>' +
-                    '<button type="button" class="ops-in" data-op="team" data-team="' + t.id + '"><i class="fa-' + (st.on ? 'solid fa-circle-check' : 'regular fa-circle') + '"></i> ' + (st.on ? 'ตั้งชุดแล้ว ' + esc(when(st.on)) : 'ตั้งชุดแล้ว') + '</button></div>';
-            }).join('') + '</div>';
-        }
-        return h + '</div>';
+        // ผังกำลัง/รายงานตัว ย้ายไปรวมกับ "รายคน" ในลำดับปฏิบัติ (ข้อมูลชุดเดิม ev.ops.roster / slots)
+        const inCount = ROSTER.filter((p) => o.roster[p.id]).length;
+        h += '<div class="ops-sub">' +
+            '<div class="ops-sub-h"><i class="fa-solid fa-id-badge"></i><b>ผังกำลัง / รายงานตัว</b><em>' + inCount + '/' + ROSTER.length + '</em>' +
+            '<button type="button" class="cmd-btn sm" data-op="people"><i class="fa-solid fa-users"></i> เปิดรายคน</button></div>' +
+            '<p class="ops-hint">กดรายงานตัวและเลือก ผช.พงส. 4 นาย ได้ที่ ลำดับปฏิบัติ › รายคน</p></div>';
+        h += '<div class="ops-sub"><div class="ops-sub-h"><i class="fa-solid fa-people-group"></i><b>คณะ พงส. 6 ชุด (ถ้าขยายตัว)</b></div>' +
+            '<p class="ops-hint">เกินกำลังเวร → ขอตั้งคณะ · เลือกหัวหน้าชุดแล้วติ๊ก</p>';
+        h += '<div class="ops-teams">' + TEAMS.map((t, i) => {
+            const st = o.teams[t.id] || {}, lead = st.lead !== undefined ? st.lead : t.def;
+            const opts = [''].concat(INVESTIGATORS);
+            if (lead && opts.indexOf(lead) === -1) opts.push(lead);
+            return '<div class="ops-team' + (st.on ? ' on' : '') + '">' +
+                '<div class="ops-team-h"><b>' + (i + 1) + '</b><span>' + esc(t.name) + '<small>' + esc(t.sub) + '</small></span></div>' +
+                '<select data-op="lead" data-team="' + t.id + '" aria-label="หัวหน้าชุดที่ ' + (i + 1) + '">' + opts.map((n) => '<option value="' + esc(n) + '"' + (n === lead ? ' selected' : '') + '>' + (n ? esc(n) : '— ยังไม่กำหนดหัวหน้าชุด —') + '</option>').join('') + '</select>' +
+                '<button type="button" class="ops-in" data-op="team" data-team="' + t.id + '"><i class="fa-' + (st.on ? 'solid fa-circle-check' : 'regular fa-circle') + '"></i> ' + (st.on ? 'ตั้งชุดแล้ว ' + esc(when(st.on)) : 'ตั้งชุดแล้ว') + '</button></div>';
+        }).join('') + '</div>';
+        h += '</div>';
+        return h;
     }
 
     /* ---------------- การกระทำ ---------------- */
@@ -304,7 +283,7 @@
             if (card) window.scrollTo({ top: Math.max(0, card.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' });
             return;
         }
-        if (op === 'view') { ui.view = b.dataset.view; saveUi(); render(); return; }
+        if (op === 'people') { if (window.LamhinDocs && window.LamhinDocs.plan) window.LamhinDocs.plan('person'); return; }
         if (op === 'check') {
             const id = b.dataset.item, d = divisions(ev).find((x) => x.items.some((it) => it.id === id));
             const it = d && d.items.find((x) => x.id === id); if (!it) return;
@@ -325,10 +304,8 @@
             return;
         }
         if (op === 'grpline') { api.copyText(groupLine(ev)); return; }
-        if (op === 'in') { const id = b.dataset.person; if (o.roster[id]) delete o.roster[id]; else o.roster[id] = now; commit(); return; }
         if (op === 'team') { const t = o.teams[b.dataset.team] = o.teams[b.dataset.team] || {}; if (t.lead === undefined) t.lead = (TEAMS.find((x) => x.id === b.dataset.team) || {}).def || ''; t.on = t.on ? '' : now; commit(); return; }
         if (op === 'head') { headForm(ev, b.dataset.div); return; }
-        if (op === 'line') { api.copyText(lineText(ev)); return; }
         if (op === 'reset') {
             if (!window.confirm('ล้างการติ๊กเช็กลิสต์ การรายงานตัว และสถานะคณะทำงานของเหตุการณ์นี้ทั้งหมด?\n(รายการที่เพิ่มเองและชื่อ ผช.พงส. ยังอยู่)')) return;
             o.checks = {}; o.roster = {}; Object.keys(o.teams).forEach((k) => { o.teams[k].on = ''; });
@@ -349,8 +326,7 @@
         const el = e.target; if (!host.contains(el)) return;
         const ev = api.active(); if (!ev) return;
         const o = ops(ev);
-        if (el.dataset.op === 'slot') { o.slots[Number(el.dataset.slot)] = String(el.value || '').trim(); commit(); }
-        else if (el.dataset.op === 'lead') { const t = o.teams[el.dataset.team] = o.teams[el.dataset.team] || {}; t.lead = el.value; api.save(); }
+        if (el.dataset.op === 'lead') { const t = o.teams[el.dataset.team] = o.teams[el.dataset.team] || {}; t.lead = el.value; api.save(); }
     }
     function headForm(ev, divId) {
         const d = divisions(ev).find((x) => x.id === divId); if (!d) return;
@@ -396,27 +372,15 @@
         return L.join('\n');
     }
 
-    /* ---------------- สรุปส่ง LINE ---------------- */
-    function lineText(ev) {
-        const divs = divisions(ev), o = ops(ev), now = Date.now();
-        const total = divs.reduce((s, d) => s + d.items.length, 0), done = divs.reduce((s, d) => s + d.done, 0);
-        const cnt = { todo: 0, doing: 0, done: 0 }; divs.forEach((d) => { cnt[d.st]++; });
-        const L = ['📋 ความพร้อมทุกสายงาน | ' + ev.title, 'ภาพรวม ' + (total ? Math.round(done / total * 100) : 0) + '% (' + done + '/' + total + ') · เสร็จสิ้น ' + cnt.done + ' · กำลังปฏิบัติ ' + cnt.doing + ' · ยังไม่เริ่ม ' + cnt.todo, ''];
-        divs.forEach((d) => {
-            const mark = d.st === 'done' ? '✅' : d.st === 'doing' ? '🟡' : '⚪';
-            const left = d.items.filter((it) => !it.at).map((it) => it.t);
-            L.push(mark + ' ' + d.short + ' ' + d.done + '/' + d.items.length + (left.length && d.st !== 'todo' ? ' — ค้าง: ' + left.slice(0, 3).join(' / ') + (left.length > 3 ? ' (+' + (left.length - 3) + ')' : '') : ''));
-        });
-        if (isAssembly(ev)) {
-            const ins = ROSTER.filter((p) => o.roster[p.id]);
-            L.push('');
-            L.push('👮 งานสอบสวน รายงานตัว ' + ins.length + '/' + ROSTER.length + (ins.length ? ': ' + ins.map((p) => p.group ? 'ผช.พงส.' : p.name.split(' ')[0]).join(', ') : ''));
-            const missing = ROSTER.filter((p) => !o.roster[p.id]);
-            if (missing.length) L.push('   ยังไม่รายงานตัว: ' + missing.map((p) => p.group ? 'ผช.พงส. 4 นาย' : p.name).join(', '));
-        }
-        L.push(''); L.push('ข้อมูล ณ ' + api.thDateShort(now) + ' ' + api.hmTh(now) + ' · กระดานสถานการณ์ สน.ลำหิน');
-        return L.join('\n');
-    }
+
+    // ให้ ลำดับปฏิบัติ › รายคน (cmddocs.js) ใช้ผังกำลัง/รายงานตัวชุดเดียวกัน
+    window.LamhinOps = {
+        roster: () => ROSTER.map((p) => ({ id: p.id, plan: p.plan, group: !!p.group })),
+        assistants: () => ASSISTANTS.map((a) => ({ name: a[0], phone: a[1] })),
+        state: (ev) => { const o = ops(ev); return { roster: o.roster, slots: o.slots }; },
+        checkIn: (ev, rid) => { const o = ops(ev); if (o.roster[rid]) delete o.roster[rid]; else o.roster[rid] = new Date().toISOString(); CMD.save(); },
+        setSlot: (ev, i, name) => { const o = ops(ev); o.slots[i] = String(name || '').trim(); CMD.save(); }
+    };
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({

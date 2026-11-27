@@ -14,7 +14,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '4';
+    const VER = '5';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
@@ -868,7 +868,10 @@
         const d = new Date(), today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
         if (e.date === today) { const nx = steps.find((s) => s.at && s.at.getTime() >= d.getTime()); if (nx) nextIdx = nx.idx; }
         const slots = e.ops && Array.isArray(e.ops.slots) ? e.ops.slots.map((x) => String(x || '').trim()).filter(Boolean) : [];
-        return { L: L, steps: steps, P: P, nextIdx: nextIdx, slots: slots, doc: (id) => (id ? tplById(k, id) : null) };
+        // ผังกำลัง/รายงานตัวจากสายงาน (cmdops.js) — แสดงในมุมมองรายคน
+        const O = window.LamhinOps;
+        const roster = O ? O.roster() : [], ost = O ? O.state(e) : { roster: {}, slots: [] }, assist = O ? O.assistants() : [];
+        return { L: L, steps: steps, P: P, nextIdx: nextIdx, slots: slots, roster: roster, ost: ost, assist: assist, doc: (id) => (id ? tplById(k, id) : null) };
     }
     const planTime = (s, withDay) => (withDay && s.dayKey && !s.c && !s.n ? '<small>' + esc(s.dayLabel.replace(/^\S+\s/, '')) + '</small>' : '') + esc(s.time);
     function planRow(D, s, opt) {
@@ -889,6 +892,24 @@
         return '<div class="cmdd-seg" role="tablist" aria-label="มุมมองลำดับปฏิบัติ">' + b('time', 'fa-clock', 'เรียงเวลา') + b('person', 'fa-users', 'รายคน') + (opsReady() ? b('ops', 'fa-sitemap', 'สายงาน') : '') + '</div>';
     }
     const opsReady = () => !!(window.LamhinCmd && document.querySelector('.cmd-ext-pane[data-ext="ops"]'));
+    // ช่วง "หากฝ่าฝืน" = บันได 7 ขั้น — ไม่ไล่ซ้ำในหน้าจอ พาไปแท็บ "ขั้นตอน & กฎหมาย" (ฉบับพิมพ์ยังแสดงครบ)
+    function planJump() {
+        return '<div class="cmdd-pjump"><span><b>ทำตามบันได 7 ขั้น ห้ามข้ามขั้น</b><small>เจรจา → ประกาศ ม.21 → ยื่นศาล → คำบังคับ → พื้นที่ควบคุม ม.23 → จับกุม ม.24 · เหตุรุนแรง ม.25 สั่งยุติได้ทันที</small></span>' +
+            '<button type="button" class="cmd-btn sm gold" data-d="goto-ladder"><i class="fa-solid fa-stairs"></i> เปิดบันได 7 ขั้น</button></div>';
+    }
+    // ปุ่มรายงานตัว + ช่อง ผช.พงส. (ย้ายมาจากผังกำลังในสายงาน)
+    function planCheckIn(D, p) {
+        const R = D.roster.find((r) => r.plan === p.id);
+        if (!R) return { btn: '', slots: '' };
+        const at = D.ost.roster[R.id];
+        const btn = '<button type="button" class="cmdd-pin' + (at ? ' on' : '') + '" data-d="ops-in" data-rid="' + esc(R.id) + '" aria-pressed="' + (!!at) + '"><i class="fa-' + (at ? 'solid fa-circle-check' : 'regular fa-circle') + '"></i> ' + (at ? 'มาแล้ว ' + esc(api.hmTh(Date.parse(at))) : 'รายงานตัว') + '</button>';
+        const slots = R.group ? '<div class="cmdd-slots">' + [0, 1, 2, 3].map((i) => {
+            const nm = D.ost.slots[i] || '', ph = (D.assist.find((a) => a.name === nm) || {}).phone;
+            return '<div><input type="text" list="cmdd-assist" data-d="ops-slot" data-slot="' + i + '" value="' + esc(nm) + '" placeholder="' + (i + 1) + ') เลือกชื่อ ผช.พงส." aria-label="ผช.พงส. คนที่ ' + (i + 1) + '">' +
+                (ph ? '<a class="cmdd-ptel" href="tel:' + ph.replace(/\D/g, '') + '" aria-label="โทร ' + esc(nm) + '"><i class="fa-solid fa-phone"></i></a>' : '') + '</div>';
+        }).join('') + '</div>' : '';
+        return { btn: btn, slots: slots };
+    }
     function renderPlan(body, k) {
         if (ui.planBy === 'ops' && opsReady()) {
             body.innerHTML = '<div class="cmdd-ptools cmd-card">' + planSeg('ops') +
@@ -898,7 +919,7 @@
         const D = planData(k), byPerson = ui.planBy === 'person';
         let html = '';
         if (!byPerson) {
-            let ph = 0, day = null;
+            let ph = 0, day = null, jumped = false;
             D.steps.forEach((s) => {
                 if (s.ph !== ph) {
                     if (ph) html += '</section>';
@@ -909,6 +930,7 @@
                     html += '<section class="cmdd-pgrp cmd-card"><div class="cmdd-ph"><b class="n">' + ph + '</b><i class="fa-solid ' + P.icon + '"></i><span>' + esc(P.label) + '</span>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>';
                 }
                 if (ph === 1 && s.dayLabel !== day) { day = s.dayLabel; html += '<div class="cmdd-pday">' + esc(day) + '</div>'; }
+                if (s.ph === 3) { if (!jumped) { jumped = true; html += planJump(); } return; }
                 html += planRow(D, s, { who: true });
             });
             if (ph) html += '</section>';
@@ -917,12 +939,12 @@
                 const mine = D.steps.filter((s) => s.who.indexOf(p.id) !== -1);
                 if (!mine.length) return '';
                 const lead = mine.filter((s) => s.who[0] === p.id).length;
-                const extra = p.id === 'asst' && D.slots.length ? '<small>' + esc(D.slots.join(' · ')) + '</small>' : '';
-                return '<section class="cmdd-pgrp cmd-card"><div class="cmdd-pph"><i class="fa-solid ' + (p.team ? 'fa-people-group' : 'fa-user-shield') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(p.role) + '</small>' + extra + '</span>' +
-                    '<em>' + mine.length + ' งาน' + (lead && lead < mine.length ? ' · หลัก ' + lead : '') + '</em>' +
-                    (p.tel ? '<a class="cmdd-ptel" href="tel:' + p.tel.replace(/\D/g, '') + '" aria-label="โทร ' + esc(p.name) + '"><i class="fa-solid fa-phone"></i></a>' : '') + '</div>' +
+                const ci = planCheckIn(D, p);
+                return '<section class="cmdd-pgrp cmd-card"><div class="cmdd-pph"><i class="fa-solid ' + (p.team ? 'fa-people-group' : 'fa-user-shield') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(p.role) + '</small></span>' +
+                    '<em>' + mine.length + ' งาน' + (lead && lead < mine.length ? ' · หลัก ' + lead : '') + '</em>' + ci.btn +
+                    (p.tel ? '<a class="cmdd-ptel" href="tel:' + p.tel.replace(/\D/g, '') + '" aria-label="โทร ' + esc(p.name) + '"><i class="fa-solid fa-phone"></i></a>' : '') + '</div>' + ci.slots +
                     mine.map((s) => planRow(D, s, { who: false, me: p.id, day: true })).join('') + '</section>';
-            }).join('');
+            }).join('') + '<datalist id="cmdd-assist">' + D.assist.map((a) => '<option value="' + esc(a.name) + '">').join('') + '</datalist>';
         }
         body.innerHTML = '<div class="cmdd-ptools cmd-card">' + planSeg(byPerson ? 'person' : 'time') +
             '<button type="button" class="cmd-btn sm gold" data-d="print-plan"><i class="fa-solid fa-print"></i> พิมพ์</button>' +
@@ -1297,6 +1319,8 @@
         if (d === 'view') { ui.view = b.dataset.v; saveUi(); render(); syncOps(); }
         else if (d === 'plan-by') { ui.planBy = b.dataset.v; saveUi(); render(); syncOps(); }
         else if (d === 'print-plan') printPlan(k);
+        else if (d === 'goto-ladder') api.openTab('ladder');
+        else if (d === 'ops-in') { if (window.LamhinOps) { window.LamhinOps.checkIn(ev(), b.dataset.rid); render(); } }
         else if (d === 'plan-doc') { ui.view = 'docs'; ui.doc = b.dataset.id; saveUi(); render(); syncOps(); window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' }); }
         else if (d === 'chapter') { const id = b.dataset.id; if (ui.open[id]) delete ui.open[id]; else ui.open[id] = 1; saveUi(); render(); }
         else if (d === 'expand') { const all = Object.keys(ui.open).length >= window.LAMHIN_MANUAL.chapters.length; ui.open = {}; if (!all) window.LAMHIN_MANUAL.chapters.forEach((c) => { ui.open[c.id] = 1; }); saveUi(); render(); }
@@ -1364,6 +1388,10 @@
             el.classList.add('cmdd');
             el.addEventListener('click', onClick);
             el.addEventListener('input', onInput);
+            el.addEventListener('change', (e) => {   // เลือกชื่อ ผช.พงส. (รายคน)
+                const sl = e.target.closest('[data-d="ops-slot"]');
+                if (sl && window.LamhinOps) { window.LamhinOps.setSlot(ev(), Number(sl.dataset.slot), sl.value); render(); }
+            });
             if (window.ResizeObserver) {
                 ro = new ResizeObserver(() => {
                     const pv = host.querySelector('.cmdd-pv'), inn = host.querySelector('.cmdd-pv-in');
@@ -1387,6 +1415,14 @@
     // ใช้ร่วมกับโมดูลอื่น (เช่น บันทึก ศปก.) และใช้ทดสอบ: ได้ HTML หน้าพิมพ์ / ไฟล์ Word ของหนังสือตามรหัส
     window.LamhinDocs = {
         ready: deps,
+        // เปิดลำดับปฏิบัติตามมุมมอง ('time' | 'person' | 'ops') เช่น ปุ่ม "เปิดรายคน" ในสายงาน
+        plan: (by) => {
+            ui.view = 'plan'; ui.planBy = by || 'time'; saveUi();
+            if (api && api.openTab) api.openTab('docs');
+            if (built) render();
+            syncOps();
+            if (host) window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' });
+        },
         // เปิดหนังสือตามรหัสในมุมมอง "หนังสือ" (เช่น ปุ่มเปิดร่างคำร้องในสายงาน)
         open: (id) => {
             ui.view = 'docs'; ui.doc = id; saveUi();

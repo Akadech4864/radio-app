@@ -90,9 +90,9 @@
 .cmd-dot.yellow { background: var(--cmd-amber); color: var(--cmd-amber); }
 .cmd-dot.red { background: var(--cmd-red); color: var(--cmd-red); }
 
-.cmd-head, .cmd-top, .cmd-core, .cmd-ext, .cmd-tail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cmd-head, .cmd-top, .cmd-core, .cmd-ext { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .cmd-core[hidden], .cmd-top[hidden], .cmd-ext[hidden], .cmd-ext-pane[hidden] { display: none !important; }
-.cmd-ext:empty, .cmd-tail:empty { display: none; }
+.cmd-ext:empty { display: none; }
 .cmd-ext-pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
 /* ---------- แท็บย่อยในกระดาน (ติดขอบบนเมื่อเลื่อน) ---------- */
@@ -129,7 +129,7 @@
 .cmd-g-overview .cmd-alerts { grid-area: alerts; }
 .cmd-g-overview .cmd-quick { grid-area: quick; }
 @media (min-width: 860px) {
-    .cmd-root, .cmd-head, .cmd-top, .cmd-core, .cmd-ext, .cmd-tail, .cmd-ext-pane { gap: 14px; }
+    .cmd-root, .cmd-head, .cmd-top, .cmd-core, .cmd-ext, .cmd-ext-pane { gap: 14px; }
     .cmd-root { padding: 18px; }
     .cmd-grid { gap: 14px; }
     .cmd-g-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "hero hero" "count level" "alerts alerts" "quick quick"; }
@@ -149,7 +149,13 @@
 .cmd-almini[data-tone="red"] { --tone: var(--cmd-red); }
 .cmd-almini[data-tone="amber"] { --tone: var(--cmd-amber); }
 .cmd-almini[data-tone="green"] { --tone: var(--cmd-green); }
-.cmd-almini > i { flex: 0 0 18px; margin-top: 3px; color: var(--tone); text-align: center; }
+.cmd-almini { flex-direction: column; align-items: stretch; gap: 6px; }
+.cmd-almini-h { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 0; border: 0; background: none; text-align: left; }
+.cmd-almini-h > i:first-child { flex: 0 0 18px; margin-top: 3px; color: var(--tone); text-align: center; }
+.cmd-almini-chev { margin-left: auto; margin-top: 6px; font-size: 0.7rem; color: var(--cmd-mute); transition: transform 0.15s; }
+.cmd-almini.open .cmd-almini-chev { transform: rotate(180deg); }
+.cmd-almini > .cmd-al-ck { align-self: flex-start; margin-left: 28px; }
+.cmd-almini-more { margin-left: 28px; font-size: 0.78rem; line-height: 1.55; color: var(--cmd-ink); opacity: 0.86; }
 .cmd-almini span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cmd-almini b { font-size: 0.84rem; font-weight: 800; line-height: 1.4; }
 .cmd-almini small { font-size: 0.72rem; color: var(--tone); font-weight: 700; }
@@ -172,6 +178,7 @@
 
 /* ---------- การ์ดหัวเหตุการณ์ ---------- */
 .cmd-hero { position: relative; overflow: hidden; }
+.cmd-mute { color: var(--cmd-mute); font-weight: 500; }
 .cmd-hero::after {
     content: ''; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%;
     background: radial-gradient(circle, color-mix(in srgb, var(--cmd-lv) 35%, transparent), transparent 70%);
@@ -303,7 +310,7 @@
 .cmd-al-ck.on { color: #86EFAC; border-color: rgba(22, 163, 74, 0.6); background: rgba(22, 163, 74, 0.12); }
 
 /* ---------- ปุ่มลัดภาคสนาม ---------- */
-.cmd-maps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cmd-maps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
 .cmd-map {
     display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 16px; text-align: left;
     background: linear-gradient(135deg, rgba(0, 210, 255, 0.14), rgba(0, 210, 255, 0.04)); border: 1px solid rgba(0, 210, 255, 0.35);
@@ -395,7 +402,9 @@
     .cmd-digit { min-width: 52px; }
     .cmd-digit b { font-size: 1.6rem; }
     .cmd-hero h2 { font-size: 1.04rem; }
-    .cmd-tools .cmd-btn { flex: 1 1 calc(50% - 8px); }
+    .cmd-tools .cmd-btn { flex: 1 1 0; }
+    .cmd-tools .cmd-btn.ic { flex: 0 0 auto; padding-left: 12px; padding-right: 12px; }   /* Export/Import: ไอคอนอย่างเดียว */
+    .cmd-tools .cmd-btn.ic span { display: none; }
     .cmd-form { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 560px) {

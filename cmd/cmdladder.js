@@ -1,6 +1,6 @@
 /* =====================================================================
    4 ระยะการดูแลการชุมนุม + บันได 7 ขั้นตอนบังคับใช้กฎหมาย (พ.ร.บ.การชุมนุมสาธารณะฯ ม.21–24) + ทางลัดฉุกเฉิน ม.25
-   (Step 3 · แท็บ "ขั้นตอน & กฎหมาย" = 4 ระยะ · 7 ขั้น + ข้อกฎหมายชี้ขาดต่อท้าย (cmd.js วาดให้))
+   (Step 3 · แท็บ "ขั้นตอน & กฎหมาย" = 4 ระยะ · บันได 7 ขั้น ม.21–25)
    - ข้อมูลชุดเดียวกับแท็บ "บันทึก ศปก." (ev.log) — กดบันทึกที่นี่จะขึ้นใน timeline และเติมคำร้องศาลในแท็บเอกสารเอง
      รูปแบบรายการตรงกับ cmdlog.js: { id, at, kind, title, detail, crowd, vehicles, law, unit, place, by, level, evidence,
      deadlineAt, refId, ann, minutes, outcome } + ladder ('L1'–'L7' / 'S25') / phase (1–4) ของโมดูลนี้
@@ -25,19 +25,19 @@
     const PLACE = 'จุดชุมนุม ปากซอยคู้คลองสิบ 4';
 
     const PHASES = [
-        { n: 1, name: 'ขั้นเตรียมการ', icon: 'fa-clipboard-list', desc: 'ประสานเขต/บรรเทาสาธารณภัย/โรงพยาบาล ส่งหนังสือ ม.11 เตรียมกำลังพล อุปกรณ์ ข้อกฎหมาย และแฟ้มคำร้องศาล' },
-        { n: 2, name: 'ขั้นเผชิญเหตุ', icon: 'fa-person-walking', desc: 'เริ่มฝ่าฝืนเงื่อนไข/กฎหมาย → ส่งชุดเจรจา กระชับพื้นที่ตามแผน (ยังไม่สลายการชุมนุม) บันทึกภาพทุกขั้นตอน' },
-        { n: 3, name: 'ขั้นใช้กำลังคลี่คลายสถานการณ์', icon: 'fa-shield-halved', desc: 'ต้องพิสูจน์ได้ว่าทำครบจากเบาไปหนัก (เจรจา → ประกาศ → คำสั่งศาล → พื้นที่ควบคุม) ใช้กำลังเท่าที่จำเป็นตามแผน ม.21' },
-        { n: 4, name: 'ขั้นหลังการชุมนุม / ฟื้นฟู', icon: 'fa-broom', desc: 'คืนพื้นที่ ตรวจที่เกิดเหตุ รวบรวมพยานหลักฐาน 3 ช่วง คืนรถ/ทรัพย์ที่ไม่เกี่ยวข้อง สรุปสำนวนหรือบันทึกปิดภารกิจ' }
+        { n: 1, name: 'เตรียมการ', icon: 'fa-clipboard-list', desc: 'ประสานหน่วยงาน · ส่งหนังสือ ม.11 · เตรียมกำลังและแฟ้มศาล' },
+        { n: 2, name: 'เผชิญเหตุ', icon: 'fa-person-walking', desc: 'เริ่มฝ่าฝืน → เจรจา กระชับพื้นที่ (ยังไม่สลาย) · บันทึกภาพทุกขั้น' },
+        { n: 3, name: 'ใช้กำลังคลี่คลาย', icon: 'fa-shield-halved', desc: 'ไล่จากเบาไปหนัก: เจรจา → ประกาศ → ศาล → พื้นที่ควบคุม' },
+        { n: 4, name: 'หลังชุมนุม / ฟื้นฟู', icon: 'fa-broom', desc: 'คืนพื้นที่ · เก็บพยานหลักฐาน · สรุปสำนวน/ปิดภารกิจ' }
     ];
     const STEPS = [
-        { n: 1, name: 'เจรจา', law: 'หลักความได้สัดส่วน', who: 'ชุดเจรจา / งาน ป. / พงส.ส่วนหน้า', desc: 'เจรจาทำความเข้าใจกับผู้จัด (นายภูเบศ โพธิ์โซ๊ะ) และผู้ประสานงานทั้ง 2 ท่านเป็นลำดับแรก บันทึกภาพและเวลาการเจรจา', btn: 'บันทึกการเจรจา', repeat: true },
-        { n: 2, name: 'ประกาศให้แก้ไข / ให้เลิกการชุมนุม', law: 'ม.21 (2) / ม.21 (1)', who: 'รรท.ผกก. (เจ้าพนักงานดูแลฯ) + งานสืบสวนถ่ายคลิป Uncut', desc: 'ฝ่าฝืน ม.15 / 16 / 17 ช่วง 05.00–18.00 น. → ประกาศให้แก้ไข ม.21 (2) · เลย 18.00 น. (ฝ่าฝืน ม.18) → ประกาศให้เลิก ม.21 (1) · กำหนดเวลาให้ได้สัดส่วนกับจำนวนผู้ชุมนุมและเส้นทางออก ห้ามสั้นเกินวิสัย', btn: 'บันทึกการประกาศ', repeat: true, docs: 'เปิดบทประกาศ' },
-        { n: 3, name: 'ยื่นคำร้องไต่สวนฉุกเฉินต่อศาลแพ่งมีนบุรี', law: 'ม.21 วรรคสอง', who: 'พงส. ชุดเอกสาร + ธุรการขับรถไปศาล', desc: 'ครบกำหนดตามประกาศแล้วยังไม่แก้ไข/ไม่เลิก → ยื่นคำร้องพร้อมเอกสารแนบ 6 รายการ ระหว่างรอคำสั่งศาลใช้มาตรการเท่าที่จำเป็นตามแผน ม.21', btn: 'บันทึกการยื่นคำร้อง', docs: 'เปิดร่างคำร้องศาล' },
-        { n: 4, name: 'ศาลมีคำสั่ง / ออกคำบังคับให้เลิกการชุมนุม', law: 'ม.22', who: 'ศาลแพ่งมีนบุรี / พงส. รับคำสั่ง', desc: 'ศาลพิจารณาเป็นการด่วนและออกคำบังคับให้เลิกภายในเวลาที่ศาลกำหนด (ผู้ชุมนุมอุทธรณ์ได้ แต่ไม่ตัดขั้นตอนบังคับตามคำสั่ง)', btn: 'บันทึกคำสั่งศาล' },
-        { n: 5, name: 'ปิดประกาศคำสั่งศาล + รายงานศาลและรัฐมนตรี', law: 'ม.22 วรรคสี่', who: 'เจ้าพนักงานบังคับคดีร่วมกับตำรวจ / พงส.', desc: 'ปิดประกาศคำสั่งศาลในที่แลเห็นได้ง่าย ณ ปากซอยคู้คลองสิบ 4 หรือส่งมอบผู้จัด ประกาศให้ทราบทั่วกัน หากไม่เลิกให้รายงานศาลและรัฐมนตรี', btn: 'บันทึกการปิดประกาศ' },
-        { n: 6, name: 'ประกาศกำหนดพื้นที่ควบคุม', law: 'ม.23', who: 'เจ้าพนักงานดูแลฯ / ผบช.น. (ผู้ควบคุมสถานการณ์)', desc: 'กำหนดขอบเขตพื้นที่ควบคุม ห้ามเข้าโดยไม่ได้รับอนุญาต และสั่งให้ออกภายในเวลาที่กำหนด (กำหนดเป็นนาทีได้ เช่น 20–30 นาที ตามจำนวนคนและเส้นทางออก)', btn: 'บันทึกการประกาศพื้นที่ควบคุม', docs: 'เปิดบทประกาศ' },
-        { n: 7, name: 'พ้นกำหนด = ความผิดซึ่งหน้า: จับกุม / ค้น / ยึด', law: 'ม.24', who: 'ผบช.น. / ผู้ได้รับมอบหมาย / คฝ. / พงส. รับตัว', desc: 'ผู้ที่ยังอยู่หรือเข้าไปในพื้นที่ควบคุมโดยไม่ได้รับอนุญาตถือว่ากระทำความผิดซึ่งหน้า มีอำนาจจับกุม ค้น ยึด อายัด รื้อถอนทรัพย์สินที่ใช้ในการชุมนุม และสั่งห้ามกระทำการใด ๆ', btn: 'บันทึกการจับกุม/ยึด' }
+        { n: 1, name: 'เจรจา', law: 'หลักความได้สัดส่วน', who: 'ชุดเจรจา · งาน ป. · พงส.', desc: 'เจรจาผู้จัดและผู้ประสานงานก่อน · บันทึกภาพและเวลา', btn: 'บันทึกการเจรจา', repeat: true },
+        { n: 2, name: 'ประกาศให้แก้ไข / ให้เลิก', law: 'ม.21 (2) / (1)', who: 'รรท.ผกก. · สืบสวนถ่ายคลิป Uncut', desc: 'ฝ่าฝืน ม.15–17 → ให้แก้ไข ม.21 (2) · เลย 18.00 น. → ให้เลิก ม.21 (1) · ให้เวลาได้สัดส่วน', btn: 'บันทึกการประกาศ', repeat: true, docs: 'บทประกาศ' },
+        { n: 3, name: 'ยื่นคำร้องศาลแพ่งมีนบุรี', law: 'ม.21 ว.2', who: 'พงส.ชุดเอกสาร · ธุรการ', desc: 'ครบกำหนดแล้วไม่ปฏิบัติ → ยื่นคำร้อง + เอกสารแนบ 6 รายการ', btn: 'บันทึกการยื่นคำร้อง', docs: 'ร่างคำร้อง' },
+        { n: 4, name: 'ศาลสั่งให้เลิก', law: 'ม.22', who: 'พงส. รับคำสั่ง', desc: 'ศาลพิจารณาด่วน ออกคำบังคับให้เลิกภายในเวลาที่กำหนด', btn: 'บันทึกคำสั่งศาล' },
+        { n: 5, name: 'ปิดประกาศคำสั่งศาล', law: 'ม.22 ว.4', who: 'เจ้าพนักงานบังคับคดี · ตร.', desc: 'ปิดที่ปากซอย/ส่งผู้จัด · ไม่เลิก → รายงานศาลและรัฐมนตรี', btn: 'บันทึกการปิดประกาศ' },
+        { n: 6, name: 'ประกาศพื้นที่ควบคุม', law: 'ม.23', who: 'เจ้าพนักงานดูแลฯ · ผบช.น.', desc: 'กำหนดเขตห้ามเข้า สั่งให้ออกภายในเวลาที่กำหนด (เช่น 20–30 นาที)', btn: 'บันทึกพื้นที่ควบคุม', docs: 'บทประกาศ' },
+        { n: 7, name: 'พ้นกำหนด: จับ / ค้น / ยึด', law: 'ม.24', who: 'ผบช.น. · คฝ. · พงส. รับตัว', desc: 'ผู้ยังอยู่ในพื้นที่ = ความผิดซึ่งหน้า · จับ ค้น ยึด รื้อถอนทรัพย์ที่ใช้ชุมนุมได้', btn: 'บันทึกการจับกุม/ยึด' }
     ];
     // ข้อความประกาศ/ผลลัพธ์ ใช้คำเดียวกับแท็บบันทึก ศปก. (cmdlog.js)
     const ANN = {
@@ -120,34 +120,33 @@
         const curName = cur ? 'ระยะที่ ' + cur + ' ' + PHASES[cur - 1].name : 'ยังไม่ได้บันทึกระยะ';
 
         let h = '<section class="cmd-card"><div class="ld-top">' +
-            '<div class="ld-now"><small>ขั้นถัดไปตามบันได ม.21–24 · ' + esc(curName) + '</small>' +
+            '<div class="ld-now"><small>ขั้นถัดไป · ' + esc(curName) + '</small>' +
                 (next ? '<b>ขั้นที่ ' + next.n + ' · ' + esc(next.name) + '</b><span class="ld-law">' + esc(next.law) + '</span>' : '<b>บันทึกครบทั้ง 7 ขั้นแล้ว</b>') +
                 '<div class="ld-btns">' +
                     (next ? '<button type="button" class="cmd-btn gold" data-ld="step" data-n="' + next.n + '"><i class="fa-solid fa-pen-to-square"></i> ' + esc(next.btn) + '</button>' : '') +
                     '<button type="button" class="ld-sos" data-ld="s25"><i class="fa-solid fa-triangle-exclamation"></i> เหตุรุนแรง ม.25</button>' +
                 '</div>' +
                 '<div class="ld-btns">' +
-                    '<button type="button" class="cmd-btn line sm" data-ld="line"><i class="fa-brands fa-line"></i> คัดลอกลำดับขั้นส่ง LINE</button>' +
-                    '<button type="button" class="cmd-btn sm" data-ld="tab" data-tab="log"><i class="fa-solid fa-clipboard-list"></i> ดูบันทึก ศปก.</button>' +
+                    '<button type="button" class="cmd-btn sm" data-ld="tab" data-tab="log"><i class="fa-solid fa-clipboard-list"></i> บันทึก ศปก.</button>' +
                 '</div></div>' +
             '<div class="ld-timer" id="ld-timer"></div>' +
             '</div>' +
-            (s25.length ? '<div class="ld-note"><i class="fa-solid fa-triangle-exclamation"></i><span><b>สั่งยุติเหตุรุนแรงตาม ม.25 เมื่อ ' + esc(hm(s25[s25.length - 1].at)) + '</b> — ไม่ต้องรอคำสั่งศาล หากผู้ชุมนุมไม่ยุติการกระทำ ประกาศพื้นที่ควบคุม ม.23 และดำเนินการตาม ม.24 ได้ทันที (ผู้ไม่ปฏิบัติตามมีโทษตาม ม.33)</span></div>' : '') +
+            (s25.length ? '<div class="ld-note"><i class="fa-solid fa-triangle-exclamation"></i><span><b>สั่งยุติตาม ม.25 เมื่อ ' + esc(hm(s25[s25.length - 1].at)) + '</b> — ไม่ยุติ → ประกาศ ม.23 และดำเนินการ ม.24 ได้ทันที ไม่ต้องรอศาล</span></div>' : '') +
             '</section>';
 
         // ---- 4 ระยะ ----
-        h += '<section class="cmd-card"><div class="cmd-card-h"><i class="fa-solid fa-route"></i><h4>4 ระยะการดูแลการชุมนุม</h4><small>แตะเพื่อลงเวลาเข้าสู่ระยะ (ใช้บรรยายในสำนวน)</small></div><div class="ld-phases">' +
+        h += '<section class="cmd-card"><div class="cmd-card-h"><i class="fa-solid fa-route"></i><h4>4 ระยะ</h4><small>แตะเพื่อลงเวลา</small></div><div class="ld-phases">' +
             PHASES.map((p) => {
                 const first = L.find((x) => x.phase === p.n);
                 const cls = p.n === cur ? 'cur' : first ? 'done' : '';
                 return '<button type="button" class="ld-ph ' + cls + '" data-ld="phase" data-n="' + p.n + '" aria-pressed="' + (p.n === cur) + '">' +
                     '<span class="ld-ph-n"><i class="fa-solid ' + p.icon + '"></i><b>ระยะที่ ' + p.n + '<br>' + esc(p.name) + '</b></span>' +
                     '<small>' + esc(p.desc) + '</small>' +
-                    '<em>' + (p.n === cur ? '● ระยะปัจจุบัน · เริ่ม ' + esc(hm(L.filter((x) => x.phase === p.n).pop().at)) : first ? '✓ เริ่ม ' + esc(hm(first.at)) : 'แตะเพื่อเริ่มระยะนี้') + '</em></button>';
+                    '<em>' + (p.n === cur ? '● ปัจจุบัน · ' + esc(hm(L.filter((x) => x.phase === p.n).pop().at)) : first ? '✓ เริ่ม ' + esc(hm(first.at)) : 'แตะเพื่อเริ่ม') + '</em></button>';
             }).join('') + '</div></section>';
 
         // ---- บันได 7 ขั้น ----
-        h += '<section class="cmd-card"><div class="cmd-card-h"><i class="fa-solid fa-stairs"></i><h4>บันได 7 ขั้นตอนบังคับใช้กฎหมาย (ม.21–24)</h4><small>บันทึกตามลำดับ ห้ามข้ามขั้น เว้นแต่เหตุรุนแรง ม.25</small></div><ol class="ld-ladder">' +
+        h += '<section class="cmd-card"><div class="cmd-card-h"><i class="fa-solid fa-stairs"></i><h4>บันได 7 ขั้น (ม.21–24)</h4><small>ห้ามข้ามขั้น ยกเว้น ม.25</small></div><ol class="ld-ladder">' +
             STEPS.map((s) => {
                 const recs = R[s.n], done = recs.length > 0, isNext = next && next.n === s.n;
                 const cls = done ? 'done' : isNext ? 'next' : 'lock';
@@ -165,7 +164,7 @@
                         (s.docs ? '<button type="button" class="cmd-btn sm" data-ld="tab" data-tab="docs"><i class="fa-solid fa-file-lines"></i> ' + esc(s.docs) + '</button>' : '') +
                     '</div></div></li>';
             }).join('') + '</ol>' +
-            '<div class="ld-note"><i class="fa-solid fa-bolt"></i><span><b>ข้อยกเว้นเหตุรุนแรงฉุกเฉิน (ม.25):</b> ผู้ชุมนุมกระทำการรุนแรงอาจเป็นอันตรายแก่ชีวิต ร่างกาย จิตใจ หรือทรัพย์สินจนเกิดความวุ่นวาย เจ้าพนักงานดูแลฯ สั่งให้ยุติได้ทันที ไม่ปฏิบัติตามเข้าสู่ ม.23–24 ได้โดยไม่ต้องรอคำสั่งศาล (คัดค้านต่อศาลแพ่งได้ภายใน 30 วัน) · ความผิดอาญาร้ายแรงซึ่งหน้า (พกอาวุธ ทำร้ายร่างกาย วางเพลิง) จับกุมตาม ป.วิ.อ. ได้ทันที</span></div>' +
+            '<div class="ld-note"><i class="fa-solid fa-bolt"></i><span><b>ข้อยกเว้น ม.25:</b> ใช้ความรุนแรงจนวุ่นวาย → สั่งยุติได้ทันที · ไม่ปฏิบัติ → ม.23–24 ไม่ต้องรอศาล (คัดค้านได้ใน 30 วัน) · ความผิดร้ายแรงซึ่งหน้า จับตาม ป.วิ.อ. ได้ทันที</span></div>' +
             '</section>';
         host.innerHTML = h;
         tick(true);
@@ -177,7 +176,7 @@
         const ev = api.active(); if (!ev) return;
         const L = sorted(ev), a = openTimer(L), now = Date.now();
         if (!a) {
-            if (force || timerKey !== 'idle') { box.className = 'ld-timer idle'; box.innerHTML = '<small>ตัวจับเวลาครบกำหนดตามประกาศ</small><b>ยังไม่มีประกาศที่รอครบกำหนด</b><em>บันทึกขั้นที่ 2 หรือ 6 แล้วระบบจะนับถอยหลังให้</em>'; timerKey = 'idle'; }
+            if (force || timerKey !== 'idle') { box.className = 'ld-timer idle'; box.innerHTML = '<small>ตัวจับเวลาประกาศ</small><b>ยังไม่มีประกาศ</b><em>บันทึกขั้น 2 หรือ 6 เพื่อเริ่มนับ</em>'; timerKey = 'idle'; }
             return;
         }
         const due = Date.parse(a.deadlineAt), left = due - now, over = left <= 0;
@@ -188,7 +187,7 @@
             box.className = 'ld-timer' + (over ? ' due' : '');
             box.innerHTML = '<small>' + esc(label) + ' · ประกาศ ' + esc(hm(a.at)) + ' · ครบ ' + esc(hm(due)) + '</small><b id="ld-mmss"></b>' +
                 (over ? '<em>ครบกำหนดแล้ว — บันทึกผล</em><div class="ld-res">' + DUE_OUT.map((o, i) => '<button type="button" class="cmd-btn sm ' + (i === 1 ? 'danger' : i === 0 ? 'neon' : '') + '" data-ld="due" data-ref="' + esc(a.id) + '" data-i="' + i + '">' + esc(o) + '</button>').join('') + '</div>'
-                    : '<em>เหลือเวลาก่อนครบกำหนดตามประกาศ</em>');
+                    : '<em>ก่อนครบกำหนด</em>');
             timerKey = key;
         }
         const t = box.querySelector('#ld-mmss'); if (t) t.textContent = (over ? 'เลย ' : '') + mmss;
@@ -206,7 +205,6 @@
         else if (k === 's25') openSheet('s25');
         else if (k === 'phase') phaseClick(ev, Number(b.dataset.n));
         else if (k === 'tab') api.openTab(b.dataset.tab);
-        else if (k === 'line') api.copyText(lineText(ev));
         else if (k === 'due') {
             const i = Number(b.dataset.i), out = DUE_OUT[i];
             const a = logOf(ev).find((x) => x.id === b.dataset.ref);
@@ -383,25 +381,6 @@
     }
 
     /* ---------------- สรุปส่ง LINE ---------------- */
-    function lineText(ev) {
-        const L = sorted(ev), R = stepRecs(L), cur = curPhase(L), now = Date.now();
-        const out = ['⚖️ ลำดับการบังคับใช้กฎหมาย (พ.ร.บ.ชุมนุมฯ ม.21–25)', ev.title,
-            '📍 ' + (cur ? 'ระยะที่ ' + cur + ' ' + PHASES[cur - 1].name + ' (เริ่ม ' + hm(L.filter((x) => x.phase === cur).pop().at) + ')' : 'ยังไม่ได้บันทึกระยะ'), ''];
-        STEPS.forEach((s) => {
-            const r = R[s.n];
-            if (!r.length) { out.push('⬜ ' + s.n + ') ' + s.name + ' [' + s.law + ']'); return; }
-            r.forEach((x, i) => {
-                const res = x.deadlineAt ? L.find((y) => y.kind === 'deadline' && y.refId === x.id) : null;
-                out.push((i ? '   ' : '✅ ' + s.n + ') ') + hm(x.at) + ' ' + x.title + (res ? ' → ' + res.title + ' (' + hm(res.at) + ')' : ''));
-            });
-        });
-        const s25 = L.filter((x) => x.ann === 'a25');
-        if (s25.length) out.push('', '🚨 สั่งยุติเหตุรุนแรง ม.25 เมื่อ ' + hm(s25[s25.length - 1].at));
-        const a = openTimer(L);
-        if (a) out.push('', '⏱ รอครบกำหนด ' + ((ANN[a.ann] || {}).label || a.law) + ' เวลา ' + hm(a.deadlineAt) + (Date.parse(a.deadlineAt) < now ? ' (ครบกำหนดแล้ว)' : ''));
-        out.push('', 'ข้อมูล ณ ' + api.thDateShort(now) + ' ' + api.hmTh(now) + ' · กระดานสถานการณ์ สน.ลำหิน');
-        return out.join('\n');
-    }
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({

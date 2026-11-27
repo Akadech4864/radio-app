@@ -15,7 +15,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const BUILD = '6';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
+    const BUILD = '7';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
     const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.' + BUILD;
 
     const LAT = 13.883804945497769, LON = 100.80997853378307;
@@ -65,11 +65,10 @@
        ===================================================================== */
     function mount(el, A) {
         api = A; host = el;
-        const dms = toDms(LAT, 'N') + ' ' + toDms(LON, 'E');
         el.innerHTML =
             '<section class="cmd-card m3-card">' +
-                '<div class="cmd-card-h"><i class="fa-solid fa-cube"></i><h4>แผนที่ 3 มิติ จุดชุมนุม · รัศมี 300 ม.</h4>' +
-                '<small class="m3-hint">ลากหมุน · จีบ/ล้อเมาส์ซูม · ลากสองนิ้ว/คลิกขวาเลื่อน</small></div>' +
+                '<div class="cmd-card-h"><i class="fa-solid fa-cube"></i><h4>แผนที่ 3 มิติ · รัศมี 300 ม.</h4>' +
+                '<small class="m3-hint">ลากหมุน · จีบซูม · สองนิ้วเลื่อน</small></div>' +
                 '<div class="m3-bar">' +
                     '<div class="m3-seg" data-m3="time">' +
                         '<button type="button" data-time="dawn"><i class="fa-solid fa-moon"></i> 05.00</button>' +
@@ -94,26 +93,22 @@
                     '<button type="button" class="m3-max-btn" data-m3="max" title="เต็มจอ"><i class="fa-solid fa-expand"></i></button>' +
                     '<div class="m3-legend">' +
                         '<span><i style="background:#D4AF37"></i>จุดชุมนุม</span>' +
-                        '<span><i style="background:#F59E0B"></i>แนวเสาไฟฟ้าใหม่ (พิพาท)</span>' +
+                        '<span><i style="background:#F59E0B"></i>แนวเสาใหม่ (พิพาท)</span>' +
                         '<span><i style="background:#1e3a8a"></i>ตำรวจ คฝ.</span>' +
                         '<span><i style="background:#F28C28"></i>รถกระเช้า กฟน.</span>' +
                         '<span><i style="background:#2f6f95"></i>คลอง/คูน้ำ</span>' +
                     '</div>' +
                     '<div class="m3-scale" data-m3="scale"><span>-</span><i></i></div>' +
-                    '<div class="m3-attr">© OpenStreetMap contributors · อาคารจำลองตามภาพถ่ายดาวเทียม (โดยประมาณ)</div>' +
+                    '<div class="m3-attr">© OpenStreetMap contributors · อาคารจำลองโดยประมาณ</div>' +
                     '<div class="m3-loading" data-m3="loading"><span><i class="fa-solid fa-spinner fa-spin"></i> กำลังเตรียมแผนที่ 3 มิติ…</span></div>' +
                     '<div class="m3-note" data-m3="note" hidden></div>' +
                 '</div>' +
-                '<div class="m3-facts">' +
-                    '<div class="m3-fact"><b>พิกัดจุดชุมนุม (WGS84)</b><code>' + LAT + ', ' + LON + '</code><br>' + esc(dms) + '</div>' +
-                    '<div class="m3-fact"><b>ตำแหน่ง</b>พื้นที่ว่างปากซอยคู้คลองสิบ 4 (ฝั่งเหนือของซอย ห่างแนวซอย ~10 ม.) ห่างถนนคู้-คลองสิบ ~43 ม. · ตรงข้ามมัสยิดดารุ้ลมุกร้อดรอบีน (ลำหิน)</div>' +
-                    '<div class="m3-fact"><b>จำลองวันจริง เสาร์ 28 พ.ย. 69</b>มวลชน 100–200 คน · รถผู้ชุมนุม ~10 คัน จอดลานจอดรถมัสยิด · คฝ. สน.ลำหิน 1 หมู่ · รถสายตรวจ 2 คัน · ศปก.ส่วนหน้า ที่ลานจอดรถมัสยิด · รถกระเช้า กฟน. ที่แนวเสาใหม่</div>' +
-                '</div>' +
                 '<div class="m3-links">' +
+                    '<span class="m3-ll"><i class="fa-solid fa-location-dot"></i><code>' + LAT.toFixed(6) + ', ' + LON.toFixed(6) + '</code></span>' +
                     '<button type="button" class="cmd-btn sm neon" data-m3="copyll"><i class="fa-solid fa-copy"></i> คัดลอกพิกัด</button>' +
-                    '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + LAT + ',' + LON + '"><i class="fa-solid fa-street-view"></i> เปิด Street View จุดนี้</a>' +
-                    '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=map&center=' + LAT + ',' + LON + '&zoom=18&basemap=satellite"><i class="fa-solid fa-satellite"></i> เปิดแผนที่ดาวเทียม</a>' +
-                    '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + LAT + ',' + LON + '"><i class="fa-solid fa-map-pin"></i> ปักหมุด Google Maps</a>' +
+                    '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + LAT + ',' + LON + '"><i class="fa-solid fa-street-view"></i> Street View</a>' +
+                    '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=map&center=' + LAT + ',' + LON + '&zoom=18&basemap=satellite"><i class="fa-solid fa-satellite"></i> ดาวเทียม</a>' +
+                    '<a class="cmd-btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + LAT + ',' + LON + '"><i class="fa-solid fa-map-pin"></i> Google Maps</a>' +
                 '</div>' +
             '</section>';
 
@@ -147,10 +142,6 @@
         else if (k === 'copyll') api.copyText(LAT + ', ' + LON);
     }
 
-    function toDms(v, pos) {
-        const a = Math.abs(v), d = Math.floor(a), mf = (a - d) * 60, m = Math.floor(mf), s = (mf - m) * 60;
-        return d + '°' + String(m).padStart(2, '0') + '\'' + s.toFixed(1).padStart(4, '0') + '"' + pos;
-    }
 
     function toggleMax() {
         const st = ui.stage;
@@ -997,7 +988,7 @@
         addLabel('บ้านเลขที่ 42 ซอยคู้คลองสิบ 4', 'ลานโล่งมีรั้ว', -2, 45, 5, '', 300);
         addLabel('นาข้าว', '', 160, -70, 2, 'field', 800);
         addLabel('นาข้าว', '', -110, -50, 2, 'field', 600);
-        if (anim.newPoles && anim.newPoles.length) { const p = anim.newPoles[Math.min(4, anim.newPoles.length - 1)]; addLabel('แนวเสาไฟฟ้าใหม่ (พิพาท)', 'ชิดขอบซอย ระยะราว 600 ม.', p.x, p.y, 14.5, 'pole', 1200); }
+        if (anim.newPoles && anim.newPoles.length) { const p = anim.newPoles[Math.min(4, anim.newPoles.length - 1)]; addLabel('แนวเสาใหม่ (พิพาท)', 'ยาว ~600 ม.', p.x, p.y, 14.5, 'pole', 1200); }
         if (anim.meaAt) addLabel('รถกระเช้า กฟน. (จุดจั้มไฟ)', '', anim.meaAt.x, anim.meaAt.y, 12.5, 'mea', 360);
         addLabel('คฝ. สน.ลำหิน 1 หมู่', '', 2, -7.6, 3.6, 'police', 260);
         addLabel('รถสายตรวจ', '', -28, -4.2, 3.4, 'police', 200);
@@ -1005,7 +996,7 @@
         addLabel('จุดจราจร', '', -44, -9, 3.2, 'police', 220);
         addLabel('รถผู้ชุมนุม ~10 คัน', 'จอดลานจอดรถมัสยิด', -69, 2.7, 3.4, '', 320);
         anim.crowdLabel = addLabel('มวลชนจำลอง ' + crowdN + ' คน', '', 4, 1, 4.2, '', 240);
-        addLabel('↗ สน.ลำหิน ~2.8 กม. ทางรถ', 'คฝ. บก.น.3 1 หมวด สแตนด์บาย · หนุนใน 30 นาที', m2[0] + 18, Math.min(330, m2[1] + 150), 4, 'dir');
+        addLabel('↗ สน.ลำหิน 2.8 กม.', 'คฝ. 1 หมวด สแตนด์บาย', m2[0] + 18, Math.min(330, m2[1] + 150), 4, 'dir');
         [100, 200, 300].forEach((r) => addLabel(r + ' ม.', '', r * 0.707, -r * 0.707, 2, 'ring'));
         anim.zoneLabel = addLabel('ตัวอย่างขอบเขตพื้นที่ควบคุม (ม.23)', 'แสดงเมื่อระดับสีแดง', 4, -70, 3, 'zone');
     }
