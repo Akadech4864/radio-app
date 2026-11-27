@@ -157,3 +157,46 @@
     .cmdd-ch-h em { display: none; }
     .cmdd-cards { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- ลำดับปฏิบัติ (ตารางเรียงเวลา / รายคน) ---------- */
+.cmdd-ptools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px; }
+.cmdd-ptools .cmdd-seg { flex: 1 1 180px; }
+.cmdd-psum { flex: 1 1 100%; padding: 0 4px; font-size: 0.74rem; line-height: 1.5; color: var(--cmd-mute); }
+.cmdd-psum i { color: var(--cmd-neon); }
+.cmdd-pgrp { padding: 0; overflow: hidden; }
+.cmdd-ph { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 11px 14px 8px; font-size: 0.88rem; font-weight: 800; color: var(--cmd-gold); }
+.cmdd-ph b.n { flex: 0 0 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 0.76rem; color: var(--cmd-bg); background: var(--cmd-gold); }
+.cmdd-ph > i { color: var(--cmd-mute); font-size: 0.82rem; }
+.cmdd-ph small { margin-left: auto; font-size: 0.74rem; font-weight: 700; color: var(--cmd-mute); }
+.cmdd-pday { padding: 6px 14px 4px; font-size: 0.72rem; font-weight: 800; color: #93A7C4; border-top: 1px solid var(--cmd-line); }
+.cmdd-pr { display: grid; grid-template-columns: 92px minmax(0, 1fr) minmax(150px, 32%) 34px; gap: 4px 12px; align-items: start; padding: 9px 14px; border-top: 1px solid var(--cmd-line); }
+.cmdd-pday + .cmdd-pr { border-top: 0; }
+.cmdd-pr.nowho { grid-template-columns: 92px minmax(0, 1fr) 34px; }
+.cmdd-pr.next { background: rgba(0, 210, 255, 0.07); box-shadow: inset 3px 0 0 var(--cmd-neon); }
+.cmdd-pt { padding-top: 1px; font-size: 0.86rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.35; color: var(--cmd-ink); }
+.cmdd-pt small { display: block; font-size: 0.68rem; font-weight: 700; color: var(--cmd-mute); }
+.cmdd-pt i { display: block; margin-top: 2px; font-style: normal; font-size: 0.66rem; font-weight: 800; color: var(--cmd-neon); }
+.cmdd-pr.cond .cmdd-pt { color: #F3D774; }
+.cmdd-pw { min-width: 0; }
+.cmdd-pw b { display: block; font-size: 0.88rem; font-weight: 700; line-height: 1.45; color: var(--cmd-ink); }
+.cmdd-pw small { display: block; margin-top: 1px; font-size: 0.76rem; line-height: 1.45; color: var(--cmd-mute); }
+.cmdd-ptag { margin-left: 6px; padding: 1px 6px; border-radius: 6px; font-style: normal; font-size: 0.66rem; font-weight: 800; color: #93A7C4; background: rgba(148, 178, 222, 0.12); vertical-align: 1px; }
+.cmdd-po { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.cmdd-who { padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; line-height: 1.5; white-space: nowrap; color: #C9D6EA; background: rgba(148, 178, 222, 0.1); }
+.cmdd-who.main { color: #0A1628; background: #D4AF37; }
+.cmdd-pdoc { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--cmd-line2); background: rgba(0, 210, 255, 0.06); color: var(--cmd-neon); cursor: pointer; }
+.cmdd-pdoc:hover { background: rgba(0, 210, 255, 0.16); }
+.cmdd-pph { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+.cmdd-pph > i { flex: 0 0 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: var(--cmd-gold); background: rgba(212, 175, 55, 0.12); }
+.cmdd-pph span { flex: 1 1 auto; min-width: 0; }
+.cmdd-pph b { display: block; font-size: 0.92rem; font-weight: 800; line-height: 1.35; }
+.cmdd-pph small { display: block; font-size: 0.74rem; line-height: 1.45; color: var(--cmd-mute); }
+.cmdd-pph em { font-style: normal; font-size: 0.72rem; font-weight: 700; color: var(--cmd-mute); white-space: nowrap; }
+.cmdd-ptel { flex: 0 0 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: rgba(22, 163, 74, 0.85); text-decoration: none; }
+@media (max-width: 640px) {
+    .cmdd-pr, .cmdd-pr.nowho { grid-template-columns: 62px minmax(0, 1fr) 34px; gap: 5px 8px; padding: 9px 10px; }
+    .cmdd-po { grid-column: 2 / 3; grid-row: 2; }
+    .cmdd-pdoc, .cmdd-pdoc0 { grid-column: 3; grid-row: 1 / span 2; }
+    .cmdd-ph small { flex: 1 1 100%; margin-left: 32px; }
+    .cmdd-pph em { display: none; }
+}

@@ -112,6 +112,14 @@
 .ops-team select { width: 100%; min-height: 36px; padding: 5px 9px; border-radius: 9px; font: inherit; font-size: 15px; color: #E8EFF9; background: rgba(10, 22, 40, 0.75); border: 1px solid rgba(148, 178, 222, 0.26); color-scheme: dark; }
 .ops-hint { margin: 0 0 10px; font-size: 0.78rem; color: #93A7C4; line-height: 1.5; }
 
+/* ---------- งานสอบสวน: แจ้งกลุ่ม LINE / เอกสารแนบคำร้องศาล 6 รายการ ---------- */
+.ops-sub { margin-top: 14px; padding: 11px 12px; border-radius: 14px; background: rgba(10, 22, 40, 0.4); border: 1px solid rgba(148, 178, 222, 0.14); }
+.ops-sub-h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ops-sub-h > i { color: #D4AF37; }
+.ops-sub-h > b { flex: 1 1 auto; font-size: 0.88rem; font-weight: 800; }
+.ops-sub-h > em { font-style: normal; font-size: 0.78rem; font-weight: 800; color: #00D2FF; font-variant-numeric: tabular-nums; }
+.ops-sub .ops-hint { margin-bottom: 8px; }
+
 /* ---------- มือถือ: สรุปกระชับ (วงแหวนข้างข้อความ · ทางลัด 2 คอลัมน์) ---------- */
 @media (max-width: 560px) {
     .ops-sum { gap: 10px; }

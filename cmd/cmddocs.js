@@ -14,14 +14,22 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC ? SRC.replace(/[^/]*(\?.*)?$/, '') : new URL('cmd/', location.href).href;   // .../cmd/
-    const VER = '3';
+    const VER = '4';
     const UI_KEY = 'lamhin_cmd_docs_ui';
     const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const JSZIP_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
     const PX_CM = 96 / 2.54;
 
     let api = null, host = null, lastEvId = null, depsP = null, built = false;
-    let ui = (function () { try { return Object.assign({ view: 'manual', doc: '', open: {}, prompt: 34, mob: 'form' }, JSON.parse(localStorage.getItem(UI_KEY) || '{}')); } catch (e) { return { view: 'manual', doc: '', open: {}, prompt: 34, mob: 'form' }; } })();
+    // มุมมองเริ่มต้น = ลำดับปฏิบัติ (ตารางเรียงเวลา) · ui.pv = 2 ย้ายผู้ที่เคยเปิดคู่มือไว้มาที่ลำดับปฏิบัติครั้งเดียว
+    const UI_DEF = { view: 'plan', planBy: 'time', doc: '', open: {}, prompt: 34, mob: 'form', pv: 2 };
+    let ui = (function () {
+        try {
+            const s = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
+            if (s.pv !== 2) { s.view = 'plan'; s.planBy = 'time'; s.pv = 2; }
+            return Object.assign({}, UI_DEF, s);
+        } catch (e) { return Object.assign({}, UI_DEF); }
+    })();
     function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ไม่จำก็ได้ */ } }
 
     /* ---------------- โหลดไฟล์ข้อมูล ---------------- */
@@ -34,7 +42,8 @@
     }
     function deps() {
         if (!depsP) {
-            depsP = Promise.all(['docs/garuda.js', 'docs/manual.js', 'docs/templates.js'].map((f) => loadScript(BASE + f + '?v=' + VER)))
+            // โหลดฟอนต์เอกสารก่อนจัดหน้า เพื่อให้วัดความกว้างจริงได้ (realCm)
+            depsP = Promise.all(['docs/garuda.js', 'docs/manual.js', 'docs/templates.js', 'docs/plan.js'].map((f) => loadScript(BASE + f + '?v=' + VER)).concat([fontsReady()]))
                 .catch((e) => { depsP = null; throw e; });
         }
         return depsP;
@@ -59,6 +68,21 @@
             w += ch === ' ' ? 0.13 : /[0-9๐-๙]/.test(ch) ? 0.27 : /[a-zA-Z]/.test(ch) ? 0.2 : 0.22;
         });
         return Math.round(w * 100) / 100;
+    }
+    // ความกว้างจริงของ TH SarabunPSK 16 pt — ค่า advance width จากไฟล์ฟอนต์ cmd/fonts/THSarabunPSK.woff (unitsPerEm 1000)
+    // ใช้จัดกึ่งกลางชื่อ/ตำแหน่งใต้คำลงท้ายและเส้นลงชื่อ ให้ตรงทั้งหน้าพิมพ์และ Word โดยไม่ขึ้นกับการโหลดฟอนต์
+    // (ค่าประมาณ textCm นับจุด "." 0.22 ซม. แต่จริง 0.091 ซม.) · ช่อง [กรอก] นับเป็นเส้นจุด
+    const ADV_ASCII = [216,147,208,403,361,585,423,120,190,190,285,411,162,216,162,270,362,362,362,362,362,362,362,362,362,362,162,162,411,411,411,283,536,400,378,406,431,351,351,425,441,147,264,376,353,548,441,486,378,487,379,352,379,466,390,588,418,366,424,196,262,196,412,352,204,344,401,331,401,374,206,311,390,143,155,316,200,601,390,398,401,401,217,282,238,390,341,507,318,337,321,208,153,208,416];
+    const ADV_THAI = [386,378,382,393,393,408,294,367,377,380,384,519,519,425,425,343,461,532,543,391,391,378,430,335,420,428,428,381,381,447,447,425,400,375,322,378,381,425,335,393,438,381,427,454,387,372,391,357,0,316,316,0,0,0,0,0,0,0,-1,-1,-1,-1,411,203,377,237,242,244,205,399,0,0,0,0,0,0,0,0,450,449,449,449,449,449,449,449,449,449,449,522,697];
+    const ADV_MISC = { 0xA0: 216, 0x2013: 360, 0x2014: 720, 0x2026: 479, 0x200B: 0 };
+    function realCm(text) {
+        let u = 0;
+        for (const ch of String(text || '').replace(PH_RE, PH_DOTS)) {
+            const c = ch.codePointAt(0);
+            const a = c >= 0x20 && c <= 0x7E ? ADV_ASCII[c - 0x20] : c >= 0x0E01 && c <= 0x0E5B ? ADV_THAI[c - 0x0E01] : ADV_MISC[c];
+            u += a == null || a < 0 ? 390 : a;
+        }
+        return u * 16 * 0.0352778 / 1000;
     }
     const DOC_RANK_RE = /^((?:ว่าที่\s*)?(?:พล\.ต\.[อทต]\.|[พร]\.ต\.[อทต]\.|ส\.ต\.[อทต]\.|จ\.ส\.ต\.|ด\.ต\.|พล\.[อทต]\.|[พร]\.[อทต]\.|จ\.ส\.อ\.|ส\.อ\.|[พร]\.ต\.|พลตำรวจ(?:เอก|โท|ตรี)|พันตำรวจ(?:เอก|โท|ตรี)|ร้อยตำรวจ(?:เอก|โท|ตรี)|ดาบตำรวจ|จ่าสิบตำรวจ|สิบตำรวจ(?:เอก|โท|ตรี))(?:\s*หญิง)?)(?:\s+|(?<=\.)\s*|$)/;
     function splitRank(name) {
@@ -218,7 +242,7 @@
             h += '<p class="ds-j' + (b.t === 'h' ? ' ds-b' : '') + '"' + (b.t === 'h' || bi === eb.length - 1 ? ' data-kn="1"' : '') + ' style="margin-top:' + (b.t === 'p' ? 6 : 0) + 'pt;text-indent:' + cm(b.t === 'i' ? 3 : 2.5) + '">' + T(b.text) + '</p>';
         });
         const closing = String(F.closing || 'ขอแสดงความนับถือ').trim();
-        const signCenter = center + textCm(th(closing)) / 2;
+        const signCenter = center + realCm(th(closing)) / 2;
         h += signBlock(F, closing, center, signCenter, th, W, 12);
         const owner = lines(F.owner);
         if (owner.length) h += blank(3) + owner.map((l) => '<div>' + T(l) + '</div>').join('');
@@ -235,8 +259,8 @@
     function signBlock(F, closing, closeAt, signCenter, th, W, beforePt) {
         const T = tf(th);
         const rank = String(F.signRank || '').trim();
-        const signLeft = Math.max(0, 2 * signCenter - W);
-        let s = '<div class="ds-keep"><div style="margin-top:' + beforePt + 'pt;padding-left:' + cm(closeAt) + '">' + T(closing) + '</div>' + blank(rank ? 2 : 3);
+        const signLeft = Math.max(-2.5, 2 * signCenter - W);
+        let s ='<div class="ds-keep"><div style="margin-top:' + beforePt + 'pt;padding-left:' + cm(closeAt) + '">' + T(closing) + '</div>' + blank(rank ? 2 : 3);
         if (rank) s += '<div style="padding-left:' + cm(Math.max(0, signCenter - 3.0)) + '">' + T(rank) + '</div>';
         s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">' + T('(' + (F.signName || '..................................................') + ')') + '</div>';
         lines(F.signPos).forEach((l) => { s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">' + T(l) + '</div>'; });
@@ -282,7 +306,7 @@
         ab.forEach((l, i) => { h += '<p class="ds-j"' + (i === ab.length - 1 ? ' data-kn="1"' : '') + ' style="margin-top:6pt;text-indent:2.5cm">' + T(l) + '</p>'; });
         const given = String(F.given || '').trim();
         const givenAt = 4.5;
-        const signCenter = givenAt + textCm(th(given)) / 2;
+        const signCenter = givenAt + realCm(th(given)) / 2;
         h += signBlock(F, given, givenAt, signCenter, th, W, 12);
         return sheet('announce', h);
     }
@@ -290,7 +314,8 @@
     /* ---------- คำร้องต่อศาลแพ่ง (ม.21 ว.2 · ม.22) — เอกสารฉบับเดียว: คำร้อง (หัวแบบพิมพ์ศาล) ไม่มีชุดเอกสารแบบคำร้องขอหมายค้น ---------- */
     const PET_DOTS = '........................................';
     const PET_SIGN_AT = 5;
-    const petSignLeft = () => Math.max(0, 2 * (PET_SIGN_AT + textCm('ลงชื่อ ') + textCm(PET_DOTS) / 2) - 16);
+    // ชื่อ/ตำแหน่งกึ่งกลางใต้เส้นจุดลงชื่อ: กล่องกึ่งกลางเริ่มที่ left ถึงขอบขวา → จุดกึ่งกลาง = (left + 16) / 2
+    const petSignLeft = () => Math.max(-2.5, 2 * (PET_SIGN_AT + realCm('ลงชื่อ ') + realCm(PET_DOTS) / 2) - 16);
     const courtName = (F) => String(F.court || '').replace(/^ศาล\s*/, '');
     function rPetition(t, F, th) {
         const T = tf(th);
@@ -644,7 +669,7 @@
         const W = 16;
         parts.push(pX('<w:keepNext/>' + spX(beforePt) + '<w:ind w:left="' + tw(closeAt) + '"/>', run(closing)));
         const rank = String(F.signRank || '').trim();
-        const signLeft = Math.max(0, 2 * signCenter - W);
+        const signLeft = Math.max(-2.5, 2 * signCenter - W);
         for (let k = 0; k < (rank ? 2 : 3); k++) parts.push(pX('<w:keepNext/>' + spX(0)));
         if (rank) parts.push(pX('<w:keepNext/>' + spX(0) + '<w:ind w:left="' + tw(Math.max(0, signCenter - 3.0)) + '"/>', run(rank)));
         const pos = lines(F.signPos);
@@ -674,7 +699,7 @@
             parts.push(pX(keep + spX(b.t === 'p' ? 6 : 0) + '<w:ind w:left="0" w:firstLine="' + tw(b.t === 'i' ? 3 : 2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(b.text, b.t === 'h')));
         });
         const closing = String(F.closing || 'ขอแสดงความนับถือ').trim();
-        parts.push(signX(F, closing, center, center + textCm(th(closing)) / 2, th, 12));
+        parts.push(signX(F, closing, center, center + realCm(th(closing)) / 2, th, 12));
         const owner = lines(F.owner);
         if (owner.length) { for (let k = 0; k < 3; k++) parts.push(pX(spX(0))); owner.forEach((l) => parts.push(pX(spX(0), run(l)))); }
         if (t.receipt && (F.receiptText || '').trim()) {
@@ -723,7 +748,7 @@
         parts.push(pX(spX(4) + '<w:ind w:left="' + tw(5.75) + '" w:right="' + tw(5.75) + '"/><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>'));
         lines(F.body).forEach((l) => parts.push(pX(spX(6) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(l))));
         const given = String(F.given || '').trim();
-        parts.push(signX(F, given, 4.5, 4.5 + textCm(th(given)) / 2, th, 12));
+        parts.push(signX(F, given, 4.5, 4.5 + realCm(th(given)) / 2, th, 12));
         return { xml: parts.join(''), margin: [2.5, 2, 2, 3], pageNumbers: false };
     }
     // ชุดเอกสารยื่นศาลแพ่ง (.docx): หน้าละส่วน · ใบปะหน้าเป็นส่วนสุดท้ายแนวนอน
@@ -809,7 +834,7 @@
        ===================================================================== */
     function render() {
         if (!host || !api) return;
-        if (!window.LAMHIN_DOC_KIT || !window.LAMHIN_MANUAL) {
+        if (!window.LAMHIN_DOC_KIT || !window.LAMHIN_MANUAL || !window.LAMHIN_PLAN) {
             host.innerHTML = '<div class="cmd-card"><div class="cmd-empty"><span class="spin"></span> กำลังโหลดคู่มือและแบบหนังสือ…</div></div>';
             deps().then(render).catch(() => { host.innerHTML = '<div class="cmd-card"><div class="cmd-empty">โหลดไฟล์คู่มือไม่สำเร็จ — ตรวจการเชื่อมต่อแล้วกดแท็บนี้อีกครั้ง</div></div>'; });
             return;
@@ -818,8 +843,9 @@
         const k = kit();
         const nav = '<div class="cmdd-top cmd-card">' +
             '<div class="cmdd-seg" role="tablist">' +
-            '<button type="button" role="tab" class="' + (ui.view === 'manual' ? 'on' : '') + '" data-d="view" data-v="manual"><i class="fa-solid fa-book-open"></i> คู่มือปฏิบัติ</button>' +
-            '<button type="button" role="tab" class="' + (ui.view === 'docs' ? 'on' : '') + '" data-d="view" data-v="docs"><i class="fa-solid fa-file-pen"></i> หนังสือราชการ</button></div>' +
+            '<button type="button" role="tab" class="' + (ui.view === 'plan' ? 'on' : '') + '" data-d="view" data-v="plan"><i class="fa-solid fa-list-ol"></i> ลำดับปฏิบัติ</button>' +
+            '<button type="button" role="tab" class="' + (ui.view === 'manual' ? 'on' : '') + '" data-d="view" data-v="manual"><i class="fa-solid fa-book-open"></i> คู่มือ</button>' +
+            '<button type="button" role="tab" class="' + (ui.view === 'docs' ? 'on' : '') + '" data-d="view" data-v="docs"><i class="fa-solid fa-file-pen"></i> หนังสือ</button></div>' +
             '<button type="button" class="cmd-btn sm" data-d="prompt-menu"><i class="fa-solid fa-microphone-lines"></i> อ่านหน้างาน</button>' +
             '</div>';
         host.innerHTML = nav + '<div class="cmdd-body"></div>';
@@ -827,7 +853,97 @@
         if (ui.view === 'docs') {
             const t = ui.doc ? tplById(k, ui.doc) : null;
             if (t) renderEditor(body, k, t); else renderList(body, k);
-        } else renderManual(body, k);
+        } else if (ui.view === 'manual') renderManual(body, k);
+        else renderPlan(body, k);
+    }
+
+    /* ---------------- ลำดับปฏิบัติ: ใคร ทำอะไร เมื่อไร (เรียงเวลา / รายคน) ---------------- */
+    function planData(k) {
+        const L = window.LAMHIN_PLAN, e = ev();
+        const steps = L.build(e);
+        const P = {}; L.people.forEach((p) => { P[p.id] = p; });
+        // ขั้นถัดไป (เฉพาะวันชุมนุม): ขั้นแรกที่ยังไม่ถึงเวลา
+        let nextIdx = -1;
+        const d = new Date(), today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        if (e.date === today) { const nx = steps.find((s) => s.at && s.at.getTime() >= d.getTime()); if (nx) nextIdx = nx.idx; }
+        const slots = e.ops && Array.isArray(e.ops.slots) ? e.ops.slots.map((x) => String(x || '').trim()).filter(Boolean) : [];
+        return { L: L, steps: steps, P: P, nextIdx: nextIdx, slots: slots, doc: (id) => (id ? tplById(k, id) : null) };
+    }
+    const planTime = (s, withDay) => (withDay && s.dayKey && !s.c && !s.n ? '<small>' + esc(s.dayLabel.replace(/^\S+\s/, '')) + '</small>' : '') + esc(s.time);
+    function planRow(D, s, opt) {
+        const t = D.doc(s.doc);
+        const who = opt.who ? '<div class="cmdd-po">' + s.who.map((id, i) => {
+            const p = D.P[id]; if (!p) return '';
+            return '<span class="cmdd-who' + (i ? '' : ' main') + '" title="' + esc(p.name + ' · ' + p.role) + '">' + esc(p.short) + '</span>';
+        }).join('') + '</div>' : '';
+        const tag = opt.me ? (s.who[0] === opt.me ? '' : '<em class="cmdd-ptag">ร่วม</em>') : '';
+        return '<div class="cmdd-pr' + (s.ph === 3 ? ' cond' : '') + (s.idx === D.nextIdx ? ' next' : '') + (opt.who ? '' : ' nowho') + '">' +
+            '<div class="cmdd-pt">' + planTime(s, opt.day) + (s.idx === D.nextIdx ? '<i>ถัดไป</i>' : '') + '</div>' +
+            '<div class="cmdd-pw"><b>' + esc(s.what) + tag + '</b>' + (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</div>' + who +
+            (t ? '<button type="button" class="cmdd-pdoc" data-d="plan-doc" data-id="' + esc(s.doc) + '" title="เปิดหนังสือ: ' + esc(t.title) + '" aria-label="เปิดหนังสือ ' + esc(t.title) + '"><i class="fa-solid fa-file-lines"></i></button>' : '<span class="cmdd-pdoc0"></span>') +
+            '</div>';
+    }
+    function renderPlan(body, k) {
+        const D = planData(k), byPerson = ui.planBy === 'person';
+        let html = '';
+        if (!byPerson) {
+            let ph = 0, day = null;
+            D.steps.forEach((s) => {
+                if (s.ph !== ph) {
+                    if (ph) html += '</section>';
+                    ph = s.ph; day = null;
+                    const P = D.L.phases[ph];
+                    const days = ph === 1 ? D.steps.filter((x) => x.ph === 1).map((x) => x.dayLabel) : [];
+                    const sub = ph === 1 ? (days[0] === days[days.length - 1] ? days[0] : days[0] + ' – ' + days[days.length - 1]) : ph === 2 ? s.dayLabel : '';
+                    html += '<section class="cmdd-pgrp cmd-card"><div class="cmdd-ph"><b class="n">' + ph + '</b><i class="fa-solid ' + P.icon + '"></i><span>' + esc(P.label) + '</span>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>';
+                }
+                if (ph === 1 && s.dayLabel !== day) { day = s.dayLabel; html += '<div class="cmdd-pday">' + esc(day) + '</div>'; }
+                html += planRow(D, s, { who: true });
+            });
+            if (ph) html += '</section>';
+        } else {
+            html = D.L.people.map((p) => {
+                const mine = D.steps.filter((s) => s.who.indexOf(p.id) !== -1);
+                if (!mine.length) return '';
+                const lead = mine.filter((s) => s.who[0] === p.id).length;
+                const extra = p.id === 'asst' && D.slots.length ? '<small>' + esc(D.slots.join(' · ')) + '</small>' : '';
+                return '<section class="cmdd-pgrp cmd-card"><div class="cmdd-pph"><i class="fa-solid ' + (p.team ? 'fa-people-group' : 'fa-user-shield') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(p.role) + '</small>' + extra + '</span>' +
+                    '<em>' + mine.length + ' งาน' + (lead && lead < mine.length ? ' · หลัก ' + lead : '') + '</em>' +
+                    (p.tel ? '<a class="cmdd-ptel" href="tel:' + p.tel.replace(/\D/g, '') + '" aria-label="โทร ' + esc(p.name) + '"><i class="fa-solid fa-phone"></i></a>' : '') + '</div>' +
+                    mine.map((s) => planRow(D, s, { who: false, me: p.id, day: true })).join('') + '</section>';
+            }).join('');
+        }
+        body.innerHTML = '<div class="cmdd-ptools cmd-card"><div class="cmdd-seg" role="tablist" aria-label="มุมมองลำดับปฏิบัติ">' +
+            '<button type="button" role="tab" class="' + (byPerson ? '' : 'on') + '" data-d="plan-by" data-v="time"><i class="fa-solid fa-clock"></i> เรียงเวลา</button>' +
+            '<button type="button" role="tab" class="' + (byPerson ? 'on' : '') + '" data-d="plan-by" data-v="person"><i class="fa-solid fa-users"></i> รายคน</button></div>' +
+            '<button type="button" class="cmd-btn sm gold" data-d="print-plan"><i class="fa-solid fa-print"></i> พิมพ์</button>' +
+            '<small class="cmdd-psum">' + D.steps.length + ' ขั้นตอน ตั้งแต่รับแจ้งจนปิดภารกิจ · ชื่อแรก = ผู้รับผิดชอบหลัก · <i class="fa-solid fa-file-lines"></i> เปิดหนังสือที่ใช้ในขั้นนั้น</small></div>' + html;
+    }
+    function printPlan(k) {
+        const D = planData(k), byPerson = ui.planBy === 'person', e = ev();
+        const names = (ids) => ids.map((id) => (D.P[id] ? D.P[id].name : '')).filter(Boolean).join(', ');
+        const tr = (s, who) => '<tr><td class="t">' + (s.dayKey && !s.c && !s.n ? esc(s.dayLabel.replace(/^\S+\s/, '')) + '<br>' : '') + esc(s.time) + '</td><td><b>' + esc(s.what) + '</b>' + (s.note ? '<br><small>' + esc(s.note) + '</small>' : '') + '</td>' + (who ? '<td>' + esc(names(s.who)) + '</td>' : '') + '</tr>';
+        let body = '<div class="pp"><h1>ลำดับปฏิบัติงานสอบสวน — ' + esc(e.title || 'การชุมนุมสาธารณะ') + '</h1><p class="sub">' + esc((D.steps.find((s) => s.ph === 2) || {}).dayLabel || '') + ' · เรียง' + (byPerson ? 'รายผู้รับผิดชอบ' : 'ตามเวลา') + '</p>';
+        if (!byPerson) {
+            body += '<table><thead><tr><th style="width:2.4cm">เวลา</th><th>ขั้นตอน</th><th style="width:5.4cm">ผู้รับผิดชอบ</th></tr></thead><tbody>';
+            let ph = 0;
+            D.steps.forEach((s) => { if (s.ph !== ph) { ph = s.ph; body += '<tr class="ph"><td colspan="3">' + ph + '. ' + esc(D.L.phases[ph].label) + '</td></tr>'; } body += tr(s, true); });
+            body += '</tbody></table>';
+        } else {
+            D.L.people.forEach((p) => {
+                const mine = D.steps.filter((s) => s.who.indexOf(p.id) !== -1); if (!mine.length) return;
+                body += '<h3>' + esc(p.name) + ' <small>' + esc(p.role) + (p.tel ? ' · โทร. ' + esc(p.tel) : '') + '</small></h3><table><tbody>' + mine.map((s) => tr(s, false)).join('') + '</tbody></table>';
+            });
+        }
+        body += '</div>';
+        printHtml(body, {
+            title: 'ลำดับปฏิบัติ', thai: false, pageNumbers: false,
+            extraCss: '@page{size:A4;margin:1.6cm 1.5cm 1.6cm 2cm}' +
+                '.pp{font-family:"THSarabunDoc","TH SarabunPSK",Sarabun,sans-serif;font-size:15pt;line-height:1.2;color:#000}.pp h1{font-size:20pt;text-align:center;margin:0}.pp .sub{text-align:center;margin:0 0 8pt}' +
+                '.pp table{width:100%;border-collapse:collapse;margin:0 0 6pt}.pp th,.pp td{border:1px solid #777;padding:2pt 5pt;vertical-align:top;text-align:left}.pp th{background:#eef;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+                '.pp td.t{white-space:nowrap;font-weight:700}.pp tr{break-inside:avoid}.pp small{font-size:13pt;color:#333}.pp tr.ph td{background:#0A1628;color:#fff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+                '.pp h3{font-size:16pt;margin:10pt 0 3pt;break-after:avoid}.pp h3 small{font-weight:400}'
+        });
     }
 
     /* ---------------- คู่มือ ---------------- */
@@ -1045,6 +1161,8 @@
         wrap.innerHTML = '<div class="cmdd-tp-bar"><b>' + esc(title) + '</b><span>' +
             '<button type="button" data-tp="minus" aria-label="ตัวเล็กลง">A−</button><button type="button" data-tp="plus" aria-label="ตัวใหญ่ขึ้น">A+</button>' +
             '<button type="button" data-tp="scroll"><i class="fa-solid fa-play"></i> เลื่อนอัตโนมัติ</button>' +
+            '<button type="button" data-tp="copy"><i class="fa-solid fa-copy"></i> คัดลอก</button>' +
+            '<button type="button" data-tp="print"><i class="fa-solid fa-print"></i> พิมพ์ A4</button>' +
             '<button type="button" data-tp="close" aria-label="ปิด"><i class="fa-solid fa-xmark"></i></button></span></div>' + varRow +
             '<div class="cmdd-tp-scroll"><div class="cmdd-tp-text" style="font-size:' + ui.prompt + 'px"></div></div>';
         document.body.appendChild(wrap);
@@ -1064,6 +1182,15 @@
             } else if (a === 'scroll') {
                 if (auto) { clearInterval(auto); auto = 0; b.innerHTML = '<i class="fa-solid fa-play"></i> เลื่อนอัตโนมัติ'; }
                 else { auto = setInterval(() => { sc.scrollTop += 1; }, 45); b.innerHTML = '<i class="fa-solid fa-pause"></i> หยุด'; }
+            } else if (a === 'copy') {   // คัดลอกข้อความที่แสดงอยู่ (รวมเวลา/พฤติการณ์ที่กรอกแล้ว) ไปวาง LINE/เอกสาร
+                api.copyText(wrap.querySelector('.cmdd-tp-text').innerText.replace(/\n{3,}/g, '\n\n').trim());
+            } else if (a === 'print') {  // พิมพ์บทพูด/ประกาศที่แสดงอยู่เป็น A4 (ตัว TH Sarabun 16pt)
+                printHtml('<div class="tpp"><h1>' + esc(title) + '</h1>' + wrap.querySelector('.cmdd-tp-text').innerHTML + '</div>', {
+                    title: title,
+                    extraCss: '@page{size:A4;margin:2cm 2cm 2cm 3cm}.tpp{font-family:"THSarabunDoc","TH SarabunPSK",Sarabun,sans-serif;font-size:16pt;line-height:1.35;color:#000}' +
+                        '.tpp h1{font-size:20pt;text-align:center;margin:0 0 10pt}.tpp p{margin:0 0 6pt;text-indent:2.5cm}.tpp .cmdd-tp-hd{text-indent:0;font-weight:700}' +
+                        '.tpp ol,.tpp ul{margin:4pt 0 4pt 20pt;padding:0}.tpp li{margin:0 0 4pt}.tpp table{width:100%;border-collapse:collapse}.tpp th,.tpp td{border:1px solid #777;padding:2pt 5pt;text-align:left;vertical-align:top}'
+                });
             } else if (a === 'now' && tpl) { fillNow(tpl); wrap.querySelectorAll('.cmdd-tp-vars input').forEach((i) => { i.value = fields(tpl)[i.dataset.k] || ''; }); draw(); }
         });
         wrap.addEventListener('input', (e) => {
@@ -1159,6 +1286,9 @@
         const d = b.dataset.d, k = kit();
         const t = ui.doc ? tplById(k, ui.doc) : null;
         if (d === 'view') { ui.view = b.dataset.v; saveUi(); render(); }
+        else if (d === 'plan-by') { ui.planBy = b.dataset.v; saveUi(); render(); }
+        else if (d === 'print-plan') printPlan(k);
+        else if (d === 'plan-doc') { ui.view = 'docs'; ui.doc = b.dataset.id; saveUi(); render(); window.scrollTo({ top: Math.max(0, host.getBoundingClientRect().top + window.scrollY - 70), behavior: 'smooth' }); }
         else if (d === 'chapter') { const id = b.dataset.id; if (ui.open[id]) delete ui.open[id]; else ui.open[id] = 1; saveUi(); render(); }
         else if (d === 'expand') { const all = Object.keys(ui.open).length >= window.LAMHIN_MANUAL.chapters.length; ui.open = {}; if (!all) window.LAMHIN_MANUAL.chapters.forEach((c) => { ui.open[c.id] = 1; }); saveUi(); render(); }
         else if (d === 'edit-sec') editSection(b.dataset.id);

@@ -16,7 +16,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.2';   // เลขหลังจุด: เพิ่มทุกครั้งที่แก้ cmdops.css
+    const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.3';   // เลขหลังจุด: เพิ่มทุกครั้งที่แก้ cmdops.css
     const UI_KEY = 'lamhin_cmd_ops_ui';
     (function () {
         if (document.querySelector('link[data-opscss]')) return;
@@ -129,6 +129,15 @@
         { id: 't6', name: 'สรุปสำนวนและประสานอัยการ', sub: 'เตรียมแผนกรณีผู้ต้องหากลับคำให้การ', def: 'ร.ต.อ.เชี่ยวชาญชัย ทีหนองสังข์' }
     ];
     const ST = { todo: 'ยังไม่เริ่ม', doing: 'กำลังปฏิบัติ', done: 'เสร็จสิ้น' };
+    // เอกสารแนบท้ายคำร้องศาลแพ่งมีนบุรี 6 รายการ (เลขตรงกับคำร้องในแท็บ "คู่มือ & เอกสาร")
+    const ATTACH = [
+        ['att-1', 'สำเนาคำสั่งแต่งตั้ง รรท.ผกก.สน.ลำหิน', 'ยืนยันฐานะเจ้าพนักงานดูแลการชุมนุมสาธารณะ (ม.19) · เอกสารแนบหมายเลข 1'],
+        ['att-2', 'สำเนาหนังสือแจ้งการชุมนุมสาธารณะ ลงวันที่ 26 พ.ย. 69', 'เอกสารแนบหมายเลข 2'],
+        ['att-3', 'สำเนา ปจว.ข้อ 3 ลง 26 พ.ย. 69 เลขรับ EV60026256900637SJ', 'เอกสารแนบหมายเลข 3'],
+        ['att-4', 'สำเนาหนังสือแจ้งเงื่อนไข ม.11 พร้อมหลักฐานเซ็นรับ และหนังสือแจ้งเขต ม.19', 'เอกสารแนบหมายเลข 4'],
+        ['att-5', 'ภาพถ่ายสี A4 (ระบุวันเวลา/คำบรรยาย) แผนที่สังเขป และ Flash Drive/CD คลิปเหตุการณ์', 'เอกสารแนบหมายเลข 5'],
+        ['att-6', 'ต้นฉบับประกาศ ม.21 และคลิป Uncut ขณะอ่านประกาศ', 'เห็นเวลาเริ่มและเวลาครบกำหนดชัดเจน · เอกสารแนบหมายเลข 6']
+    ];
 
     /* ---------------- สถานะ ---------------- */
     let api = null, host = null, lastKey = '';
@@ -156,6 +165,11 @@
             items.forEach((it) => {
                 const al = it.alert && (ev.alerts || []).find((a) => a.id === it.alert);
                 it.at = o.checks[it.id] || (al && al.done ? (al.doneAt || 'yes') : '');
+                if (it.id === 'qa-2' && asm) {
+                    const got = ATTACH.filter((a) => o.checks[a[0]]);
+                    it.sub = 'เอกสารแนบ ' + got.length + '/6 · ติ๊กรายการย่อยในหัวข้อด้านล่าง';
+                    if (!it.at && got.length === ATTACH.length) it.at = got.map((a) => o.checks[a[0]]).sort().pop();
+                }
             });
             const done = items.filter((it) => it.at).length;
             const pct = items.length ? Math.round(done / items.length * 100) : 0;
@@ -221,7 +235,21 @@
     }
     function qaExtra(o) {
         const view = ui.view === 'teams' ? 'teams' : 'roster';
-        let h = '<div style="margin-top:14px"><div class="ops-seg">' +
+        const got = ATTACH.filter((a) => o.checks[a[0]]).length;
+        let h = '<div class="ops-sub">' +
+            '<div class="ops-sub-h"><i class="fa-brands fa-line"></i><b>แจ้งกลุ่ม LINE งานสอบสวน</b></div>' +
+            '<p class="ops-hint">ข้อความสรุปเหตุการณ์ + ผังกำลัง (ชื่อทางการ) + การเตรียมตัวก่อนเริ่มภารกิจ — กดแล้ววางในกลุ่มได้ทันที</p>' +
+            '<button type="button" class="cmd-btn line sm" data-op="grpline"><i class="fa-brands fa-line"></i> คัดลอกข้อความแจ้งกลุ่ม LINE</button></div>';
+        h += '<div class="ops-sub">' +
+            '<div class="ops-sub-h"><i class="fa-solid fa-folder-open"></i><b>เอกสารแนบคำร้องศาลแพ่งมีนบุรี 6 รายการ</b><em>' + got + '/6</em>' +
+            '<button type="button" class="cmd-btn sm" data-op="tab" data-tab="docs"><i class="fa-solid fa-gavel"></i> เปิดร่างคำร้อง</button></div>' +
+            '<ul class="ops-list">' + ATTACH.map((a) => {
+                const at = o.checks[a[0]];
+                return '<li><button type="button" class="ops-item' + (at ? ' on' : '') + '" data-op="att" data-item="' + a[0] + '" aria-pressed="' + (!!at) + '">' +
+                    '<span class="ops-box"><i class="fa-solid fa-check"></i></span><span class="ops-item-txt">' + esc(a[1]) + '<small>' + esc(a[2]) + '</small></span>' +
+                    (at ? '<span class="ops-when">' + esc(when(at)) + '</span>' : '') + '</button></li>';
+            }).join('') + '</ul></div>';
+        h += '<div style="margin-top:14px"><div class="ops-seg">' +
             '<button type="button" data-op="view" data-view="roster" class="' + (view === 'roster' ? 'on' : '') + '"><i class="fa-solid fa-id-badge"></i> ผังกำลังวันนี้</button>' +
             '<button type="button" data-op="view" data-view="teams" class="' + (view === 'teams' ? 'on' : '') + '"><i class="fa-solid fa-people-group"></i> คณะทำงาน 6 ชุด (กรณีขยายตัว)</button></div>';
         if (view === 'roster') {
@@ -290,6 +318,9 @@
             o.custom[b.dataset.div] = list.filter((c) => c.id !== b.dataset.item); delete o.checks[b.dataset.item];
             commit(); return;
         }
+        if (op === 'att') { const id = b.dataset.item; if (o.checks[id]) delete o.checks[id]; else o.checks[id] = now; commit(); return; }
+        if (op === 'tab') { api.openTab(b.dataset.tab); return; }
+        if (op === 'grpline') { api.copyText(groupLine(ev)); return; }
         if (op === 'in') { const id = b.dataset.person; if (o.roster[id]) delete o.roster[id]; else o.roster[id] = now; commit(); return; }
         if (op === 'team') { const t = o.teams[b.dataset.team] = o.teams[b.dataset.team] || {}; if (t.lead === undefined) t.lead = (TEAMS.find((x) => x.id === b.dataset.team) || {}).def || ''; t.on = t.on ? '' : now; commit(); return; }
         if (op === 'head') { headForm(ev, b.dataset.div); return; }
@@ -329,6 +360,36 @@
                 { label: '<i class="fa-solid fa-floppy-disk"></i> บันทึก', cls: 'gold', run: (close, box) => { o.heads[divId] = { name: api.formVal(box, 'name'), pos: api.formVal(box, 'pos'), phone: api.formVal(box, 'phone') }; commit(); close(); } }
             ]
         });
+    }
+
+    /* ---------------- ข้อความแจ้งกลุ่ม LINE งานสอบสวน (ผังกำลังชื่อทางการ) ---------------- */
+    function groupLine(ev) {
+        const o = ops(ev), s = api.startOf(ev);
+        const day = s ? api.thDateLong(s) : '';
+        const L = ['📢 แจ้งเตรียมกำลังงานสอบสวน | ภารกิจดูแลการชุมนุมสาธารณะ',
+            (day ? day + ' ' : '') + '(ปล่อยแถว ' + api.hmStr(ev.muster) + ' ' + (ev.musterLabel || 'หน้า สน.ลำหิน').replace(/^รวมพล\/ปล่อยแถว\s*/, '') + ')', '',
+            '🔹 สรุปเหตุการณ์',
+            '• ' + ev.title,
+            '• วันเวลา/สถานที่: ' + api.hmStr(ev.start) + '–' + api.hmStr(ev.end) + ' ณ ' + (ev.place || '-')];
+        if (ev.crowd) L.push('• รูปแบบ: ' + ev.crowd);
+        if (ev.ref) L.push('• หลักฐานรับแจ้ง: ' + ev.ref);
+        if (isAssembly(ev)) L.push('• จุดเสี่ยง: ช่วงการไฟฟ้าเข้าจั้มไฟ อาจปิดถนนหรือขัดขวางการทำงาน (ม.31 วรรคสอง โทษผู้จัดจำคุกไม่เกิน 10 ปี)');
+        L.push('', '🔹 การจัดกำลังงานสอบสวน');
+        ROSTER.forEach((p) => {
+            if (p.group) {
+                const names = o.slots.filter(Boolean);
+                L.push('• ' + p.name + (names.length ? ' (' + names.join(', ') + ')' : '') + ': ' + p.role + ' ' + p.time + ' — ' + p.duty);
+            } else L.push('• ' + p.name + ' ' + p.pos + ' โทร. ' + p.phone + ': ' + p.role + ' ' + p.time);
+        });
+        const got = ATTACH.filter((a) => o.checks[a[0]]).length;
+        L.push('', '🔹 การเตรียมตัวก่อนเริ่มภารกิจ',
+            '1. ธุรการ: เตรียมแฟ้มเอกสารแนบคำร้องศาล 6 รายการ (พร้อมแล้ว ' + got + '/6) ไฟล์ร่างคำร้อง/ประกาศ ตรวจรถไปศาลแพ่งมีนบุรี และเบอร์เวรไต่สวนฉุกเฉิน',
+            '2. จุดเน้นกฎหมายหน้างาน: ห้ามใช้โทรโข่ง 05.00–06.00 น. (ม.15(6)) · เฝ้าระวังการปิดถนน/ขัดขวางระบบส่งกระแสไฟฟ้า (ม.31 ว.2) · เลิกตามแจ้ง ' + api.hmStr(ev.end),
+            '3. มีเหตุ/ฝ่าฝืน: ประสานสืบสวนเก็บคลิปครบทุกขั้น (เจรจา–ประกาศ–ครบกำหนด) ตรวจที่เกิดเหตุควบคู่สอบผู้กล่าวหา และรายงานเหตุเป็นระยะ',
+            '4. ศปก.ส่วนหน้า: ลานจอดรถมัสยิดดารุ้ลมุกร้อดรอบีน (ตรงข้ามจุดชุมนุม)');
+        const ll = String(ev.latlng || '').match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+        if (ll) L.push('📍 พิกัดจุดชุมนุม ' + ll[1] + ', ' + ll[2] + ' · https://www.google.com/maps/search/?api=1&query=' + ll[1] + ',' + ll[2]);
+        return L.join('\n');
     }
 
     /* ---------------- สรุปส่ง LINE ---------------- */
