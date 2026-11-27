@@ -40,6 +40,19 @@
 .cl-q i { font-size: 1.05rem; color: var(--tone); }
 .cl-q:hover { border-color: color-mix(in srgb, var(--tone) 55%, transparent); }
 .cl-q:active { transform: scale(0.96); }
+.cl-quick { grid-auto-flow: row dense; }
+/* ปุ่มเข้าสู่มาตรการเบา → หนัก (บันได 7 ขั้น): ปุ่มเด่นเต็มแถว */
+.cl-q.go { grid-column: span 3; flex-direction: row; gap: 10px; min-height: 56px; padding: 8px 12px; font-size: 0.86rem; font-weight: 800;
+    background: color-mix(in srgb, var(--tone) 14%, transparent); border-color: color-mix(in srgb, var(--tone) 55%, transparent); }
+.cl-q.go i { font-size: 1.3rem; }
+.cl-q.go span { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.cl-q small { font-size: 0.7rem; font-weight: 700; color: var(--cmd-mute); }
+/* หัวแผงมาตรการเบา → หนัก */
+.cl-ladbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 5px; border-radius: 14px; background: rgba(10, 22, 40, 0.6); border: 1px solid var(--cmd-line); }
+.cl-back { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--cmd-line);
+    background: rgba(148, 178, 222, 0.08); color: var(--cmd-ink); font: inherit; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
+.cl-back:hover { border-color: rgba(148, 178, 222, 0.45); }
+.cl-ladbar b { display: inline-flex; align-items: center; gap: 6px; font-size: 0.92rem; font-weight: 800; color: var(--cmd-gold); }
 
 /* Timeline */
 .cl-tl-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }

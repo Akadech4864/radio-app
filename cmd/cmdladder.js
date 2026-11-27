@@ -1,6 +1,6 @@
 /* =====================================================================
    4 ระยะการดูแลการชุมนุม + บันได 7 ขั้นตอนบังคับใช้กฎหมาย (พ.ร.บ.การชุมนุมสาธารณะฯ ม.21–24) + ทางลัดฉุกเฉิน ม.25
-   (Step 3 · แท็บย่อย "ขั้นตอน & กฎหมาย" ในแท็บ บันทึก ศปก. (host: 'log') = 4 ระยะ · บันได 7 ขั้น ม.21–25 · ขั้นตอนพับได้ เปิดทีละขั้น)
+   (Step 3 · แผง "มาตรการจากเบาไปหนัก" ในแท็บ บันทึก ศปก. (เปิดจากปุ่ม "เข้าสู่มาตรการ เบา → หนัก") (host: 'log') = 4 ระยะ · บันได 7 ขั้น ม.21–25 · ขั้นตอนพับได้ เปิดทีละขั้น)
    - ข้อมูลชุดเดียวกับแท็บ "บันทึก ศปก." (ev.log) — กดบันทึกที่นี่จะขึ้นใน timeline และเติมคำร้องศาลในแท็บเอกสารเอง
      รูปแบบรายการตรงกับ cmdlog.js: { id, at, kind, title, detail, crowd, vehicles, law, unit, place, by, level, evidence,
      deadlineAt, refId, ann, minutes, outcome } + ladder ('L1'–'L7' / 'S25') / phase (1–4) ของโมดูลนี้
@@ -126,9 +126,6 @@
                 '<div class="ld-btns">' +
                     (next ? '<button type="button" class="cmd-btn gold" data-ld="step" data-n="' + next.n + '"><i class="fa-solid fa-pen-to-square"></i> ' + esc(next.btn) + '</button>' : '') +
                     '<button type="button" class="ld-sos" data-ld="s25"><i class="fa-solid fa-triangle-exclamation"></i> เหตุรุนแรง ม.25</button>' +
-                '</div>' +
-                '<div class="ld-btns">' +
-                    '<button type="button" class="cmd-btn sm" data-ld="tab" data-tab="log"><i class="fa-solid fa-clipboard-list"></i> บันทึก ศปก.</button>' +
                 '</div></div>' +
             '<div class="ld-timer" id="ld-timer"></div>' +
             '</div>' +
@@ -394,7 +391,7 @@
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({
-        id: 'ladder', label: 'ขั้นตอน & กฎหมาย', icon: 'fa-stairs', order: 18, host: 'log',
+        id: 'ladder', label: 'มาตรการเบา → หนัก', icon: 'fa-stairs', order: 18, host: 'log',
         mount: function (el, A) { api = A; host = el; el.addEventListener('click', onClick); render(); },
         update: function (ev) {   // บันทึกจากแท็บอื่น (เช่น บันทึก ศปก.) → วาดใหม่เมื่อเห็นอยู่
             const L = ev && Array.isArray(ev.log) ? ev.log : [];

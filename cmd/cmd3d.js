@@ -15,7 +15,7 @@
 
     const SRC = (document.currentScript && document.currentScript.src) || '';
     const BASE = SRC.replace(/[^/]*(\?.*)?$/, '');
-    const BUILD = '8';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
+    const BUILD = '9';   // เพิ่มเลขนี้ทุกครั้งที่แก้ cmd3d.css / cmd3d-data.js (กันเบราว์เซอร์จำไฟล์เก่า)
     const VER = ((SRC.match(/[?&]v=([^&]+)/) || [])[1] || '1') + '.' + BUILD;
 
     const LAT = 13.883804945497769, LON = 100.80997853378307;
@@ -102,6 +102,8 @@
                     '<div class="m3-attr">© OpenStreetMap contributors · อาคารจำลองโดยประมาณ</div>' +
                     '<div class="m3-loading" data-m3="loading"><span><i class="fa-solid fa-spinner fa-spin"></i> กำลังเตรียมแผนที่ 3 มิติ…</span></div>' +
                     '<div class="m3-note" data-m3="note" hidden></div>' +
+                    // แผงข้อมูลการชุมนุม (เห็นเฉพาะตอนเต็มจอ) — แตะหัวแผงเพื่อย่อ/ขยาย
+                    '<div class="m3-info" data-m3="info"></div>' +
                 '</div>' +
                 '<div class="m3-links">' +
                     '<span class="m3-ll"><i class="fa-solid fa-location-dot"></i><code>' + LAT.toFixed(6) + ', ' + LON.toFixed(6) + '</code></span>' +
@@ -140,6 +142,7 @@
         else if (k === 'compass') { want.az = 0; idleAt = Date.now(); }
         else if (k === 'max') toggleMax();
         else if (k === 'copyll') api.copyText(LAT + ', ' + LON);
+        else if (k === 'infoToggle') { infoOpen = !infoOpen; paintInfo(); }
     }
 
 
@@ -147,16 +150,65 @@
         const st = ui.stage;
         const doc = document;
         if (doc.fullscreenElement === st) { doc.exitFullscreen(); return; }
-        if (st.classList.contains('m3-max')) { st.classList.remove('m3-max'); setTimeout(resize, 50); return; }
+        if (st.classList.contains('m3-max')) { st.classList.remove('m3-max'); setFs(); setTimeout(resize, 50); return; }
         if (st.requestFullscreen && !/iPhone|iPad/i.test(navigator.userAgent)) {
-            st.requestFullscreen().catch(() => { st.classList.add('m3-max'); setTimeout(resize, 50); });
-        } else { st.classList.add('m3-max'); setTimeout(resize, 50); }
+            st.requestFullscreen().catch(() => { st.classList.add('m3-max'); setFs(); setTimeout(resize, 50); });
+        } else { st.classList.add('m3-max'); setFs(); setTimeout(resize, 50); }
     }
-    document.addEventListener('fullscreenchange', () => setTimeout(resize, 60));
+    document.addEventListener('fullscreenchange', () => { setFs(); setTimeout(resize, 60); });
+
+    /* ---------------- แผงข้อมูลการชุมนุมบนแผนที่เต็มจอ ---------------- */
+    let curEv = null, infoOpen = true, infoTimer = 0;
+    function setFs() {
+        if (!ui.stage) return;
+        const on = document.fullscreenElement === ui.stage || ui.stage.classList.contains('m3-max');
+        ui.stage.classList.toggle('m3-fs', on);
+        // เต็มจอแบบสำรอง (iPhone): การ์ดที่มี backdrop-filter ทำให้ position:fixed ไม่เต็มจอ → ปิดเอฟเฟกต์ชั่วคราว + ล็อกการเลื่อนหน้า
+        const max = ui.stage.classList.contains('m3-max'), card = ui.stage.closest('.m3-card');
+        if (card) card.classList.toggle('m3-maxhost', max);
+        document.documentElement.classList.toggle('m3-lock', max);
+        clearInterval(infoTimer); infoTimer = 0;
+        if (on) { paintInfo(); infoTimer = setInterval(paintPhase, 1000); }
+    }
+    // ช่วงเวลาตอนนี้ เช่น "อีก 3 ชม. 10 นาที ถึง รวมพล 04.30 น." (ข้อความจาก api.phase ของกระดาน)
+    function phaseText(ev) {
+        if (!api || !api.phase || !ev) return '';
+        const now = Date.now(), ph = api.phase(ev, now), hu = api.human || (() => '');
+        if (ph.mode === 'pre') return 'อีก ' + hu(ph.target - now) + ' ' + ph.label;
+        if (ph.mode === 'live') return ph.label + (ph.key === 'live' ? ' · เหลือ ' + hu(ph.target - now) : '');
+        if (ph.mode === 'over') return ph.label + ' มาแล้ว ' + hu(now - ph.target);
+        return '';
+    }
+    function paintPhase() {
+        const p = ui.info && ui.info.querySelector('.m3-info-ph');
+        if (p) p.innerHTML = '<i class="fa-solid fa-stopwatch"></i><span>' + phaseText(curEv) + '</span>';
+    }
+    function paintInfo() {
+        if (!ui.info) return;
+        const ev = curEv;
+        if (!ev || !api) { ui.info.innerHTML = ''; return; }
+        const L = (api.LEVELS || {})[ev.level] || {};
+        const rows = api.heroRows ? api.heroRows(ev) : [];
+        const legend = ui.stage.querySelector('.m3-legend');
+        ui.info.classList.toggle('open', infoOpen);
+        ui.info.innerHTML =
+            '<button type="button" class="m3-info-h" data-m3="infoToggle" aria-expanded="' + infoOpen + '">' +
+                '<i class="cmd-dot ' + api.esc(ev.level) + '" title="' + api.esc(L.name || '') + '"></i>' +
+                '<span><small>' + api.esc(ev.category || 'เหตุการณ์') + ' · ' + api.esc(L.name || '') + '</small><b>' + api.esc(ev.title) + '</b></span>' +
+                '<i class="fa-solid fa-chevron-' + (infoOpen ? 'down' : 'up') + ' m3-info-chev"></i></button>' +
+            (infoOpen ? '<div class="m3-info-b">' +
+                '<div class="m3-info-ph"></div>' +
+                (rows.length ? '<ul>' + rows.join('') + '</ul>' : '') +
+                (legend ? '<div class="m3-info-lg">' + legend.innerHTML + '</div>' : '') +
+            '</div>' : '');
+        paintPhase();
+    }
 
     /* ---------------- รับสัญญาณจากกระดาน ---------------- */
     function update(ev) {
         if (!ui.note) return;
+        curEv = ev || null;
+        if (ui.stage && ui.stage.classList.contains('m3-fs')) paintInfo();
         let msg = '';
         if (ev) {
             const m = String(ev.latlng || '').match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);

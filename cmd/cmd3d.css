@@ -32,7 +32,10 @@
 @media (min-width: 860px) { .m3-stage { height: min(70vh, 660px); } }
 .m3-stage canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
 .m3-stage canvas:active { cursor: grabbing; }
-.m3-stage.m3-max { position: fixed; inset: 0; z-index: 500; height: 100% !important; border-radius: 0; border: 0; }
+.m3-stage.m3-max { position: fixed; inset: 0; z-index: 2000; height: 100% !important; border-radius: 0; border: 0; }
+.m3-card.m3-maxhost { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html.m3-lock, html.m3-lock body { overflow: hidden; }
+html.m3-lock .lnav { display: none; }   /* ปุ่มย้อนกลับ/ไปข้างหน้าของเว็บไม่ทับแผงข้อมูลตอนเต็มจอ */
 
 .m3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; font-family: 'Sarabun', system-ui, sans-serif; }
 .m3-lb {
@@ -98,6 +101,38 @@
     .m3-focus button span { display: none; }
     .m3-focus button { padding: 4px 8px; }
     .m3-crowd input[type="range"] { width: 90px; }
+}
+
+/* ---------- แผงข้อมูลการชุมนุม (เห็นเฉพาะตอนเต็มจอ · แตะหัวแผงเพื่อย่อ/ขยาย) ---------- */
+.m3-info { display: none; }
+.m3-stage.m3-fs .m3-info {
+    display: block; position: absolute; right: 10px; bottom: 26px; z-index: 3; width: min(380px, calc(100% - 20px)); max-height: calc(100% - 140px);
+    overflow: auto; touch-action: pan-y; border-radius: 14px; background: rgba(10, 22, 40, 0.88); border: 1px solid rgba(148, 178, 222, 0.3);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: #E8EFF9; pointer-events: auto;
+}
+.m3-stage.m3-fs .m3-info:empty { display: none; }
+.m3-stage.m3-fs .m3-legend { display: none; }   /* สัญลักษณ์ย้ายเข้าไปอยู่ในแผง */
+.m3-info-h { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.m3-info-h span { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.m3-info-h small { font-size: 0.68rem; font-weight: 700; color: #93A7C4; }
+.m3-info-h b { font-size: 0.86rem; font-weight: 800; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.m3-info:not(.open) .m3-info-h b { -webkit-line-clamp: 1; }
+.m3-info-chev { color: #93A7C4; font-size: 0.8rem; }
+.m3-info-b { display: grid; gap: 8px; padding: 0 12px 10px; }
+.m3-info-ph { display: flex; align-items: baseline; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(212, 175, 55, 0.12); color: #F3D774; font-size: 0.8rem; font-weight: 700; line-height: 1.4; }
+.m3-info-ph:empty { display: none; }
+.m3-info-ph b { color: #fff; }
+.m3-info ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.78rem; line-height: 1.45; color: #C9D6EA; }
+.m3-info li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; }
+.m3-info li > i { margin-top: 3px; color: #D4AF37; text-align: center; }
+.m3-info li b { color: #E8EFF9; }
+.m3-info .cmd-mute { color: #93A7C4; }
+.m3-info-lg { display: flex; flex-wrap: wrap; gap: 4px 10px; padding-top: 7px; border-top: 1px solid rgba(148, 178, 222, 0.18); font-size: 0.7rem; font-weight: 700; color: #C9D6EA; }
+.m3-info-lg span { display: inline-flex; align-items: center; gap: 5px; }
+.m3-info-lg i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; }
+@media (max-width: 560px) {
+    .m3-stage.m3-fs .m3-info { left: 8px; right: 8px; width: auto; bottom: 22px; max-height: 46%; }
+    .m3-stage.m3-fs .m3-scale { display: none; }
 }
 
 /* ---------- ข้อมูลพิกัด / ลิงก์ ---------- */

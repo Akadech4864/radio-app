@@ -107,6 +107,7 @@
     let tabsEl = null;  // แท็บย่อย (ติดขอบบนเมื่อเลื่อน)
     let core = null;    // เนื้อหาแท็บหลัก (วาดใหม่ทุกครั้ง)
     let ext = null, topBox;     // การ์ดโมดูลเสริม (สร้างครั้งเดียว) · topBox = บนสุดหน้าภาพรวม (แผนที่ 3 มิติ)
+    let ovNav = null;   // แท็บย่อยหน้าภาพรวม (แผนที่ 3 มิติ | รายละเอียดการชุมนุม) เหนือแผนที่
     const alOpen = new Set();   // ข้อกฎหมายที่กางรายละเอียดอยู่ (หน้าภาพรวม)
     let timer = 0;
     let lastPhaseKey = '';
@@ -282,17 +283,20 @@
         { id: 'overview', label: 'ภาพรวม', icon: 'fa-gauge-high', order: 10 }
     ];
     // แท็บเดิมที่รวมเข้าแท็บใหญ่แล้ว — ปุ่ม/ลิงก์/ค่าที่จำไว้เดิมยังพาไปถูกที่
-    //   ข้อกฎหมาย → การ์ดข้อกฎหมายชี้ขาดในหน้าภาพรวม · ติดต่อ & นำทาง → การ์ดปุ่มลัดในหน้าภาพรวม
-    const MERGED = { legal: { to: 'overview', ov: 'legal', anchor: '.cmd-alerts' }, contact: { to: 'overview', ov: 'contact', anchor: '.cmd-quick' } };
-    // แท็บย่อยของหน้าภาพรวม (ใต้แผนที่ 3 มิติ) — เห็นทีละการ์ด ไม่ต้องเลื่อนยาว
+    //   ข้อกฎหมาย / ติดต่อ & นำทาง / เวลา & ระดับ → แท็บย่อยในแท็บ บันทึก ศปก. (cmdlog.js วาดการ์ดจาก API.card)
+    const MERGED = {
+        legal: { to: 'log', sub: 'legal', anchor: '.cmd-alerts' },
+        contact: { to: 'log', sub: 'contact', anchor: '.cmd-quick' },
+        time: { to: 'log', sub: 'time', anchor: '.cmd-count' }
+    };
+    // แท็บย่อยของหน้าภาพรวม: แผนที่ 3 มิติ | รายละเอียดการชุมนุม — เห็นทีละอย่าง ไม่ต้องเลื่อนยาวในมือถือ
     const OV_KEY = 'lamhin_cmd_ovsub';
     const OV_TABS = [
-        { id: 'event', label: 'เหตุการณ์', icon: 'fa-bullhorn' },
-        { id: 'time', label: 'เวลา & ระดับ', icon: 'fa-stopwatch' },
-        { id: 'legal', label: 'ข้อกฎหมาย', icon: 'fa-scale-balanced' },
-        { id: 'contact', label: 'เบอร์โทร', icon: 'fa-phone' }
+        { id: 'map', label: 'แผนที่ 3 มิติ', icon: 'fa-cube' },
+        { id: 'event', label: 'รายละเอียดการชุมนุม', icon: 'fa-circle-info' }
     ];
-    let ovSub = (function () { try { const v = localStorage.getItem(OV_KEY); return OV_TABS.some((t) => t.id === v) ? v : 'event'; } catch (e) { return 'event'; } })();
+    let ovSub = (function () { try { const v = localStorage.getItem(OV_KEY); return OV_TABS.some((t) => t.id === v) ? v : 'map'; } catch (e) { return 'map'; } })();
+    const hasTopMap = () => plugins.some((p) => p.top && hostOf(p) === 'overview' && p._el);
     function setOv(v) { if (!OV_TABS.some((t) => t.id === v)) return; ovSub = v; try { localStorage.setItem(OV_KEY, v); } catch (e) { /* ไม่จำก็ได้ */ } }
     let curSub = (function () { try { return localStorage.getItem(TAB_KEY) || 'overview'; } catch (e) { return 'overview'; } })();
     const findPlugin = (id) => plugins.find((x) => x.id === id);
@@ -308,7 +312,7 @@
             .sort((a, b) => a.order - b.order);
     }
     function resolveTab(id) {
-        if (MERGED[id]) return { tab: MERGED[id].to, ov: MERGED[id].ov, anchor: MERGED[id].anchor };
+        if (MERGED[id]) return { tab: MERGED[id].to, sub: MERGED[id].sub, anchor: MERGED[id].anchor };
         const p = findPlugin(id), h = p ? hostOf(p) : '';
         return h ? { tab: h, child: p } : { tab: id };
     }
@@ -317,8 +321,9 @@
         if (!allTabs().some((t) => t.id === r.tab)) return;
         const hp = r.child ? findPlugin(r.child.host) : null;   // ให้แท็บเจ้าของเปิดมุมมองที่มีโมดูลนี้ (เช่น คู่มือ › ลำดับปฏิบัติ › สายงาน)
         if (hp && hp.reveal) { try { hp.reveal(r.child.id, API); } catch (e) { console.error('[cmd] reveal ' + hp.id, e); } }
+        const tp = r.sub ? findPlugin(r.tab) : null;   // แท็บเดิมที่ย้ายไปเป็นแท็บย่อย (เช่น ข้อกฎหมาย → บันทึก ศปก. › ข้อกฎหมาย)
+        if (tp && tp.reveal) { try { tp.reveal(r.sub, API); } catch (e) { console.error('[cmd] reveal ' + tp.id, e); } }
         curSub = r.tab;
-        if (r.ov) setOv(r.ov);
         try { localStorage.setItem(TAB_KEY, r.tab); } catch (e) { /* ไม่จำก็ได้ */ }
         render();
         const target = r.child ? r.child._el : r.anchor && shell ? shell.querySelector(r.anchor) : null;
@@ -356,6 +361,7 @@
             if (h === 'overview' && p.top && topBox && p._el.parentNode !== topBox) topBox.appendChild(p._el);   // บนสุดของหน้าภาพรวม (ก่อนการ์ดสรุป)
             let here = curSub === (h || p.id);
             if (here && hp && hp.shows) { try { here = !!hp.shows(p.id, API); } catch (e) { here = false; } }
+            if (here && h === 'overview' && p.top && active()) here = ovSub === 'map';   // แผนที่ 3 มิติอยู่ในแท็บย่อย "แผนที่ 3 มิติ"
             const on = shown && here;
             p._el.hidden = !here;
             try { if (p.update) p.update(active(), API); } catch (e) { console.error('[cmd] update ' + p.id, e); }
@@ -395,28 +401,36 @@
         if (onTab && tabsEl.scrollWidth > tabsEl.clientWidth) tabsEl.scrollLeft = Math.max(0, onTab.offsetLeft - (tabsEl.clientWidth - onTab.offsetWidth) / 2);
 
         const isCore = curSub === 'overview';
-        core.hidden = !isCore;
-        if (!isCore) core.innerHTML = '';
+        // แท็บย่อยภาพรวมอยู่เหนือแผนที่ · แท็บ "แผนที่ 3 มิติ" ไม่มีการ์ดอื่นใต้แผนที่ (รายละเอียดอยู่อีกแท็บ)
+        ovNav.hidden = !(isCore && ev);
+        ovNav.innerHTML = isCore && ev ? ovTabsHtml() : '';
+        const mapOnly = isCore && ev && ovSub === 'map' && hasTopMap();
+        core.hidden = !isCore || mapOnly;
+        if (!isCore || mapOnly) core.innerHTML = '';
         else if (!ev) core.innerHTML = '<div class="cmd-grid cmd-g-one"><section class="cmd-card"><div class="cmd-empty"><i class="fa-solid fa-calendar-plus"></i>ยังไม่มีเหตุการณ์ — กด <b>+ เพิ่มเหตุการณ์ใหม่</b> เพื่อเริ่มต้น</div></section></div>';
-        else core.innerHTML = ovTabsHtml(ev, now) + ovBodyHtml(ev, now);
+        else core.innerHTML = '<div class="cmd-grid cmd-g-one">' + heroHtml(ev) + '</div>';
 
         lastPhaseKey = ev ? phase(ev, now).key : '';
         syncPlugins();
         tick();
     }
 
-    function ovTabsHtml(ev, now) {
-        const hot = ev.alerts.some((a) => { const st = alertStatus(ev, a, now); return st && /bad|warn|live/.test(st.cls); });
+    function ovTabsHtml() {
         return '<nav class="cmd-subtabs" role="tablist" aria-label="หัวข้อในภาพรวม">' + OV_TABS.map((t) =>
             '<button type="button" role="tab" class="cmd-subtab' + (t.id === ovSub ? ' on' : '') + '" data-act="ovsub" data-v="' + t.id + '" aria-selected="' + (t.id === ovSub) + '">' +
-            (t.id === 'time' ? '<i class="cmd-dot ' + esc(ev.level) + '" title="ระดับปัจจุบัน"></i>' : '<i class="fa-solid ' + t.icon + '"></i>') + '<span>' + t.label + '</span>' +
-            (t.id === 'legal' && hot ? '<em class="cmd-flag" title="มีรายการที่ต้องดำเนินการ"></em>' : '') + '</button>').join('') + '</nav>';
+            '<i class="fa-solid ' + t.icon + '"></i><span>' + t.label + '</span></button>').join('') + '</nav>';
     }
-    function ovBodyHtml(ev, now) {
-        if (ovSub === 'time') return '<div class="cmd-grid cmd-g-pair">' + countHtml(ev, now) + levelHtml(ev) + '</div>';
-        if (ovSub === 'legal') return '<div class="cmd-grid cmd-g-one">' + alertsMiniHtml(ev, now) + '</div>';
-        if (ovSub === 'contact') return '<div class="cmd-grid cmd-g-one">' + quickHtml(ev) + '</div>';
-        return '<div class="cmd-grid cmd-g-one">' + heroHtml(ev) + '</div>';
+    // มีรายการข้อกฎหมายที่ต้องทำ/ใกล้เส้นตาย (ธงแดงที่แท็บย่อย "ข้อกฎหมาย" ในบันทึก ศปก.)
+    function alertsHot(ev, now) { return (ev.alerts || []).some((a) => { const st = alertStatus(ev, a, now || Date.now()); return st && /bad|warn|live/.test(st.cls); }); }
+    // การ์ดที่ย้ายไปแท็บ บันทึก ศปก. (การกดในการ์ด/ตัวเลขนับถอยหลังยังทำงานจากไฟล์นี้)
+    function cardHtml(kind, ev) {
+        const now = Date.now();
+        if (!ev) return '';
+        if (kind === 'count') return countHtml(ev, now);
+        if (kind === 'level') return levelHtml(ev);
+        if (kind === 'legal') return alertsMiniHtml(ev, now);
+        if (kind === 'contact') return quickHtml(ev);
+        return '';
     }
 
     // ข้อกฎหมายชี้ขาด (ที่เดียวของกระดาน) — แตะหัวข้อเพื่อดูรายละเอียด · งานที่มีเส้นตายติ๊ก "ดำเนินการแล้ว" ได้ทันที
@@ -438,7 +452,8 @@
             '</section>';
     }
 
-    function heroHtml(ev) {
+    // แถวข้อมูลการชุมนุม (วันเวลา · สถานที่ · จำนวน · ผู้จัด) — ใช้ทั้งการ์ดรายละเอียดและแผงข้อมูลบนแผนที่ 3 มิติเต็มจอ
+    function heroRows(ev) {
         const s = startOf(ev);
         const rows = [];
         const DOW = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
@@ -453,6 +468,10 @@
         if (orgName || coNames.length) rows.push('<li><i class="fa-solid fa-user-tie"></i><span>' +
             (orgName ? '<b>ผู้จัด</b> ' + esc(orgName) + (orgTel ? ' <span class="cmd-mute">' + esc(orgTel) + '</span>' : '') : '') +
             (coNames.length ? (orgName ? '<br>' : '') + '<b>ผู้ประสาน</b> ' + esc(coNames.join(', ')) : '') + '</span></li>');
+        return rows;
+    }
+    function heroHtml(ev) {
+        const rows = heroRows(ev);
         return '<section class="cmd-card cmd-hero">' +
             '<div class="cmd-hero-top"><div class="cmd-hero-txt">' +
                 '<span class="cmd-tag"><i class="fa-solid fa-bullhorn"></i>' + esc(ev.category) + '</span>' +
@@ -817,10 +836,11 @@
         root = document.getElementById('pane-cmd');
         if (!root) return;
         state = load();
-        root.innerHTML = '<div class="cmd-root"><div class="cmd-head"></div><nav class="cmd-tabs" role="tablist" aria-label="หัวข้อในกระดาน"></nav><div class="cmd-top"></div><div class="cmd-core"></div><div class="cmd-ext"></div></div>';
+        root.innerHTML = '<div class="cmd-root"><div class="cmd-head"></div><nav class="cmd-tabs" role="tablist" aria-label="หัวข้อในกระดาน"></nav><div class="cmd-ovnav" hidden></div><div class="cmd-top"></div><div class="cmd-core"></div><div class="cmd-ext"></div></div>';
         shell = root.querySelector('.cmd-root');
         head = root.querySelector('.cmd-head');
         tabsEl = root.querySelector('.cmd-tabs');
+        ovNav = root.querySelector('.cmd-ovnav');
         core = root.querySelector('.cmd-core');
         ext = root.querySelector('.cmd-ext');
         topBox = root.querySelector('.cmd-top');
@@ -847,7 +867,9 @@
         active: active, save: save, render: render, openTab: setSub, syncSections: syncPlugins, lineSummary: lineSummary,
         toast: toast, copyText: copyText, modal: modal, showText: showText, field: field, formVal: formVal, esc: esc, uid: uid,
         thDateLong: thDateLong, thDateShort: thDateShort, hmTh: hmTh, hmStr: hmStr, pad: pad,
-        startOf: startOf, endOf: endOf, musterOf: musterOf, phase: phase, LEVELS: LEVELS, STATION_NAME: STATION_NAME
+        startOf: startOf, endOf: endOf, musterOf: musterOf, phase: phase, LEVELS: LEVELS, STATION_NAME: STATION_NAME,
+        // การ์ดนับถอยหลัง / ระดับ / ข้อกฎหมาย / เบอร์โทร (แท็บ บันทึก ศปก.) · แถวข้อมูลการชุมนุม (แผงบนแผนที่เต็มจอ)
+        card: cardHtml, alertsHot: alertsHot, heroRows: heroRows, human: human, tick: tick
     };
     window.LamhinCmd = Object.create(API, { registerSection: { value: registerSection } });
 

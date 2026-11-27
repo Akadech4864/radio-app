@@ -13,7 +13,11 @@
     const BY_KEY = 'lamhin_cmd_logby';
     const PRINT_KEY = 'lamhin_cmd_logprint';
     const ORDER_KEY = 'lamhin_cmd_logorder';
-    const SUB_KEY = 'lamhin_cmd_logsub';   // แท็บย่อย: 'log' บันทึกเหตุการณ์ | 'ladder' ขั้นตอน & กฎหมาย (แผงของ cmdladder.js ที่ cmd.js วางต่อท้าย)
+    // แท็บย่อย: บันทึกเหตุการณ์ | เวลา & ระดับ | ข้อกฎหมาย | เบอร์โทร (การ์ด 3 แท็บหลังวาดโดย cmd.js ผ่าน api.card)
+    // · 'ladder' = มาตรการจากเบาไปหนัก (แผงของ cmdladder.js ที่ cmd.js วางต่อท้าย) เปิดจากปุ่มในแถบปุ่มลัด ไม่มีแท็บของตัวเอง
+    const SUB_KEY = 'lamhin_cmd_logsub';
+    const SUBS = [['log', 'fa-clipboard-list', 'บันทึกเหตุการณ์'], ['time', 'fa-stopwatch', 'เวลา & ระดับ'], ['legal', 'fa-scale-balanced', 'ข้อกฎหมาย'], ['contact', 'fa-phone', 'เบอร์โทร']];
+    const isSub = (v) => v === 'ladder' || SUBS.some((t) => t[0] === v);
 
     const KINDS = {
         muster: { label: 'ปล่อยแถว', icon: 'fa-flag', tone: 'blue' },
@@ -41,7 +45,7 @@
         { k: 'deploy', label: 'แยกประจำจุด', icon: 'fa-route' },
         { k: 'sitrep', label: 'รายงานสถานการณ์', icon: 'fa-tower-broadcast' },
         { k: 'risk', label: 'เสี่ยง / ฝ่าฝืน', icon: 'fa-triangle-exclamation' },
-        { k: 'ladder', label: 'เจรจา/ประกาศ/ศาล', icon: 'fa-stairs', go: 'ladder' },   // บันทึกผ่านบันได 7 ขั้น (ที่เดียว บังคับลำดับ)
+        { k: 'ladder', label: 'เข้าสู่มาตรการ เบา → หนัก', sm: 'เจรจา › ประกาศ › ศาล', icon: 'fa-stairs', go: 'ladder' },   // บันได 7 ขั้น (ที่เดียว บังคับลำดับ)
         { k: 'end', label: 'สิ้นสุด', icon: 'fa-flag-checkered' },
         { k: 'note', label: 'อื่น ๆ', icon: 'fa-plus' }
     ];
@@ -104,13 +108,21 @@
     /* ---------------- สถานะ ---------------- */
     let api = null, el = null, evId = '', timer = 0, sheet = null, S = null;
     let newestFirst = (function () { try { return localStorage.getItem(ORDER_KEY) !== 'old'; } catch (e) { return true; } })();
-    let sub = (function () { try { return localStorage.getItem(SUB_KEY) === 'ladder' ? 'ladder' : 'log'; } catch (e) { return 'log'; } })();
+    // จำแท็บย่อยที่เปิดล่าสุด (ไม่จำแผงมาตรการ — เปิดเว็บใหม่เริ่มที่บันทึกเหตุการณ์ แล้วกดปุ่มเข้าเอง)
+    let sub = (function () { try { const v = localStorage.getItem(SUB_KEY); return v !== 'ladder' && isSub(v) ? v : 'log'; } catch (e) { return 'log'; } })();
     const hasLadder = () => !!document.querySelector('.cmd-ext-pane[data-ext="ladder"]');
-    function setSubTab(v) { sub = v === 'ladder' ? 'ladder' : 'log'; try { localStorage.setItem(SUB_KEY, sub); } catch (e) { /* ไม่จำก็ได้ */ } }
-    function subTabsHtml() {
-        if (!hasLadder()) return '';
-        return '<nav class="cmd-subtabs" role="tablist" aria-label="บันทึก ศปก.">' + [['log', 'fa-clipboard-list', 'บันทึกเหตุการณ์'], ['ladder', 'fa-stairs', 'ขั้นตอน & กฎหมาย']].map((t) =>
-            '<button type="button" role="tab" class="cmd-subtab' + (sub === t[0] ? ' on' : '') + '" data-cl="sub" data-v="' + t[0] + '" aria-selected="' + (sub === t[0]) + '"><i class="fa-solid ' + t[1] + '"></i><span>' + t[2] + '</span></button>').join('') + '</nav>';
+    function setSubTab(v) { sub = isSub(v) ? v : 'log'; if (sub !== 'ladder') { try { localStorage.setItem(SUB_KEY, sub); } catch (e) { /* ไม่จำก็ได้ */ } } }
+    function subTabsHtml(ev) {
+        const hot = api.alertsHot ? api.alertsHot(ev) : false;
+        return '<nav class="cmd-subtabs" role="tablist" aria-label="บันทึก ศปก.">' + SUBS.filter((t) => t[0] === 'log' || api.card).map((t) =>
+            '<button type="button" role="tab" class="cmd-subtab' + (sub === t[0] ? ' on' : '') + '" data-cl="sub" data-v="' + t[0] + '" aria-selected="' + (sub === t[0]) + '">' +
+            (t[0] === 'time' ? '<i class="cmd-dot ' + esc(ev.level) + '" title="ระดับปัจจุบัน"></i>' : '<i class="fa-solid ' + t[1] + '"></i>') + '<span>' + t[2] + '</span>' +
+            (t[0] === 'legal' && hot ? '<em class="cmd-flag" title="มีรายการที่ต้องดำเนินการ"></em>' : '') + '</button>').join('') + '</nav>';
+    }
+    // หัวแผงมาตรการเบา → หนัก: ปุ่มกลับไปบันทึกเหตุการณ์ (ปุ่มย้อนกลับของเว็บอ่านสถานะจาก data-cl="sub" ที่มี class on)
+    function ladderBarHtml() {
+        return '<div class="cl-ladbar"><button type="button" class="cl-back" data-cl="sub" data-v="log"><i class="fa-solid fa-arrow-left"></i> บันทึกเหตุการณ์</button>' +
+            '<b class="on" data-cl="sub" data-v="ladder"><i class="fa-solid fa-stairs"></i> มาตรการจากเบาไปหนัก</b></div>';
     }
     const esc = (s) => api.esc(s);
     const pad = (n) => String(n).padStart(2, '0');
@@ -185,8 +197,13 @@
         evId = ev.id;
         const crowd = latest(ev, 'crowd'), veh = latest(ev, 'vehicles');
         const lv = api.LEVELS[ev.level] || {};
-        if (sub === 'ladder' && hasLadder()) { el.innerHTML = '<div class="cl">' + subTabsHtml() + '</div>'; return; }
-        el.innerHTML = '<div class="cl">' + subTabsHtml() +
+        if (sub === 'ladder' && hasLadder()) { el.innerHTML = '<div class="cl">' + ladderBarHtml() + '</div>'; return; }
+        // เวลา & ระดับ / ข้อกฎหมาย / เบอร์โทร: การ์ดจาก cmd.js (ตัวเลขนับถอยหลังเดินด้วย tick ของ cmd.js)
+        const card = !api.card ? '' : sub === 'time' ? '<div class="cmd-grid cmd-g-pair">' + api.card('count', ev) + api.card('level', ev) + '</div>'
+            : sub === 'legal' ? '<div class="cmd-grid cmd-g-one">' + api.card('legal', ev) + '</div>'
+            : sub === 'contact' ? '<div class="cmd-grid cmd-g-one">' + api.card('contact', ev) + '</div>' : '';
+        if (card && api.card) { el.innerHTML = '<div class="cl">' + subTabsHtml(ev) + card + '</div>'; if (api.tick) api.tick(); return; }
+        el.innerHTML = '<div class="cl">' + subTabsHtml(ev) +
             '<section class="cmd-card cl-head">' +
                 '<div class="cl-top"><div class="cl-stats">' +
                     '<span><i class="fa-regular fa-clock"></i><b data-cl-tick="now">' + hm(Date.now()) + '</b></span>' +
@@ -198,7 +215,7 @@
                     '<button type="button" class="cl-ic" data-cl="print" title="พิมพ์ตารางแนบคำร้องศาล" aria-label="พิมพ์ตารางแนบคำร้องศาล"><i class="fa-solid fa-print"></i></button>' +
                 '</div></div>' +
                 '<div class="cl-alerts">' + alertHtml(ev) + '</div>' +
-                '<div class="cl-quick">' + QUICK.map((q) => '<button type="button" class="cl-q t-' + (KINDS[q.k] || KINDS.negotiate).tone + '" ' + (q.go ? 'data-cl="go" data-tab="' + q.go + '"' : 'data-cl="new" data-k="' + q.k + '"') + '><i class="fa-solid ' + q.icon + '"></i><span>' + q.label + '</span></button>').join('') + '</div>' +
+                '<div class="cl-quick">' + QUICK.map((q) => '<button type="button" class="cl-q t-' + (KINDS[q.k] || KINDS.negotiate).tone + (q.go ? ' go' : '') + '" ' + (q.go ? 'data-cl="sub" data-v="' + q.go + '"' : 'data-cl="new" data-k="' + q.k + '"') + '><i class="fa-solid ' + q.icon + '"></i><span>' + q.label + (q.sm ? '<small>' + q.sm + '</small>' : '') + '</span></button>').join('') + '</div>' +
             '</section>' +
             '<section class="cmd-card cl-tl-card">' + timelineHtml(ev) + '</section>' +
         '</div>';
@@ -570,7 +587,13 @@
         if (!b || !el.contains(b)) return;
         const ev = api.active(); if (!ev) return;
         const act = b.dataset.cl;
-        if (act === 'sub') { setSubTab(b.dataset.v); render(); if (api.syncSections) api.syncSections(); return; }
+        if (act === 'sub') {
+            if (b.dataset.v === 'ladder' && !hasLadder()) return;
+            const was = sub;
+            setSubTab(b.dataset.v); render(); if (api.syncSections) api.syncSections();
+            if (sub !== was && el.getBoundingClientRect().top < 0) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 64), behavior: 'smooth' });
+            return;
+        }
         if (act === 'new') openSheet(freshS(ev, b.dataset.k));
         else if (act === 'go') api.openTab(b.dataset.tab);
         else if (act === 'edit') { const x = logOf(ev).find((y) => y.id === b.dataset.id); if (x) openSheet(fromEntry(x)); }
@@ -618,13 +641,15 @@
         KINDS: KINDS,
         rows: (ev, opts) => rowsFor(ev, opts),
         printHtml: (ev, opts) => printHtml(ev, Object.assign(printPrefs(), opts || {})),
-        print: (ev, opts) => printLog(ev, Object.assign(printPrefs(), opts || {}))
+        print: (ev, opts) => printLog(ev, Object.assign(printPrefs(), opts || {})),
+        showSub: (v) => { setSubTab(v); api.openTab('log'); }   // เช่น ปุ่ม "บันทึก ศปก." ในแผงมาตรการ → กลับแท็บย่อยบันทึกเหตุการณ์
     };
 
     window.LamhinCmd.registerSection({
         id: 'log', label: 'บันทึก ศปก.', icon: 'fa-clipboard-list', order: 35,
         shows(childId) { return childId === 'ladder' ? sub === 'ladder' : true; },
-        reveal(childId) { if (childId === 'ladder') { setSubTab('ladder'); if (el) render(); } },
+        // เปิดแผงมาตรการ (openTab('ladder')) หรือแท็บย่อยที่ย้ายมา (openTab('legal' / 'contact' / 'time'))
+        reveal(childId) { if (isSub(childId)) { setSubTab(childId); if (el) render(); } },
         mount(node, a) {
             api = a; el = node;
             el.addEventListener('click', onClick);

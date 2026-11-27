@@ -113,9 +113,18 @@ window.LamhinNav = (function () {
     register('cmd', () => { const b = document.querySelector('.cmd-tab.on'); return b ? b.dataset.tab : null; },
         (v) => { if (window.LamhinCmd && window.LamhinCmd.openTab) window.LamhinCmd.openTab(v); }, 10);
     // แท็บย่อยทั่วไป: เลือกด้วยการกดปุ่มเดิมซ้ำ (เฉพาะกลุ่มที่แสดงอยู่)
+    // บันทึก ศปก.: แท็บย่อย + แผงมาตรการเบา → หนัก (เปิดจากปุ่มลัด / ปุ่มกลับ ล้วนเป็น data-cl="sub")
+    register('logsub', () => {
+        const on = Array.from(document.querySelectorAll('[data-cl="sub"]')).find((b) => b.offsetParent && b.classList.contains('on'));
+        return on ? on.dataset.v : null;
+    }, (v) => {
+        const b = Array.from(document.querySelectorAll('[data-cl="sub"]')).find((x) => x.offsetParent && x.dataset.v === v);
+        if (b) { if (!b.classList.contains('on')) b.click(); }
+        else if (v === 'ladder' && window.LamhinCmd && window.LamhinCmd.openTab) window.LamhinCmd.openTab('ladder');
+        else if (window.LamhinCmdLog && window.LamhinCmdLog.showSub && document.querySelector('.cmd-tab.on[data-tab="log"]')) window.LamhinCmdLog.showSub(v);
+    }, 19);
     const groups = [
         ['ov', '.cmd-subtab[data-act="ovsub"]', 'v'],
-        ['logsub', '.cmd-subtab[data-cl="sub"]', 'v'],
         ['opsdiv', '.ops-bar[data-op="seldiv"]', 'div'],
         ['duty', '#dutySeg button[data-v]', 'v'],
         ['station', '#stSeg button[data-v]', 'v']
