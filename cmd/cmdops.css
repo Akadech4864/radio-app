@@ -1,0 +1,127 @@
+/* =====================================================================
+   กระดานบริหารเหตุการณ์ครบทุกสายงาน (Step 2) — สไตล์เฉพาะโมดูล (โหลดโดย cmdops.js)
+   ทุก selector ขึ้นต้นด้วย .ops- (ไม่กระทบสไตล์อื่น)
+   ===================================================================== */
+
+/* ---------- สรุปภาพรวม ---------- */
+.ops-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.ops-ring { position: relative; flex: 0 0 auto; width: 96px; height: 96px; }
+.ops-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ops-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 1.45rem; font-weight: 800; color: #F3D774; font-variant-numeric: tabular-nums; }
+.ops-sum-txt { flex: 1 1 220px; min-width: 0; }
+.ops-sum-txt h4 { margin: 0 0 4px; font-size: 1rem; font-weight: 800; }
+.ops-sum-txt p { margin: 0; font-size: 0.8rem; color: #93A7C4; line-height: 1.5; }
+.ops-counts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ops-counts span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 800; background: rgba(148, 178, 222, 0.08); border: 1px solid rgba(148, 178, 222, 0.18); }
+.ops-counts i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.ops-sum-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ops-bars { display: grid; gap: 6px; margin-top: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.ops-bar { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: 10px; background: rgba(148, 178, 222, 0.05); border: 1px solid rgba(148, 178, 222, 0.12); font-size: 0.74rem; font-weight: 700; color: #C9D6EA; cursor: pointer; text-align: left; font-family: inherit; }
+.ops-bar > i { color: #D4AF37; width: 14px; text-align: center; }
+.ops-bar span { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ops-bar em { font-style: normal; color: #00D2FF; font-variant-numeric: tabular-nums; }
+
+/* ---------- กริดการ์ดสายงาน ---------- */
+.ops-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 860px) { .ops-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }
+@media (min-width: 1200px) { .ops-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 860px) { .ops-div.ops-wide { grid-column: 1 / -1; } }
+
+.ops-div { --st: #5F7594; padding: 0; overflow: hidden; }
+.ops-div[data-st="doing"] { --st: #F59E0B; }
+.ops-div[data-st="done"] { --st: #16A34A; }
+.ops-head {
+    width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 0; background: transparent;
+    color: inherit; font: inherit; text-align: left; cursor: pointer; border-left: 4px solid var(--st);
+}
+.ops-head-ic { flex: 0 0 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(212, 175, 55, 0.13); color: #D4AF37; font-size: 1rem; }
+.ops-head-txt { flex: 1 1 auto; min-width: 0; }
+.ops-head-txt b { display: block; font-size: 0.95rem; font-weight: 800; line-height: 1.3; }
+.ops-head-txt small { display: block; font-size: 0.74rem; color: #93A7C4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ops-pill { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; white-space: nowrap; color: #fff; background: var(--st); }
+.ops-div[data-st="doing"] .ops-pill { color: #1F1300; }
+.ops-chev { flex: 0 0 auto; color: #93A7C4; transition: transform 0.2s; }
+.ops-div.open .ops-chev { transform: rotate(180deg); }
+.ops-prog { height: 6px; margin: 0 14px; border-radius: 6px; background: rgba(148, 178, 222, 0.12); overflow: hidden; }
+.ops-prog i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--st), color-mix(in srgb, var(--st) 60%, #fff)); transition: width 0.3s; }
+.ops-prog-lb { display: flex; justify-content: space-between; margin: 5px 14px 10px; font-size: 0.72rem; color: #93A7C4; font-variant-numeric: tabular-nums; }
+.ops-body { padding: 0 14px 14px; display: none; }
+.ops-div.open .ops-body { display: block; }
+
+.ops-boss { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; background: rgba(148, 178, 222, 0.06); border: 1px solid rgba(148, 178, 222, 0.14); margin-bottom: 10px; }
+.ops-boss > i { color: #D4AF37; }
+.ops-boss span { flex: 1 1 auto; min-width: 0; }
+.ops-boss b { display: block; font-size: 0.84rem; font-weight: 800; }
+.ops-boss small { display: block; font-size: 0.72rem; color: #93A7C4; }
+.ops-call { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; background: rgba(22, 163, 74, 0.16); color: #86EFAC; font-size: 0.78rem; font-weight: 800; text-decoration: none; border: 1px solid rgba(22, 163, 74, 0.4); white-space: nowrap; }
+.ops-ico { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(148, 178, 222, 0.22); background: transparent; color: #93A7C4; cursor: pointer; }
+
+.ops-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ops-item {
+    display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 12px; text-align: left;
+    background: rgba(10, 22, 40, 0.45); border: 1px solid rgba(148, 178, 222, 0.14); color: inherit; font: inherit; cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.ops-item:active { transform: scale(0.99); }
+.ops-box { flex: 0 0 22px; height: 22px; margin-top: 1px; border-radius: 7px; border: 2px solid rgba(148, 178, 222, 0.45); display: grid; place-items: center; color: transparent; font-size: 0.72rem; }
+.ops-item.on { background: rgba(22, 163, 74, 0.1); border-color: rgba(22, 163, 74, 0.4); }
+.ops-item.on .ops-box { background: #16A34A; border-color: #16A34A; color: #fff; }
+.ops-item-txt { flex: 1 1 auto; min-width: 0; font-size: 0.84rem; line-height: 1.45; }
+.ops-item.on .ops-item-txt { color: #C9D6EA; }
+.ops-item-txt small { display: block; font-size: 0.72rem; color: #93A7C4; }
+.ops-item-txt .ops-tag { display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 0.68rem; font-weight: 800; color: #F3D774; background: rgba(212, 175, 55, 0.14); vertical-align: 1px; }
+.ops-when { flex: 0 0 auto; font-size: 0.72rem; font-weight: 800; color: #86EFAC; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.ops-del { flex: 0 0 auto; border: 0; background: transparent; color: #5F7594; cursor: pointer; padding: 2px 4px; }
+.ops-add { display: flex; gap: 6px; margin-top: 8px; }
+.ops-add input { flex: 1 1 auto; min-width: 0; min-height: 38px; padding: 7px 10px; border-radius: 10px; font: inherit; font-size: 16px; color: #E8EFF9; background: rgba(10, 22, 40, 0.7); border: 1px solid rgba(148, 178, 222, 0.26); outline: none; }
+.ops-add input:focus { border-color: #00D2FF; }
+.ops-note { margin-top: 10px; display: flex; gap: 8px; padding: 8px 10px; border-radius: 10px; font-size: 0.76rem; line-height: 1.5; color: #FCD34D; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); }
+
+/* ---------- งานสอบสวน: ผังกำลัง / คณะทำงาน 6 ชุด ---------- */
+.ops-seg { display: inline-flex; padding: 3px; gap: 2px; margin: 4px 0 10px; border-radius: 12px; background: rgba(10, 22, 40, 0.7); border: 1px solid rgba(148, 178, 222, 0.18); flex-wrap: wrap; }
+.ops-seg button { border: 0; background: transparent; color: #93A7C4; font: inherit; font-weight: 800; font-size: 0.78rem; min-height: 34px; padding: 5px 11px; border-radius: 9px; cursor: pointer; }
+.ops-seg button.on { color: #0A1628; background: linear-gradient(135deg, #F3D774, #D4AF37); }
+.ops-roster { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) { .ops-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .ops-roster { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ops-person { display: flex; flex-direction: column; gap: 6px; padding: 10px 11px; border-radius: 14px; background: rgba(10, 22, 40, 0.45); border: 1px solid rgba(148, 178, 222, 0.14); }
+.ops-person.in { border-color: rgba(22, 163, 74, 0.45); background: rgba(22, 163, 74, 0.07); }
+.ops-person-h { display: flex; align-items: flex-start; gap: 9px; }
+.ops-person-h > i { flex: 0 0 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(30, 58, 138, 0.55); color: #93c5fd; }
+.ops-person-h span { flex: 1 1 auto; min-width: 0; }
+.ops-person-h b { display: block; font-size: 0.86rem; font-weight: 800; line-height: 1.3; }
+.ops-person-h small { display: block; font-size: 0.72rem; color: #93A7C4; }
+.ops-role { font-size: 0.78rem; font-weight: 800; color: #F3D774; }
+.ops-time { display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; font-weight: 700; color: #00D2FF; }
+.ops-duty { font-size: 0.78rem; color: #C9D6EA; line-height: 1.5; }
+.ops-person-f { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ops-in { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; border: 1px solid rgba(148, 178, 222, 0.3); background: transparent; color: #E8EFF9; font: inherit; font-size: 0.78rem; font-weight: 800; cursor: pointer; }
+.ops-person.in .ops-in { color: #86EFAC; border-color: rgba(22, 163, 74, 0.6); background: rgba(22, 163, 74, 0.14); }
+.ops-slot { display: flex; gap: 6px; align-items: center; }
+.ops-slot input { flex: 1 1 auto; min-width: 0; min-height: 34px; padding: 5px 9px; border-radius: 9px; font: inherit; font-size: 16px; color: #E8EFF9; background: rgba(10, 22, 40, 0.7); border: 1px solid rgba(148, 178, 222, 0.26); outline: none; }
+.ops-slot em { font-style: normal; font-size: 0.72rem; color: #00D2FF; white-space: nowrap; }
+.ops-teams { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) { .ops-teams { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1200px) { .ops-teams { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ops-team { display: flex; flex-direction: column; gap: 6px; padding: 10px 11px; border-radius: 14px; background: rgba(10, 22, 40, 0.45); border: 1px solid rgba(148, 178, 222, 0.14); }
+.ops-team.on { border-color: rgba(22, 163, 74, 0.45); background: rgba(22, 163, 74, 0.07); }
+.ops-team-h { display: flex; align-items: flex-start; gap: 9px; }
+.ops-team-h > b { flex: 0 0 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; background: rgba(212, 175, 55, 0.16); color: #F3D774; font-size: 0.82rem; }
+.ops-team-h span { flex: 1 1 auto; min-width: 0; font-size: 0.84rem; font-weight: 800; line-height: 1.4; }
+.ops-team-h small { display: block; font-weight: 600; font-size: 0.74rem; color: #93A7C4; }
+.ops-team select { width: 100%; min-height: 36px; padding: 5px 9px; border-radius: 9px; font: inherit; font-size: 15px; color: #E8EFF9; background: rgba(10, 22, 40, 0.75); border: 1px solid rgba(148, 178, 222, 0.26); color-scheme: dark; }
+.ops-hint { margin: 0 0 10px; font-size: 0.78rem; color: #93A7C4; line-height: 1.5; }
+
+/* ---------- มือถือ: สรุปกระชับ (วงแหวนข้างข้อความ · ทางลัด 2 คอลัมน์) ---------- */
+@media (max-width: 560px) {
+    .ops-sum { gap: 10px; }
+    .ops-ring { width: 72px; height: 72px; }
+    .ops-ring b { font-size: 1.12rem; }
+    .ops-sum-txt { flex: 1 1 170px; }
+    .ops-sum-txt p { font-size: 0.74rem; }
+    .ops-sum-btns { flex: 1 1 100%; }
+    .ops-sum-btns .cmd-btn { flex: 1 1 auto; }
+    .ops-bars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ops-head { padding: 11px 12px; }
+    .ops-head-txt b { font-size: 0.9rem; }
+}

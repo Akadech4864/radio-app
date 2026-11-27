@@ -21,6 +21,7 @@
     const LAT = 13.883804945497769, LON = 100.80997853378307;
     const SEED_ID = 'ev-20261128-lamjedee';
     const LEVEL_HEX = { green: 0x16A34A, yellow: 0xF59E0B, red: 0xDC2626 };
+    const MAX_CROWD = 500;   // ปรับจำนวนผู้ชุมนุมจำลองได้ 1–500 คน (ค่าเริ่มต้น 100)
 
     /* ---------------- โหลด CSS / ข้อมูลผัง ---------------- */
     (function () {
@@ -50,7 +51,7 @@
     let renderer, scene, camera, sun, hemi, skyTex, skyCanvas;
     const cam = { az: 0.32, pol: 0.86, dist: 600, tx: 0, tz: 0 };
     const want = { az: 0.32, pol: 0.86, dist: 600, tx: 0, tz: 0 };
-    let idleAt = Date.now(), autoRot = true, labelsOn = true, crowdOn = true, crowdN = 150, timeMode = 'day', lowPower = false;
+    let idleAt = Date.now(), autoRot = true, labelsOn = true, crowdOn = true, crowdN = 100, timeMode = 'day', lowPower = false;
     let curLevel = 'green';
     const labels = [];
     const anim = { crowd: null, heads: null, crowdBase: [], signs: [], leader: null, pulse: null, pin: null, pinMat: null, pulseMat: null, bars: [], traffic: [], lampGlows: [], headlights: [], zone: null, zoneLabel: null, crowdGroup: null };
@@ -76,7 +77,7 @@
                         '<button type="button" data-time="dusk"><i class="fa-solid fa-cloud-sun"></i> 18.00</button>' +
                     '</div>' +
                     '<button type="button" class="m3-chip on" data-m3="crowd"><i class="fa-solid fa-people-group"></i> มวลชน</button>' +
-                    '<label class="m3-crowd" title="จำนวนผู้ชุมนุมจำลอง"><span>จำนวน</span><input type="range" min="100" max="200" step="10" value="150" data-m3="count"><b data-m3="countv">150</b></label>' +
+                    '<label class="m3-crowd" title="จำนวนผู้ชุมนุมจำลอง"><span>จำนวน</span><input type="range" min="1" max="500" step="1" value="100" data-m3="count"><b data-m3="countv">100</b></label>' +
                     '<button type="button" class="m3-chip on" data-m3="labels"><i class="fa-solid fa-tags"></i> ป้ายชื่อ</button>' +
                     '<button type="button" class="m3-chip on" data-m3="rotate"><i class="fa-solid fa-rotate"></i> หมุนเอง</button>' +
                 '</div>' +
@@ -121,7 +122,7 @@
         el.querySelectorAll('[data-m3]').forEach((n) => { ui[n.getAttribute('data-m3')] = n; });
         ui.needle = el.querySelector('.m3-needle');
         el.addEventListener('click', onUiClick);
-        ui.count.addEventListener('input', () => { crowdN = Number(ui.count.value) || 150; ui.countv.textContent = crowdN; applyCrowd(); });
+        ui.count.addEventListener('input', () => { crowdN = Math.max(1, Math.min(MAX_CROWD, Number(ui.count.value) || 100)); ui.countv.textContent = crowdN; applyCrowd(); });
 
         loadData().then((d) => { D = d; buildNav(); }).catch((e) => {
             console.error('[cmd3d]', e);
@@ -811,21 +812,38 @@
     function buildEventScene() {
         const R = rng(2811);
         const grp = new THREE.Group(); scene.add(grp); anim.crowdGroup = grp;
-        // ---- มวลชน 200 ตำแหน่ง (แสดงตามจำนวนที่เลือก) ----
+        // ---- มวลชน 500 ตำแหน่ง (แสดงตามจำนวนที่เลือก · คนลำดับแรกอยู่กลางลาน จำนวนมากขึ้นจึงขยายออกและล้นลงผิวซอย) ----
         const bodyGeo = new THREE.CylinderGeometry(0.21, 0.26, 1.25, 7); bodyGeo.translate(0, 0.62, 0);
         const headGeo = new THREE.SphereGeometry(0.14, 8, 6); headGeo.translate(0, 1.42, 0);
         const pm = personMats();
-        const crowd = new THREE.InstancedMesh(bodyGeo, pm.body, 200), heads = new THREE.InstancedMesh(headGeo, pm.head, 200);
+        const crowd = new THREE.InstancedMesh(bodyGeo, pm.body, MAX_CROWD), heads = new THREE.InstancedMesh(headGeo, pm.head, MAX_CROWD);
         const shirts = [0xffffff, 0xf4d03f, 0x2e86de, 0xe74c3c, 0x27ae60, 0x2d3436, 0xe67e22, 0xfd79a8, 0x8e44ad, 0x95a5a6, 0x16a085, 0xf5f6fa];
         const c = new THREE.Color();
-        for (let i = 0; i < 200; i++) {
-            let x, y, tries = 0;
-            do {
-                const u = Math.max(1e-6, R()), v = R();
-                const rad = Math.sqrt(-2 * Math.log(u));
-                x = 4 + rad * Math.cos(6.283 * v) * 10.5; y = 0.2 + rad * Math.sin(6.283 * v) * 2.6;
-                tries++;
-            } while ((x < -27 || x > 44 || y < -5.8 || y > 5.2 || anim.crowdBase.some((b) => Math.hypot(b.x - x, b.y - y) < 0.62) || (anim.openTrees || []).some((t) => Math.hypot(t[0] - x, t[1] - y) < 1.1)) && tries < 40);
+        // ตารางช่อง 1 ม. ไว้ตรวจระยะห่างระหว่างคน (เร็วพอสำหรับ 500 คนบนมือถือ)
+        const cells = new Map(), cellKey = (x, y) => Math.floor(x) + ',' + Math.floor(y);
+        const occupy = (x, y) => { const k = cellKey(x, y); (cells.get(k) || cells.set(k, []).get(k)).push([x, y]); };
+        const clear = (x, y, d) => {
+            for (let gx = Math.floor(x - d); gx <= Math.floor(x + d); gx++) for (let gy = Math.floor(y - d); gy <= Math.floor(y + d); gy++) {
+                const list = cells.get(gx + ',' + gy); if (list && list.some((q) => Math.hypot(q[0] - x, q[1] - y) < d)) return false;
+            }
+            return true;
+        };
+        for (let k = 0; k < 12; k++) occupy(-14 + k * 2.9, -7.6);                     // แนว คฝ. ริมซอย
+        const blocked = (x, y) => (x > -30.8 && x < -25.2 && y > -5.6 && y < -2.8) ||  // รถสายตรวจปลายลาน
+            (anim.openTrees || []).some((t) => Math.hypot(t[0] - x, t[1] - y) < 1.1);
+        for (let i = 0; i < MAX_CROWD; i++) {
+            const sx = 9 + i * 0.026, sy = 2.3 + i * 0.005;
+            let x = 4, y = 0, ok = false;
+            for (let tries = 0; tries < 60 && !ok; tries++) {            // ลานหน้ารั้ว (พื้นที่ชุมนุม)
+                const u = Math.max(1e-6, R()), v = R(), rad = Math.sqrt(-2 * Math.log(u));
+                x = 3 + rad * Math.cos(6.283 * v) * sx; y = 0 + rad * Math.sin(6.283 * v) * sy;
+                ok = x > -31 && x < 26 && y > -6 && y < 5.2 && !blocked(x, y) && clear(x, y, 0.6);
+            }
+            for (let tries = 0; tries < 80 && !ok; tries++) {            // ลานเต็ม → ล้นลงผิวซอย (พฤติการณ์ปิดกั้นทางสาธารณะ)
+                x = -30 + R() * 56; y = -12.4 + R() * 6.2;
+                ok = !blocked(x, y) && clear(x, y, 0.6);
+            }
+            occupy(x, y);
             anim.crowdBase.push({ x: x, y: y, ph: R() * 6.28, rate: 1.2 + R() * 1.6, rot: Math.atan2(4 - y, 1 - x) + (R() - 0.5) * 0.8 });
             c.setHex(shirts[(R() * shirts.length) | 0]); crowd.setColorAt(i, c);
             c.setHex([0xd9a77c, 0xc68e62, 0xe0b48a, 0xb07a52][(R() * 4) | 0]); heads.setColorAt(i, c);
@@ -840,7 +858,7 @@
             g.fillStyle = i % 2 ? '#b91c1c' : '#102340'; g.font = '800 36px Sarabun, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, w / 2, h / 2, w - 20);
         }));
         for (let k = 0; k < 16; k++) {
-            const idx = (k * 11 + 3) % 150, b = anim.crowdBase[idx];
+            const idx = 3 + k * 17, b = anim.crowdBase[idx];
             const sg = new THREE.Group();
             const stick = new THREE.Mesh(G.box, lam(0x8b6b45)); stick.scale.set(0.05, 1.1, 0.05); stick.position.y = 1.9; sg.add(stick);
             const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.63), new THREE.MeshBasicMaterial({ map: signTex[k % signTex.length], side: THREE.DoubleSide })); pl.position.y = 2.55; sg.add(pl);
@@ -982,7 +1000,7 @@
         addLabel('ศปก.ส่วนหน้า', 'ลานจอดรถมัสยิด', -57.5, 15.5, 5.5, 'police', 320);
         addLabel('จุดจราจร', '', -44, -9, 3.2, 'police', 220);
         addLabel('รถผู้ชุมนุม ~10 คัน', 'จอดลานจอดรถมัสยิด', -69, 2.7, 3.4, '', 320);
-        addLabel('มวลชน 100–200 คน', '', 8, 1, 4.2, '', 240);
+        anim.crowdLabel = addLabel('มวลชนจำลอง ' + crowdN + ' คน', '', 4, 1, 4.2, '', 240);
         addLabel('↗ สน.ลำหิน ~2.8 กม. ทางรถ', 'คฝ. บก.น.3 1 หมวด สแตนด์บาย · หนุนใน 30 นาที', m2[0] + 18, Math.min(330, m2[1] + 150), 4, 'dir');
         [100, 200, 300].forEach((r) => addLabel(r + ' ม.', '', r * 0.707, -r * 0.707, 2, 'ring'));
         anim.zoneLabel = addLabel('ตัวอย่างขอบเขตพื้นที่ควบคุม (ม.23)', 'แสดงเมื่อระดับสีแดง', 4, -70, 3, 'zone');
@@ -1117,6 +1135,7 @@
         anim.crowdGroup.visible = crowdOn;
         anim.crowd.count = anim.heads.count = crowdN;
         anim.signs.forEach((s) => { s.g.visible = s.idx < crowdN; });
+        if (anim.crowdLabel) anim.crowdLabel.el.textContent = 'มวลชนจำลอง ' + crowdN + ' คน';
         renderOnce();
     }
 
