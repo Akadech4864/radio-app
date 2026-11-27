@@ -523,13 +523,17 @@
             'table{width:100%;border-collapse:collapse;font-size:14pt;page-break-inside:auto}thead{display:table-header-group}tr{page-break-inside:avoid}' +
             'th,td{border:1px solid #000;padding:3pt 5pt;vertical-align:top}th{background:#e9e9e9;font-weight:700;text-align:center}' +
             'td.c{text-align:center;white-space:nowrap}.m{font-size:12.5pt;color:#333}tr.plan td{font-style:italic;color:#444;background:#f6f6f6}' +
-            '.cert{margin-top:12pt;text-indent:2.5cm;text-align:justify}.signs{display:flex;justify-content:space-around;margin-top:22pt;page-break-inside:avoid}.signs div{text-align:center;min-width:40%}' +
-            '.signs p{margin:0}';
+            '.cert{margin-top:12pt;text-indent:2.5cm;text-align:justify}.signs{margin-top:22pt;page-break-inside:avoid}.sg{margin-left:37.5%;text-align:center}.sg+.sg{margin-top:16pt}.signs p{margin:0}' +
+            // ลงชื่อ: เส้นจุด (ที่เซน) กว้างเท่าชื่อในวงเล็บ อยู่กึ่งกลางชื่อ · ยศจบก่อนวงเล็บชื่อเล็กน้อย · คำบทบาทต่อท้ายเส้น
+            '.sc{display:inline-block;position:relative;min-width:3.6cm}.sc .sa,.sc .sb{position:absolute;top:0;white-space:nowrap}.sc .sa{right:calc(100% + .3cm)}.sc .sb{left:calc(100% + .15cm)}' +
+            '.sd,.sdl{display:block;width:0;min-width:100%;overflow:clip;white-space:nowrap;text-decoration:underline dotted 1px;text-underline-offset:.2em}.sdl{display:inline-block;min-width:0;width:3.6cm;vertical-align:baseline}';
         // ลงชื่อ: ยศอยู่บรรทัดลงชื่อ · (ชื่อจริง นามสกุล) ไม่มียศ
         const RANK_RE = /^((?:ว่าที่\s*)?(?:พล\.ต\.[อทต]\.|[พร]\.ต\.[อทต]\.|ส\.ต\.[อทต]\.|จ\.ส\.ต\.|ด\.ต\.|พลตำรวจ(?:เอก|โท|ตรี)|พันตำรวจ(?:เอก|โท|ตรี)|ร้อยตำรวจ(?:เอก|โท|ตรี)|ดาบตำรวจ|จ่าสิบตำรวจ|สิบตำรวจ(?:เอก|โท|ตรี))(?:\s*หญิง)?)\s*/;
         const sign = (label, name, pos) => {
             const n = String(name || '').trim(), m = n.match(RANK_RE), rank = m && n.slice(m[0].length) ? m[1] : '', nm = rank ? n.slice(m[0].length) : n;
-            return '<div><p>(ลงชื่อ) ' + (rank ? esc(rank) + ' ' : '') + '.............................................. ' + label + '</p><p>(' + esc(nm || '.....................................................') + ')</p>' + (pos ? '<p>' + esc(pos) + '</p>' : '') + '</div>';
+            const NB = ' '.repeat(120);
+            return '<div class="sg"><div class="sc"><span class="sa">' + (rank ? esc(rank) : '') + '</span><span class="sd">' + NB + '</span><span class="sb">' + label + '</span>' +
+                '<p>(' + (nm ? esc(nm) : '<span class="sdl">' + NB + '</span>') + ')</p></div>' + (pos ? '<p>' + esc(pos) + '</p>' : '') + '</div>';
         };
         const body =
             (p.attach ? '<p class="att">' + esc(T(p.attach)) + '</p>' : '') +

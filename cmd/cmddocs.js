@@ -103,6 +103,10 @@
         const m = t.match(DOC_RANK_RE);
         return m && t.slice(m[0].length) ? [m[1].trim(), t.slice(m[0].length).trim()] : ['', t];
     }
+    // ยศบรรทัดลงชื่อ: ให้ยศจบก่อนวงเล็บเปิดของชื่อบรรทัดถัดไปเล็กน้อย (RANK_GAP) — ลายมือชื่อที่เซนต่อท้ายยศจึงอยู่กึ่งกลางชื่อ
+    // lead = ข้อความทั้งบรรทัดก่อนเซน (ยศ เช่น "พันตำรวจเอก" — ไม่ใช้คำว่า "(ลงชื่อ)") · nameText = "(ชื่อ นามสกุล)" · nameCenter = กึ่งกลางชื่อ (ซม. จากขอบซ้ายเนื้อความ)
+    const RANK_GAP = 0.3;
+    const rankStart = (lead, nameText, nameCenter) => Math.max(0, nameCenter - realCm(nameText) / 2 - RANK_GAP - realCm(lead));
     // ตามโปรแกรม (docSignFix_): "(สอบสวน)" → "(สอบสวน)ฯ"
     const signFix = (s) => String(s || '').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\((สอบสวน|ป้องกันปราบปราม|จราจร|อำนวยการ|สืบสวน)\)(?!ฯ)/g, '($1)ฯ');
     const memoNo = (v) => String(v || '').replace(/^\s*ตช\.?\s*/, '').trim();   // หนังสือภายในไม่มี "ตช"
@@ -290,8 +294,9 @@
         const rank = String(F.signRank || '').trim();
         const signLeft = Math.max(-2.5, 2 * signCenter - W);
         let s ='<div class="ds-keep"><div style="margin-top:' + beforePt + 'pt;padding-left:' + cm(closeAt) + '">' + ED('closing', null, T(closing)) + '</div>' + blank(rank ? 2 : 3);
-        if (rank) s += '<div style="padding-left:' + cm(Math.max(0, signCenter - 3.0)) + '">' + ED('signRank', null, T(rank)) + '</div>';
-        s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">(' + ED('signName', null, T(F.signName || '..................................................')) + ')</div>';
+        const nm = F.signName || '..................................................';
+        if (rank) s += '<div style="padding-left:' + cm(rankStart(th(rank), th('(' + nm + ')'), (signLeft + W) / 2)) + '">' + ED('signRank', null, T(rank)) + '</div>';
+        s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">(' + ED('signName', null, T(nm)) + ')</div>';
         lines(F.signPos).forEach((l, i) => { s += '<div style="margin-left:' + cm(signLeft) + ';text-align:center">' + ED('signPos', i, T(l)) + '</div>'; });
         return s + '</div>';
     }
@@ -314,18 +319,19 @@
             else h += '<p class="ds-j" style="margin-top:6pt;text-indent:' + cm(L.numCm) + '">' + ED('body', i, T(L.rest), pre) + '</p>';
         });
         lines(F.closing).forEach((l, i) => { h += '<p class="ds-j" data-kn="1" style="margin-top:6pt;text-indent:2.54cm">' + ED('closing', i, T(l)) + '</p>'; });
-        // ลงชื่อ: เว้น 3 บรรทัด · ยศที่ 6.25 ซม. · ชื่อ/ตำแหน่งกึ่งกลางที่ 12.25 ซม. จากขอบกระดาษ
+        // ลงชื่อ: เว้น 3 บรรทัด · ยศจบก่อนวงเล็บชื่อเล็กน้อย · ชื่อ/ตำแหน่งกึ่งกลางที่ 12.25 ซม. จากขอบกระดาษ
         const signIndent = 2 * (12.25 - 3) - 16;
+        const nm = signFix(F.signName || '..................................................'), rk = String(F.signRank || '').trim();
         let s = '<div class="ds-keep">' + blank(3);
-        if (String(F.signRank || '').trim()) s += '<div style="padding-left:6.25cm">' + ED('signRank', null, T(F.signRank)) + '</div>';
-        s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">(' + ED('signName', null, T(signFix(F.signName || '..................................................'))) + ')</div>';
+        if (rk) s += '<div style="padding-left:' + cm(rankStart(th(rk), th('(' + nm + ')'), (signIndent + 16) / 2)) + '">' + ED('signRank', null, T(F.signRank)) + '</div>';
+        s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">(' + ED('signName', null, T(nm)) + ')</div>';
         lines(F.signPos).forEach((l, i) => { s += '<div style="margin-left:' + cm(signIndent) + ';text-align:center">' + ED('signPos', i, T(signFix(l))) + '</div>'; });
         h += s + '</div>';
         return sheet('memo', h);
     }
 
     /* ประกาศ / คำสั่ง ตามแบบ สตช. (แบบ 3-1 … 3-8): รหัสแบบมุมขวาบน · ครุฑกึ่งกลาง · หัว 2 บรรทัดตัวหนา · ที่ · เรื่อง · เส้นสั้น
-       เนื้อความย่อหน้า 2.5 ซม. · "ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป" · "ประกาศ/สั่ง ณ วันที่" ที่ 3 ซม. · (ลงชื่อ) ที่ 6.5 ซม.
+       เนื้อความย่อหน้า 2.5 ซม. · "ทั้งนี้ ตั้งแต่บัดนี้เป็นต้นไป" · "ประกาศ/สั่ง ณ วันที่" ที่ 3 ซม. · ยศ (ไม่มีคำว่า ลงชื่อ) จบก่อนวงเล็บชื่อ
        · ชื่อ/ตำแหน่งกึ่งกลางที่ 9.5 ซม. จากขอบซ้ายเนื้อความ · "หมายเหตุ" ตัวหนาขีดเส้นใต้ */
     const ORD = { givenAt: 3, signAt: 6.5, nameC: 9.5 };
     function rAnnounce(t, F, th) {
@@ -342,8 +348,10 @@
         if (String(F.effective || '').trim()) h += '<p data-kn="1" style="margin-top:9pt;text-indent:2.5cm">' + ED('effective', null, T(F.effective)) + '</p>';
         let s = '<div class="ds-keep"><div style="margin-top:9pt;padding-left:' + cm(ORD.givenAt) + '">' + ED('given', null, T(String(F.given || '').trim())) + '</div>';
         // ลงชื่อ: ยศอยู่บรรทัดลงชื่อ · ชื่อจริง นามสกุลในวงเล็บ (ไม่มียศ)
+        // ไม่มีคำว่า "(ลงชื่อ)" · มียศ: ยศจบก่อนวงเล็บชื่อเล็กน้อย · ไม่มียศ: บรรทัดว่างไว้เซน
         const sr = splitRank(F.signName);
-        s += '<div style="margin-top:10pt;padding-left:' + cm(ORD.signAt) + '">(ลงชื่อ)' + (sr[0] ? ' ' + ED('signName', null, T(sr[0]), '', 'rank') : '') + '</div>';
+        const signAt = sr[0] ? rankStart(th(sr[0]), th('(' + (sr[1] || '..................................................') + ')'), (nameLeft + W) / 2) : ORD.signAt;
+        s += '<div style="margin-top:10pt;padding-left:' + cm(signAt) + '">' + (sr[0] ? ED('signName', null, T(sr[0]), '', 'rank') : '&nbsp;') + '</div>';
         s += '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">(' + ED('signName', null, T(sr[1] || '..................................................'), '', 'name') + ')</div>';
         lines(F.signPos).forEach((l, i) => { s += '<div style="margin-left:' + cm(nameLeft) + ';text-align:center">' + ED('signPos', i, T(l)) + '</div>'; });
         h += s + '</div>';
@@ -781,9 +789,10 @@
         const rank = String(F.signRank || '').trim();
         const signLeft = Math.max(-2.5, 2 * signCenter - W);
         for (let k = 0; k < (rank ? 2 : 3); k++) parts.push(pX('<w:keepNext/>' + spX(0)));
-        if (rank) parts.push(pX('<w:keepNext/>' + spX(0) + '<w:ind w:left="' + tw(Math.max(0, signCenter - 3.0)) + '"/>', run(rank)));
+        const nm = F.signName || '..................................................';
+        if (rank) parts.push(pX('<w:keepNext/>' + spX(0) + '<w:ind w:left="' + tw(rankStart(th(rank), th('(' + nm + ')'), (signLeft + W) / 2)) + '"/>', run(rank)));
         const pos = lines(F.signPos);
-        parts.push(pX((pos.length ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + tw(signLeft) + '"/><w:jc w:val="center"/>', run('(' + (F.signName || '..................................................') + ')')));
+        parts.push(pX((pos.length ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + tw(signLeft) + '"/><w:jc w:val="center"/>', run('(' + nm + ')')));
         pos.forEach((l, i) => parts.push(pX((i < pos.length - 1 ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + tw(signLeft) + '"/><w:jc w:val="center"/>', run(l))));
         return parts.join('');
     }
@@ -860,9 +869,9 @@
         });
         lines(F.closing).forEach((l) => parts.push(pX(spX(6) + '<w:ind w:firstLine="' + tw(2.54) + '"/><w:jc w:val="thaiDistribute"/>', run(l))));
         for (let k = 0; k < 3; k++) parts.push(pX(spX(0)));
-        if (String(F.signRank || '').trim()) parts.push(pX(spX(0) + '<w:ind w:left="' + tw(6.25) + '"/>', run(F.signRank)));
-        const signIndent = tw(2 * (12.25 - 3) - 16);
-        parts.push(pX(spX(0) + '<w:ind w:left="' + signIndent + '"/><w:jc w:val="center"/>', run(signFix('(' + (F.signName || '') + ')'))));
+        const sI = 2 * (12.25 - 3) - 16, signIndent = tw(sI), nmText = signFix('(' + (F.signName || '') + ')'), rk = String(F.signRank || '').trim();
+        if (rk) parts.push(pX(spX(0) + '<w:ind w:left="' + tw(rankStart(th(rk), th(nmText), (sI + 16) / 2)) + '"/>', run(F.signRank)));
+        parts.push(pX(spX(0) + '<w:ind w:left="' + signIndent + '"/><w:jc w:val="center"/>', run(nmText)));
         lines(F.signPos).forEach((l) => parts.push(pX(spX(0) + '<w:ind w:left="' + signIndent + '"/><w:jc w:val="center"/>', run(signFix(l)))));
         return { xml: parts.join(''), margin: [2, 2, 2, 3], pageNumbers: false };
     }
@@ -881,9 +890,11 @@
         if (String(F.effective || '').trim()) parts.push(pX('<w:keepNext/>' + spX(9) + '<w:ind w:firstLine="' + tw(2.5) + '"/>', run(F.effective)));
         parts.push(pX('<w:keepNext/>' + spX(9) + '<w:ind w:left="' + tw(ORD.givenAt) + '"/>', run(String(F.given || '').trim())));
         const sr = splitRank(F.signName);   // ยศอยู่บรรทัดลงชื่อ · (ชื่อจริง นามสกุล)
-        parts.push(pX('<w:keepNext/>' + spX(10) + '<w:ind w:left="' + tw(ORD.signAt) + '"/>', run('(ลงชื่อ)' + (sr[0] ? ' ' + sr[0] : ''))));
+        const nmText = '(' + (sr[1] || '..................................................') + ')';
+        const signAt = sr[0] ? rankStart(th(sr[0]), th(nmText), ORD.nameC) : ORD.signAt;   // ไม่มี "(ลงชื่อ)" · ยศจบก่อนวงเล็บชื่อเล็กน้อย
+        parts.push(pX('<w:keepNext/>' + spX(10) + '<w:ind w:left="' + tw(signAt) + '"/>', run(sr[0] || '')));
         const pos = lines(F.signPos);
-        parts.push(pX((pos.length ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run('(' + (sr[1] || '..................................................') + ')')));
+        parts.push(pX((pos.length ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run(nmText)));
         pos.forEach((l, i) => parts.push(pX((i < pos.length - 1 ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run(l))));
         const notes = lines(F.notes);
         if (notes.length) {
