@@ -130,7 +130,7 @@
        เครื่องที่มีไฟล์ในเครื่อง (IndexedDB) อัปโหลดเอง แล้วจด m.drive = รหัสไฟล์ใน Drive ลงบันทึก ศปก. (ซิงก์ไปเครื่องอื่นตามปกติ)
        เครื่องอื่นที่ไม่มีไฟล์: แสดง/เปิด/พิมพ์จาก Drive แทน (ห่อ LamhinMedia.url / open / dataUrl / b64) */
     const MAX_UP = 15 * 1024 * 1024, retryAt = {};
-    let upBusy = false;
+    let upBusy = false, upTotal = 0, upDone = 0;
     function mediaItems() {
         const st = state(), out = [];
         (st ? st.events : []).forEach((e) => (e.log || []).forEach((x) => (x.media || []).forEach((m) => { if (m && m.id) out.push(m); })));
@@ -142,18 +142,28 @@
         const M = window.LamhinMedia;
         if (!SYNC_URL || upBusy || !M || !M.get) return;
         upBusy = true;
+        let sent = 0;
         try {
-            for (const m of mediaItems().filter((x) => !x.drive && !(retryAt[x.id] > Date.now())).slice(0, 3)) {
-                const rec = await M.get(m.id).catch(() => null);
-                if (!rec || !rec.blob) continue;                                         // ไฟล์อยู่เครื่องอื่น
-                if (rec.blob.size > MAX_UP) { retryAt[m.id] = Infinity; continue; }
+            // อัปโหลดทุกไฟล์ที่ค้าง (ทีละไฟล์) — มือถือหยุดทำงานเมื่อพับจอ จึงส่งให้เร็วที่สุดขณะยังเปิดหน้าอยู่
+            const seen = new Set();
+            const todo = mediaItems().filter((x) => !x.drive && !(retryAt[x.id] > Date.now()) && !seen.has(x.id) && seen.add(x.id));
+            const mine = [];
+            for (const m of todo) { const rec = await M.get(m.id).catch(() => null); if (rec && rec.blob) mine.push([m, rec]); }   // เฉพาะไฟล์ที่อยู่ในเครื่องนี้
+            upTotal = mine.length; upDone = 0; if (mine.length) setBadge('up');
+            for (const [m, rec] of mine) {
+                if (rec.blob.size > MAX_UP) { retryAt[m.id] = Infinity; upDone++; continue; }
                 try {
                     const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = () => rej(fr.error); fr.readAsDataURL(rec.blob); });
                     const j = await call({ upload: { id: m.id, name: m.name || (m.id + '.jpg'), type: m.type || rec.blob.type, caption: m.caption || '', b64: b64 } });
-                    if (j.fileId) { mediaItems().filter((x) => x.id === m.id).forEach((x) => { x.drive = j.fileId; }); CMD.save(); }   // ส่งขึ้นชีตรอบถัดไป
-                } catch (e) { retryAt[m.id] = Date.now() + 5 * 60000; }
+                    if (j.fileId) { mediaItems().filter((x) => x.id === m.id).forEach((x) => { x.drive = j.fileId; }); CMD.save(); sent++; }
+                } catch (e) { retryAt[m.id] = Date.now() + 2 * 60000; }
+                upDone++; setBadge('up');
+                if (sent && sent % 3 === 0) sync(true);                                   // ส่งรหัสไฟล์ขึ้นชีตเป็นระยะ ไม่ต้องรอครบ
             }
-        } finally { upBusy = false; }
+        } finally {
+            upBusy = false; upTotal = 0;
+            if (sent) sync(true); else if (lastOk) setBadge(lastErr ? 'err' : 'ok');
+        }
     }
     function fromDrive(id, as) {
         const fid = driveOf(id); if (!fid) return Promise.resolve('');
@@ -174,8 +184,10 @@
         const root = document.querySelector('#pane-cmd .cmd-root'); if (!root) return;
         if (!badge || !badge.isConnected) { badge = document.createElement('div'); badge.className = 'cmd-sync'; root.appendChild(badge); }
         const t = lastOk ? new Date(lastOk) : null, hm = t ? String(t.getHours()).padStart(2, '0') + '.' + String(t.getMinutes()).padStart(2, '0') + ' น.' : '';
+        if (st === 'ok' && upTotal) st = 'up';
         badge.dataset.st = st;
-        badge.innerHTML = st === 'ok' ? '<i class="fa-solid fa-cloud"></i> ซิงก์ข้ามเครื่องแล้ว · ' + hm
+        badge.innerHTML = st === 'up' ? '<i class="fa-solid fa-cloud-arrow-up"></i> กำลังอัปโหลดรูปขึ้น Drive ' + upDone + '/' + upTotal + ' — เปิดหน้านี้ค้างไว้จนครบ'
+            : st === 'ok' ? '<i class="fa-solid fa-cloud"></i> ซิงก์ข้ามเครื่องแล้ว · ' + hm
             : st === 'off' ? '<i class="fa-solid fa-cloud-slash"></i> ออฟไลน์ — บันทึกในเครื่องไว้ก่อน จะส่งขึ้นเมื่อมีสัญญาณ'
             : '<i class="fa-solid fa-triangle-exclamation"></i> ซิงก์ไม่สำเร็จ (' + lastErr.replace(/[<>&]/g, '') + ') — ข้อมูลยังอยู่ในเครื่อง' + (hm ? ' · สำเร็จล่าสุด ' + hm : '');
     }
@@ -190,7 +202,7 @@
         if (!SYNC_URL) return;
         const st = document.createElement('style');
         st.textContent = '.cmd-sync{margin-top:2px;padding:4px 10px;border-radius:10px;font-size:.72rem;font-weight:700;color:#93A7C4;background:rgba(10,22,40,.5);border:1px solid rgba(148,178,222,.16);text-align:center}' +
-            '.cmd-sync[data-st="ok"] i{color:#4ade80}.cmd-sync[data-st="err"]{color:#fca5a5;border-color:rgba(220,38,38,.4)}.cmd-sync[data-st="off"]{color:#fcd34d}';
+            '.cmd-sync[data-st="ok"] i{color:#4ade80}.cmd-sync[data-st="err"]{color:#fca5a5;border-color:rgba(220,38,38,.4)}.cmd-sync[data-st="off"]{color:#fcd34d}.cmd-sync[data-st="up"]{color:#7dd3fc;border-color:rgba(0,210,255,.35)}';
         document.head.appendChild(st);
         lastRaw = localStorage.getItem(KEY) || '';
         wrapMedia();
