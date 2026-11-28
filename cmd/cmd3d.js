@@ -938,6 +938,62 @@
         g.userData.roof = G2.roof;
         return g;
     }
+    // รถการไฟฟ้า (กฟน.) สีส้ม หัวเก๋งทรงหัวตัด ตามภาพถ่ายหน้างาน — kind: 'crane' รถเครน/กระเช้ายก · 'bucket' รถกระเช้าแขนพับ (raised = ยกกระเช้าทำงาน)
+    let meaTex = null;
+    function meaTruck(kind, raised) {
+        const g = new THREE.Group(), orange = std(0xf2761b, 0.34, 0.15), dark = std(0x23272d, 0.8, 0), glassM = std(0x07090d, 0.12, 0.65), white = std(0xf2f4f7, 0.4, 0.05);
+        const box = (mat, sx, sy, sz, x, y, z, rz) => { const m = new THREE.Mesh(G.box, mat); m.scale.set(sx, sy, sz); m.position.set(x, y, z); if (rz) m.rotation.z = rz; m.castShadow = true; g.add(m); return m; };
+        const dbl = kind === 'bucket', cx0 = dbl ? 0.9 : 2.0;               // รถกระเช้า = หัวเก๋งแค็บคู่
+        // หัวเก๋ง (ขอบโค้งมน) + กระจก
+        const cab = new THREE.Shape();
+        cab.moveTo(cx0, 0.85); cab.lineTo(3.52, 0.85); cab.lineTo(3.58, 2.3); cab.quadraticCurveTo(3.58, 2.78, 3.15, 2.8); cab.lineTo(cx0, 2.8); cab.lineTo(cx0, 0.85);
+        const cm = new THREE.Mesh(extrudeSide(cab, 2.3, 0.12), orange); cm.castShadow = true; g.add(cm);
+        box(glassM, 0.06, 0.72, 2.02, 3.62, 2.1, 0);                         // กระจกหน้า
+        [1.16, -1.16].forEach((z) => { box(glassM, dbl ? 2.2 : 1.05, 0.62, 0.05, (cx0 + 3.3) / 2 + 0.15, 2.15, z); });   // กระจกข้าง
+        box(dark, 0.14, 0.32, 2.3, 3.62, 0.95, 0);                           // กันชน
+        [0.78, -0.78].forEach((z) => box(lam(0xfff6d8, { emissive: 0x000000 }), 0.05, 0.16, 0.36, 3.63, 1.25, z));       // ไฟหน้า
+        [0.6, 0, -0.6].forEach((z, i) => box(new THREE.MeshBasicMaterial({ color: i === 1 ? 0xffb000 : 0x22c55e }), 0.22, 0.12, 0.22, 3.0, 2.92, z));   // ไฟบนหลังคา
+        // ตัวอักษร กฟน. ข้างประตู
+        meaTex = meaTex || canvasTex(256, 96, (c, w, h) => { c.fillStyle = '#ffffff'; c.font = '800 54px Sarabun, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('กฟน. MEA', w / 2, h / 2 + 2, w - 12); });
+        [1, -1].forEach((sd) => { const d = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.43), new THREE.MeshBasicMaterial({ map: meaTex, transparent: true })); d.position.set(cx0 + 0.75, 1.45, sd * 1.19); if (sd < 0) d.rotation.y = Math.PI; g.add(d); });
+        // แชสซีและล้อ (หน้าเดี่ยว หลังคู่)
+        box(dark, 6.6, 0.28, 1.1, -0.2, 0.72, 0);
+        const r = 0.5, tires = [], rims = [];
+        [[2.7, 0.92, 0.32], [2.7, -0.92, 0.32], [-1.8, 0.86, 0.56], [-1.8, -0.86, 0.56]].forEach((w) => {
+            const t = new THREE.CylinderGeometry(r, r, w[2], 20); t.rotateX(Math.PI / 2); t.translate(w[0], r, w[1]); tires.push(t);
+            const m = new THREE.CylinderGeometry(r * 0.55, r * 0.55, w[2] + 0.02, 14); m.rotateX(Math.PI / 2); m.translate(w[0], r, w[1]); rims.push(m);
+        });
+        g.add(new THREE.Mesh(mergeGeos(tires), std(0x16181c, 0.75, 0)));
+        g.add(new THREE.Mesh(mergeGeos(rims), std(0xc7ccd3, 0.3, 0.7)));
+        if (kind === 'crane') {
+            // กระบะพื้นเรียบ + เสาเครนหลังหัวเก๋ง + แขนเครนพาดไปท้ายรถ (ภาพที่ 1)
+            box(orange, 5.0, 0.22, 2.3, -0.75, 1.0, 0);
+            [1.12, -1.12].forEach((z) => box(orange, 4.9, 0.32, 0.08, -0.75, 1.27, z));
+            box(orange, 0.55, 2.3, 0.7, 1.55, 2.2, 0);                       // เสาเครน
+            box(orange, 0.8, 0.45, 1.0, 1.55, 3.4, 0);                        // หัวหมุน
+            box(orange, 5.4, 0.38, 0.42, -1.05, 3.35, 0, -0.05);              // แขนเครน
+            box(orange, 0.32, 1.9, 0.32, -3.3, 2.3, 0.75); box(orange, 0.32, 1.9, 0.32, -3.3, 2.3, -0.75);   // โครงพักแขนท้ายรถ
+            box(orange, 0.3, 0.3, 1.8, -3.3, 3.15, 0);
+            [1.0, -1.0].forEach((z) => box(dark, 0.3, 0.55, 0.3, 1.2, 0.5, z * 1.2));                       // ขาค้ำ
+        } else {
+            // ตู้เครื่องมือ 2 ข้าง + ฐานบูม + แขนพับ + กระเช้า (ภาพที่ 3)
+            [0.84, -0.84].forEach((z) => { box(orange, 3.9, 1.25, 0.62, -1.15, 1.55, z); box(white, 3.9, 0.06, 0.64, -1.15, 1.7, z); });
+            box(orange, 3.9, 0.12, 1.1, -1.15, 1.0, 0);
+            box(orange, 0.9, 0.9, 0.9, -2.5, 2.55, 0);                        // ฐานหมุนบูม
+            if (raised) {
+                const a1 = box(orange, 6.2, 0.42, 0.42, -2.5 + Math.cos(1.0) * 3.1, 2.8 + Math.sin(1.0) * 3.1, 0, 1.0);   // แขนยกขึ้นทำงาน
+                box(std(0xffd400, 0.4, 0.05), 1.0, 1.0, 1.0, -2.5 + Math.cos(1.0) * 6.2, 2.8 + Math.sin(1.0) * 6.2 + 0.55, 0);
+                a1.castShadow = true;
+            } else {
+                box(orange, 5.6, 0.36, 0.38, 0.2, 3.25, 0.25, 0.04);           // แขนล่างพาดเหนือหัวเก๋ง
+                box(orange, 4.4, 0.3, 0.32, -0.6, 3.62, -0.2, -0.03);          // แขนบนพับกลับ
+                box(std(0xf9a03f, 0.4, 0.05), 0.9, 0.85, 0.9, -2.9, 3.55, -0.2); // กระเช้า
+            }
+        }
+        const sh = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 3.4), new THREE.MeshBasicMaterial({ map: carShadowTex(), transparent: true, depthWrite: false }));
+        sh.rotation.x = -Math.PI / 2; sh.position.y = 0.04; sh.renderOrder = -1; g.add(sh);
+        return g;
+    }
     function placeCar(g, x, y, headingDeg) { g.position.set(x, 0, -y); g.rotation.y = headingDeg * Math.PI / 180; scene.add(g); return g; }
     function personMats() { return { body: std(0xffffff, 0.6, 0.02), head: std(0xffffff, 0.55, 0.02) }; }
     // หุ่นคนแนวกราฟิกจอรถ: สูง ~1.78 ม. หันหน้า +z · ศีรษะแยกชิ้น (ใช้แนวทางเดิมของฉาก)
@@ -1035,6 +1091,9 @@
             placeCar(car(cc[i], kinds[i]), x, -3.2, 90);
             placeCar(car(cc[5 + i], kinds[5 + i]), x, 8.6, 270);
         });
+        // ---- รถการไฟฟ้า (กฟน.) 2 คัน จอดแถวหลังลานจอดเดียวกัน หน้ารถหันออกถนนใหญ่ ----
+        placeCar(meaTruck('crane'), -73.5, 16.6, 0);
+        placeCar(meaTruck('bucket'), -65, 16.6, 0);
 
         // ---- ตำรวจ คฝ. สน.ลำหิน 1 หมู่ (12 นาย) แนวริมซอยหันหาผู้ชุมนุม ----
         const pol = new THREE.InstancedMesh(bodyGeo, std(0x23365e, 0.55, 0.05), 12), helm = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 12, 8).translate(0, 1.73, 0), std(0xeef1f5, 0.3, 0.1), 12);
@@ -1065,12 +1124,7 @@
         const tph = new THREE.Mesh(headGeo, std(0xeef1f5, 0.3, 0.1)); tph.position.set(-44, 0.3, 9); scene.add(tph);
         for (let k = 0; k < 6; k++) { const cn = new THREE.Mesh(G.cone, lam(0xff6b1a)); cn.scale.set(0.25, 0.7, 0.25); cn.position.set(-40.5 + k * 1.6, 0.7, 13.5 - k * 0.2); scene.add(cn); }
         // ---- รถกระเช้า กฟน. ที่แนวเสาใหม่ (~100 ม. จากปากซอย) ----
-        const mea = new THREE.Group();
-        const mBody = new THREE.Mesh(G.box, lam(0xf28c28)); mBody.scale.set(6.5, 1.6, 2.3); mBody.position.set(-0.5, 1.4, 0); mBody.castShadow = true; mea.add(mBody);
-        const mCab = new THREE.Mesh(G.box, lam(0xf7f7f7)); mCab.scale.set(1.9, 1.6, 2.3); mCab.position.set(3.4, 1.6, 0); mea.add(mCab);
-        const boom = new THREE.Mesh(G.box, lam(0xf5f5f5)); boom.scale.set(9.5, 0.4, 0.4); boom.position.set(-1.2, 6, 0.6); boom.rotation.z = 1.0; mea.add(boom);
-        const bucket = new THREE.Mesh(G.box, lam(0xffd400)); bucket.scale.set(1, 1, 1); bucket.position.set(-3.8, 10.3, 0.6); mea.add(bucket);
-        [[-2.2, 1.1], [2.6, 1.1], [-2.2, -1.1], [2.6, -1.1]].forEach((w) => { const t = new THREE.Mesh(G.cyl, lam(0x15181d)); t.scale.set(0.5, 0.35, 0.5); t.rotation.x = Math.PI / 2; t.position.set(w[0], 0.5, w[1]); mea.add(t); });
+        const mea = meaTruck('bucket', true);
         const meaAt = soiPts ? along(soiPts, 150) : { x: 108, y: -13, ux: 1, uy: 0 };
         mea.position.set(meaAt.x, 0.3, -(meaAt.y + 0.6)); mea.rotation.y = Math.atan2(meaAt.uy, meaAt.ux);
         scene.add(mea); anim.meaAt = meaAt;
@@ -1145,6 +1199,7 @@
         addLabel('ศปก.ส่วนหน้า', 'ลานจอดรถมัสยิด', -57.5, 15.5, 5.5, 'police', 320);
         addLabel('จุดจราจร', '', -44, -9, 3.2, 'police', 220);
         addLabel('รถผู้ชุมนุม ~10 คัน', 'จอดลานจอดรถมัสยิด', -69, 2.7, 3.4, '', 320);
+        addLabel('รถ กฟน. 2 คัน', 'รถเครน · รถกระเช้า', -69.5, 16.6, 4.6, '', 320);
         anim.crowdLabel = addLabel('มวลชนจำลอง ' + crowdN + ' คน', '', 4, 1, 4.2, '', 240);
         addLabel('↗ สน.ลำหิน 2.8 กม.', 'คฝ. 1 หมวด สแตนด์บาย', m2[0] + 18, Math.min(330, m2[1] + 150), 4, 'dir');
         [100, 200, 300].forEach((r) => addLabel(r + ' ม.', '', r * 0.707, -r * 0.707, 2, 'ring'));
