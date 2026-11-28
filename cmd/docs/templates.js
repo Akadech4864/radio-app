@@ -129,7 +129,7 @@ window.LAMHIN_DOC_KIT = function (ctx) {
     const ORD_DEF = { f34: { varWithin: '30 นาที' }, f33: { varWithin: '30 นาที' }, f36: { varWithin: '20 นาที' }, f38: {} };
 
     /* ---------- รายงานผลการปฏิบัติ: สรุปจากบันทึก ศปก. ---------- */
-    const KEY_KINDS = ['muster', 'deploy', 'post', 'sitrep', 'crowd', 'risk', 'violation', 'negotiate', 'announce', 'deadline', 'court', 'control', 'arrest', 'end'];
+    const KEY_KINDS = ['muster', 'deploy', 'post', 'sitrep', 'crowd', 'risk', 'violation', 'negotiate', 'announce', 'deadline', 'court', 'control', 'arrest', 'daily', 'end'];
     const resultLines = (function () {
         const rows = log.filter((x) => KEY_KINDS.indexOf(x.kind) !== -1);
         if (!rows.length) {

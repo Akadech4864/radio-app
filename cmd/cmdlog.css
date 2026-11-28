@@ -111,13 +111,13 @@ button.cl-body:hover { background: rgba(148, 178, 222, 0.06); border-color: var(
 }
 .cl-f textarea:focus, .cl-f input:focus { border-color: #00D2FF; }
 .cl-time input { max-width: 160px; }
-.cl-by .cl-chips { margin-bottom: 8px; }
+.cl-by .cl-chips, .cl-place .cl-chips { margin-bottom: 8px; }
 .cl-by .cl-chip { font-size: 0.78rem; min-height: 34px; padding: 5px 11px; }
-.cl-by input {
+.cl-by input, .cl-place input {
     width: 100%; min-height: 42px; padding: 9px 11px; border-radius: 12px; font: inherit; font-size: 16px;
     color: #E8EFF9; background: rgba(10, 22, 40, 0.7); border: 1px solid rgba(148, 178, 222, 0.26); outline: none; color-scheme: dark;
 }
-.cl-by input:focus { border-color: #00D2FF; }
+.cl-by input:focus, .cl-place input:focus { border-color: #00D2FF; }
 .cl-row2 { display: grid; gap: 10px; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
 
 @media (min-width: 900px) {

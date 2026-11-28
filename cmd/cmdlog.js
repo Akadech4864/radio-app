@@ -34,10 +34,11 @@
         control: { label: 'พื้นที่ควบคุม', icon: 'fa-road-barrier', tone: 'red' },
         arrest: { label: 'จับกุม/ยึด', icon: 'fa-handcuffs', tone: 'red' },
         end: { label: 'สิ้นสุด', icon: 'fa-flag-checkered', tone: 'green' },
+        daily: { label: 'ลงบันทึกประจำวัน', icon: 'fa-book', tone: 'violet' },
         note: { label: 'บันทึก', icon: 'fa-note-sticky', tone: 'gray' }
     };
     // ประเภทที่ใช้ประกอบคำร้องศาล
-    const COURT_KINDS = ['crowd', 'sitrep', 'risk', 'violation', 'negotiate', 'announce', 'deadline', 'court', 'control', 'arrest', 'end'];
+    const COURT_KINDS = ['crowd', 'sitrep', 'risk', 'violation', 'negotiate', 'announce', 'deadline', 'court', 'control', 'arrest', 'daily', 'end'];
 
     // ปุ่มลัด (เรียงตามลำดับเหตุการณ์จริง)
     const QUICK = [
@@ -46,6 +47,7 @@
         { k: 'sitrep', label: 'รายงานสถานการณ์', icon: 'fa-tower-broadcast' },
         { k: 'risk', label: 'เสี่ยง / ฝ่าฝืน', icon: 'fa-triangle-exclamation' },
         { k: 'ladder', label: 'เข้าสู่มาตรการ เบา → หนัก', sm: 'เจรจา › ประกาศ › ศาล', icon: 'fa-stairs', go: 'ladder' },   // บันได 7 ขั้น (ที่เดียว บังคับลำดับ)
+        { k: 'daily', label: 'นำตัวลงบันทึกประจำวัน', icon: 'fa-book' },
         { k: 'end', label: 'สิ้นสุด', icon: 'fa-flag-checkered' },
         { k: 'note', label: 'อื่น ๆ', icon: 'fa-plus' }
     ];
@@ -74,17 +76,80 @@
         { id: 'a25', label: 'ยุติเหตุรุนแรง ม.25', law: 'ม.25', text: 'สั่งให้ผู้ชุมนุมยุติการกระทำที่มีลักษณะรุนแรง ตามมาตรา 25' }
     ];
     const OUT = {
-        negotiate: ['ผู้จัดยินยอมปฏิบัติตาม', 'ผู้จัดขอเวลาหารือกับผู้ชุมนุม', 'ผู้จัดปฏิเสธไม่ปฏิบัติตาม'],
+        negotiate: ['ผู้จัดการชุมนุมยินยอมปฏิบัติตาม', 'ผู้จัดการชุมนุมขอเวลาหารือกับผู้ชุมนุม', 'ผู้จัดการชุมนุมปฏิเสธไม่ปฏิบัติตาม'],
         deadline: ['ผู้ชุมนุมปฏิบัติตามประกาศแล้ว', 'ผู้ชุมนุมไม่ปฏิบัติตามประกาศ', 'ผู้ชุมนุมปฏิบัติตามบางส่วน'],
         court: ['ยื่นคำร้องต่อศาลแพ่งมีนบุรีขอให้มีคำสั่งให้เลิกการชุมนุม (ม.21 วรรคสอง)', 'ศาลนัดไต่สวนคำร้องฉุกเฉิน', 'ศาลแพ่งมีนบุรีมีคำสั่งให้ผู้ชุมนุมเลิกการชุมนุม (ม.22)', 'ปิดประกาศคำบังคับของศาล ณ สถานที่ชุมนุม'],
         end: ['ผู้ชุมนุมยุติการชุมนุมและแยกย้ายโดยสงบ', 'ครบเวลาตามที่แจ้งแล้ว ผู้ชุมนุมไม่ยอมเลิกการชุมนุม', 'ตรวจสภาพพื้นที่ คืนพื้นที่สาธารณะ และปิดภารกิจ'],
-        note: ['จับกุม/ตรวจยึดตามอำนาจ', 'ประกาศพื้นที่ควบคุม (ม.23)', 'บันทึกอื่น']
+        note: ['จับกุม/ตรวจยึดตามอำนาจ', 'ประกาศพื้นที่ควบคุม (ม.23)', 'บันทึกอื่น'],
+        daily: ['นำตัวผู้ถูกจับมาลงบันทึกประจำวันเพื่อดำเนินการตามกฎหมาย', 'นำตัวผู้เกี่ยวข้องมาลงบันทึกประจำวันไว้เป็นหลักฐาน', 'ผู้เสียหายมาร้องทุกข์ / แจ้งความ', 'บันทึกการตรวจยึดของกลาง']
     };
     const WHO = ['นายภูเบศ โพธิ์โซ๊ะ (ผู้จัด)', 'ผู้ประสานงาน 2 ท่าน'];
     const MINUTES = [15, 20, 30, 45, 60];
-    const UNIT_OF = { muster: 'ศปก.ส่วนหน้า', deploy: 'ศปก.ส่วนหน้า', sitrep: 'งานสืบสวน', risk: 'งานสืบสวน', violation: 'งานสืบสวน', negotiate: 'ศปก.ส่วนหน้า', announce: 'ศปก.ส่วนหน้า', deadline: 'ศปก.ส่วนหน้า', court: 'งานสอบสวน', end: 'ศปก.ส่วนหน้า', arrest: 'งานป้องกันปราบปราม/คฝ.', control: 'ศปก.ส่วนหน้า', note: 'ศปก.ส่วนหน้า' };
-    const PLACE_OF = { muster: 'หน้า สน.ลำหิน', deploy: 'หน้า สน.ลำหิน', court: 'ศาลแพ่งมีนบุรี' };
+    const UNIT_OF = { muster: 'ศปก.ส่วนหน้า', deploy: 'ศปก.ส่วนหน้า', sitrep: 'งานสืบสวน', risk: 'งานสืบสวน', violation: 'งานสืบสวน', negotiate: 'ศปก.ส่วนหน้า', announce: 'ศปก.ส่วนหน้า', deadline: 'ศปก.ส่วนหน้า', court: 'งานสอบสวน', end: 'ศปก.ส่วนหน้า', arrest: 'งานป้องกันปราบปราม/คฝ.', control: 'ศปก.ส่วนหน้า', daily: 'งานสอบสวน', note: 'ศปก.ส่วนหน้า' };
+    const PLACE_OF = { muster: 'หน้า สน.ลำหิน', deploy: 'หน้า สน.ลำหิน', court: 'ศาลแพ่งมีนบุรี', daily: 'ห้องสอบสวน สน.ลำหิน' };
     const DEFAULT_PLACE = 'จุดชุมนุม ปากซอยคู้คลองสิบ 4';
+    // ตัวเลือกสถานที่ในแผ่นกรอก (พิมพ์สถานที่อื่นเองได้)
+    const PLACES = [DEFAULT_PLACE, 'หน้า สน.ลำหิน', 'ห้องสอบสวน สน.ลำหิน', 'ศาลแพ่งมีนบุรี'];
+
+    /* ---------------- เรียบเรียงข้อความแบบรายงาน (ประโยคสมบูรณ์ ไม่ใช่คำสั้นต่อกันด้วย "·") ---------------- */
+    const joinTh = (a) => (a.length <= 1 ? a[0] || '' : a.slice(0, -1).join(' ') + ' และ' + a[a.length - 1]);
+    const MOOD_TXT = { 'มีการปราศรัย': 'มีการปราศรัยของแกนนำ', 'เริ่มตึงเครียด': 'บรรยากาศเริ่มตึงเครียด', 'กฟน. เข้าพื้นที่': 'เจ้าหน้าที่การไฟฟ้านครหลวงเข้าพื้นที่' };
+    const WHO_TXT = { 'นายภูเบศ โพธิ์โซ๊ะ (ผู้จัด)': 'นายภูเบศ โพธิ์โซ๊ะ ผู้จัดการชุมนุม' };
+    const TXT = {
+        muster: 'ปล่อยแถวชี้แจงภารกิจ ข้อกฎหมาย และแนวทางการปฏิบัติแก่กำลังพล ณ บริเวณหน้าสถานีตำรวจนครบาลลำหิน',
+        deploy: (units) => (units.length ? 'กำลังพลจาก' + joinTh(units) + ' แยกย้ายเข้าประจำจุดตามแผนเรียบร้อยแล้ว' : 'กำลังพลแยกย้ายเข้าประจำจุดตามแผนเรียบร้อยแล้ว'),
+        // "มีผู้ชุมนุมประมาณ 100 คน และรถยนต์ประมาณ 10 คัน มีการปราศรัยของแกนนำ โดยรวมสถานการณ์เป็นไปด้วยความสงบเรียบร้อย"
+        sitrep: (crowd, veh, moods) => {
+            const m = (moods || []).filter(Boolean), ex = m.filter((x) => x !== 'สงบ').map((x) => MOOD_TXT[x] || x);
+            let t = 'มีผู้ชุมนุมประมาณ ' + crowd + ' คน' + (Number(veh) ? ' และรถยนต์ประมาณ ' + veh + ' คัน' : '');
+            if (ex.length) t += ' ' + ex.join(' ');
+            if (m.indexOf('สงบ') !== -1) t += ' ' + (ex.length ? 'โดยรวม' : '') + 'สถานการณ์เป็นไปด้วยความสงบเรียบร้อย';
+            return t;
+        },
+        groups: (g) => (g && g.length ? 'ผู้ชุมนุมประกอบด้วย' + joinTh(g) : ''),
+        // ฝ่าฝืน: บรรยายพฤติการณ์เป็นประโยค · เฝ้าระวัง: ระบุพฤติการณ์ที่เฝ้าระวัง
+        risk: (violated, rs) => (violated
+            ? (rs.length ? rs.map((r) => r.text).join(' และ') : 'พบการกระทำที่ฝ่าฝืนกฎหมาย')
+            : (rs.length ? 'เฝ้าระวังพฤติการณ์ที่อาจฝ่าฝืนกฎหมาย ได้แก่ ' + joinTh(rs.map((r) => r.label)) : 'เฝ้าระวังพฤติการณ์ที่อาจฝ่าฝืนกฎหมาย')),
+        negotiate: (who) => 'ชุดเจรจาเข้าพบ' + (who && who.length ? joinTh(who.map((w) => WHO_TXT[w] || w)) : 'ผู้จัดการชุมนุม') + ' เพื่อชี้แจงทำความเข้าใจและขอความร่วมมือ',
+        within: (min, due) => ' โดยให้ปฏิบัติภายใน ' + min + ' นาที (ครบกำหนดเวลา ' + due + ' น.)'
+    };
+    const OLD_NEG = { 'ผู้จัดยินยอมปฏิบัติตาม': 'ผู้จัดการชุมนุมยินยอมปฏิบัติตาม', 'ผู้จัดขอเวลาหารือกับผู้ชุมนุม': 'ผู้จัดการชุมนุมขอเวลาหารือกับผู้ชุมนุม', 'ผู้จัดปฏิเสธไม่ปฏิบัติตาม': 'ผู้จัดการชุมนุมปฏิเสธไม่ปฏิบัติตาม' };
+    // ปรับรายการที่บันทึกไว้ก่อนหน้า (ครั้งเดียวต่อรายการ): ข้อความที่ระบบเรียบเรียงให้รุ่นเดิม → ประโยครายงาน
+    // · สถานที่ที่ระบบใส่ให้อัตโนมัติ → ตามเนื้อความจริง · ข้อความที่ผู้ใช้พิมพ์เองไม่แตะ
+    function upgradeEntry(x) {
+        if (!x || x.tv === 2) return false;
+        const t0 = x.title || '', d0 = x.detail || '';
+        let t = t0, d = d0, m;
+        if (t === 'ปล่อยแถวชี้แจงภารกิจและข้อกฎหมายแก่กำลังพล ณ หน้า สน.ลำหิน') t = TXT.muster;
+        else if (t === 'ปล่อยแถว กำลังพลแยกย้ายประจำจุดตามแผน') t = TXT.deploy([]);
+        else if ((m = t.match(/^(.+) แยกประจำจุดเรียบร้อย$/))) t = TXT.deploy(m[1].split(' / '));
+        else if ((m = t.match(/^ผู้ชุมนุมประมาณ (\d+) คน รถยนต์ (\d+) คัน((?: · [^·]+)*)$/))) t = TXT.sitrep(m[1], m[2], m[3].split(' · ').map((y) => y.trim()).filter(Boolean));
+        else if ((m = t.match(/^(ฝ่าฝืน|เฝ้าระวัง): (.+)$/))) {
+            const labels = m[2].split(' / '), rs = labels.map((l) => RISKS.find((r) => r.label === l)).filter(Boolean);
+            if (rs.length === labels.length || m[2] === 'พบพฤติการณ์เสี่ยงต่อการฝ่าฝืนกฎหมาย') {
+                t = TXT.risk(m[1] === 'ฝ่าฝืน', rs);
+                if (d === rs.map((r) => r.text).join(' ')) d = '';
+            }
+        } else if ((m = t.match(/^ชุดเจรจาพบ (.+) เพื่อทำความเข้าใจ$/))) {
+            t = TXT.negotiate(m[1].split(' และ '));
+            if (OLD_NEG[d]) d = 'ผลการเจรจา ' + OLD_NEG[d];
+        } else if ((m = t.match(/^(.+) กำหนดเวลา (\d+) นาที \(ครบ (\d{1,2}\.\d{2}) น\.\)$/))) t = m[1] + TXT.within(m[2], m[3]);
+        if ((m = d.match(/^กลุ่มผู้ชุมนุม: (.+)$/))) d = TXT.groups(m[1].split(', '));
+        if (OLD_NEG[x.outcome]) x.outcome = OLD_NEG[x.outcome];
+        // สถานที่ตามเนื้อความ (เฉพาะค่าที่ระบบใส่ให้อัตโนมัติ)
+        const auto = !x.place || x.place === DEFAULT_PLACE || x.place === 'ศาลแพ่งมีนบุรี';
+        let pl = x.place || DEFAULT_PLACE;
+        if (auto) {
+            const all = t + ' ' + d;
+            if (/ณ สถานที่ชุมนุม/.test(all)) pl = DEFAULT_PLACE;
+            else if (/ลงบันทึกประจำวัน|ห้องสอบสวน|ร้องทุกข์/.test(all) || x.kind === 'daily') pl = 'ห้องสอบสวน สน.ลำหิน';
+            else if (x.kind === 'muster' || x.kind === 'deploy' || /หน้า(สถานีตำรวจนครบาล| สน\.)ลำหิน/.test(all)) pl = 'หน้า สน.ลำหิน';
+            else if (x.kind === 'court' && /ศาล/.test(all)) pl = 'ศาลแพ่งมีนบุรี';
+        }
+        x.title = t; x.detail = d; x.place = pl; x.tv = 2;
+        return true;
+    }
 
     // รายชื่อผู้บันทึก (ยศ ชื่อ-สกุลทางการตามข้อมูลกำลังพล สน.ลำหิน 2569)
     const RECENT_KEY = 'lamhin_cmd_logby_recent';
@@ -229,6 +294,8 @@
         if (!el) return;
         if (!ev) { el.innerHTML = '<div class="cmd-card"><div class="cmd-empty">ยังไม่มีเหตุการณ์</div></div>'; return; }
         evId = ev.id;
+        // รายการรุ่นเดิม → ปรับถ้อยคำ/สถานที่ครั้งเดียว
+        let upg = false; logOf(ev).forEach((x) => { if (upgradeEntry(x)) upg = true; }); if (upg) api.save();
         const crowd = latest(ev, 'crowd'), veh = latest(ev, 'vehicles');
         const lv = api.LEVELS[ev.level] || {};
         if (sub === 'ladder' && hasLadder()) { el.innerHTML = '<div class="cl">' + ladderBarHtml() + '</div>'; return; }
@@ -282,6 +349,7 @@
             if (x.crowd != null && x.crowd !== '') tags.push('<span><i class="fa-solid fa-people-group"></i>' + esc(x.crowd) + ' คน</span>');
             if (x.vehicles != null && x.vehicles !== '') tags.push('<span><i class="fa-solid fa-car-side"></i>' + esc(x.vehicles) + ' คัน</span>');
             if (x.law) tags.push('<span class="law">' + esc(x.law) + '</span>');
+            if (x.place && x.place !== DEFAULT_PLACE) tags.push('<span class="pl"><i class="fa-solid fa-location-dot"></i>' + esc(x.place) + '</span>');
             if (x.deadlineAt) tags.push('<span><i class="fa-solid fa-hourglass-half"></i>ครบ ' + hm(Date.parse(x.deadlineAt)) + ' น.</span>');
             h += '<li class="cl-it"><time>' + hm(it.t) + '</time><i class="cl-dot t-' + k.tone + '"><i class="fa-solid ' + k.icon + '"></i></i>' +
                 '<button type="button" class="cl-body" data-cl="edit" data-id="' + esc(x.id) + '"><span class="cl-kind t-' + k.tone + '">' + esc(k.label) + '</span><b>' + esc(x.title || k.label) + '</b>' +
@@ -344,7 +412,7 @@
             kind: kind, at: now, title: '', detail: '', law: '', titleDirty: false, detailDirty: false, editId: '', refId: '',
             crowd: clamp(num(latest(ev, 'crowd')) || 100, 1, 500), vehicles: clamp(num(latest(ev, 'vehicles')) == null ? 10 : num(latest(ev, 'vehicles')), 0, 50),
             withCount: kind === 'sitrep' || kind === 'risk', picks: [], groups: [], units: [], who: [WHO[0]], outcome: '', ann: 'a212', minutes: 30, violated: false,
-            media: [], mediaOrig: [], mediaNew: [], mediaBusy: false
+            media: [], mediaOrig: [], mediaNew: [], mediaBusy: false, place: PLACE_OF[kind] || DEFAULT_PLACE, person: '', dailyNo: ''
         }, extra || {});
     }
     function fromEntry(x) {
@@ -354,34 +422,38 @@
             crowd: x.crowd != null && x.crowd !== '' ? clamp(num(x.crowd) || 1, 1, 500) : 100, vehicles: x.vehicles != null && x.vehicles !== '' ? clamp(num(x.vehicles) || 0, 0, 50) : 10,
             withCount: x.crowd != null && x.crowd !== '', violated: x.kind === 'violation', refId: x.refId || '', deadlineAt: x.deadlineAt || '',
             origKind: x.kind, picks: x.picks || [], groups: x.groups || [], units: x.units || [], outcome: x.outcome || '', ann: x.ann || 'a212', minutes: x.minutes || 30,
-            media: mediaOf(x).map((m) => Object.assign({}, m)), mediaOrig: mediaIds(mediaOf(x)), place: x.place || ''
+            media: mediaOf(x).map((m) => Object.assign({}, m)), mediaOrig: mediaIds(mediaOf(x)), place: x.place || PLACE_OF[k] || DEFAULT_PLACE, person: x.person || '', dailyNo: x.dailyNo || ''
         });
     }
     // เรียบเรียงหัวข้อ/รายละเอียด/มาตราจากปุ่มที่เลือก (ถ้าผู้ใช้ยังไม่ได้พิมพ์แก้เอง)
     function compose() {
         let title = '', detail = '', law = '';
         const k = S.kind;
-        if (k === 'muster') title = 'ปล่อยแถวชี้แจงภารกิจและข้อกฎหมายแก่กำลังพล ณ หน้า สน.ลำหิน';
-        else if (k === 'deploy') title = S.units.length ? S.units.join(' / ') + ' แยกประจำจุดเรียบร้อย' : 'ปล่อยแถว กำลังพลแยกย้ายประจำจุดตามแผน';
+        if (k === 'muster') title = TXT.muster;
+        else if (k === 'deploy') title = TXT.deploy(S.units);
         else if (k === 'sitrep') {
-            title = 'ผู้ชุมนุมประมาณ ' + S.crowd + ' คน รถยนต์ ' + S.vehicles + ' คัน' + (S.picks.length ? ' · ' + S.picks.join(' · ') : '');
-            detail = S.groups.length ? 'กลุ่มผู้ชุมนุม: ' + S.groups.join(', ') : '';
+            title = TXT.sitrep(S.crowd, S.vehicles, S.picks);
+            detail = TXT.groups(S.groups);
         } else if (k === 'risk') {
             const rs = RISKS.filter((r) => S.picks.indexOf(r.id) !== -1);
-            title = (S.violated ? 'ฝ่าฝืน: ' : 'เฝ้าระวัง: ') + (rs.length ? rs.map((r) => r.label).join(' / ') : 'พบพฤติการณ์เสี่ยงต่อการฝ่าฝืนกฎหมาย');
-            detail = rs.map((r) => r.text).join(' ');
+            title = TXT.risk(S.violated, rs);
+            detail = '';
             law = rs.map((r) => r.law).join(', ');
         } else if (k === 'negotiate') {
-            title = 'ชุดเจรจาพบ ' + (S.who.length ? S.who.join(' และ ') : 'ผู้จัดการชุมนุม') + ' เพื่อทำความเข้าใจ';
-            detail = S.outcome;
+            title = TXT.negotiate(S.who);
+            detail = S.outcome ? 'ผลการเจรจา ' + S.outcome : '';
         } else if (k === 'announce') {
             const a = ANNOUNCES.find((x) => x.id === S.ann) || ANNOUNCES[0];
             const withTime = a.id !== 'a25';
-            title = a.text + (withTime ? ' กำหนดเวลา ' + S.minutes + ' นาที (ครบ ' + hm(S.at + S.minutes * 60000) + ' น.)' : '');
+            title = a.text + (withTime ? TXT.within(S.minutes, hm(S.at + S.minutes * 60000)) : '');
             law = a.law;
         } else if (k === 'deadline') title = S.outcome || 'ครบกำหนดเวลาตามประกาศ';
         else if (k === 'court') title = S.outcome || OUT.court[0];
         else if (k === 'end') { title = S.outcome || OUT.end[0]; if (S.outcome === OUT.end[1]) law = 'ม.18 / ม.28'; }
+        else if (k === 'daily') {
+            title = (S.outcome || 'ลงบันทึกประจำวัน') + (String(S.person || '').trim() ? ' (' + String(S.person).trim() + ')' : '');
+            detail = String(S.dailyNo || '').trim() ? 'ลงรายงานประจำวันเกี่ยวกับคดี ข้อ ' + String(S.dailyNo).trim() + ' เวลา ' + hm(S.at) + ' น.' : '';
+        }
         else title = S.outcome && S.outcome !== 'บันทึกอื่น' ? S.outcome : '';
         if (!S.titleDirty) S.title = title;
         if (!S.detailDirty) S.detail = detail;
@@ -418,12 +490,17 @@
             f += '<div class="cl-sec"><span>ประกาศ</span>' + chips('ann', ANNOUNCES, S.ann, false) + '</div>';
             if (S.ann !== 'a25') f += '<div class="cl-sec"><span>ให้ปฏิบัติภายใน (นาที) — ระบบเตือนเมื่อครบกำหนด</span>' + chips('minutes', MINUTES.map(String), String(S.minutes), false) + '</div>';
         }
-        if (k === 'deadline' || k === 'court' || k === 'end' || k === 'note') f += '<div class="cl-sec"><span>' + (k === 'note' ? 'ประเภท' : 'เลือก') + '</span>' + chips('outcome', OUT[k], S.outcome, false) + '</div>';
+        if (k === 'deadline' || k === 'court' || k === 'end' || k === 'note' || k === 'daily') f += '<div class="cl-sec"><span>' + (k === 'note' || k === 'daily' ? 'ประเภท' : 'เลือก') + '</span>' + chips('outcome', OUT[k], S.outcome, false) + '</div>';
+        if (k === 'daily') f += '<div class="cl-row2"><label class="cl-f"><span>ข้อที่ (รายงานประจำวัน)</span><input data-cl-in="dailyNo" inputmode="numeric" value="' + esc(S.dailyNo) + '" placeholder="เช่น 12"></label>' +
+            '<label class="cl-f"><span>ชื่อผู้ถูกนำตัว / ผู้เกี่ยวข้อง</span><input data-cl-in="person" value="' + esc(S.person) + '" placeholder="ชื่อ-สกุล"></label></div>';
         f += '<label class="cl-f"><span>หัวข้อ (เรียบเรียงให้อัตโนมัติ แก้ได้)</span><textarea rows="2" data-cl-in="title">' + esc(S.title) + '</textarea></label>';
-        if (k === 'risk' || k === 'sitrep' || k === 'negotiate' || k === 'note' || S.detail) f += '<label class="cl-f"><span>รายละเอียด</span><textarea rows="2" data-cl-in="detail" placeholder="ไม่บังคับ">' + esc(S.detail) + '</textarea></label>';
+        if (k === 'risk' || k === 'sitrep' || k === 'negotiate' || k === 'note' || k === 'daily' || S.detail) f += '<label class="cl-f"><span>รายละเอียด</span><textarea rows="2" data-cl-in="detail" placeholder="ไม่บังคับ">' + esc(S.detail) + '</textarea></label>';
         if (S.law || k === 'risk') f += '<label class="cl-f"><span>ข้อกฎหมาย</span><input data-cl-in="law" value="' + esc(S.law) + '"></label>';
         const by = S.by != null ? S.by : recorder();
         f += '<label class="cl-f cl-time"><span>เวลา</span><input type="time" data-cl-in="time" value="' + hmc(S.at) + '"></label>';
+        // สถานที่: แตะเลือก หรือพิมพ์สถานที่อื่น (ใช้ในตารางลำดับเหตุการณ์ และคำบรรยายใต้ภาพ)
+        f += '<div class="cl-sec cl-place"><span>สถานที่</span>' + chips('place', PLACES, S.place, false) +
+            '<input data-cl-in="place" value="' + esc(S.place) + '" placeholder="พิมพ์สถานที่อื่น เช่น ปากซอยคู้คลองสิบ 4 ฝั่งตรงข้าม"></div>';
         f += mediaSec();
         f += '<div class="cl-sec cl-by"><span>ผู้บันทึก — แตะชื่อ หรือพิมพ์ค้นจากรายชื่อ สน.ลำหิน</span>' + chips('by', quickNames(api.active()), by, false) +
             '<input list="cl-staff" data-cl-in="by" value="' + esc(by) + '" placeholder="พิมพ์ชื่อหรือตำแหน่ง เช่น ภาณุ, สส., ผช.พงส." autocomplete="off">' +
@@ -511,10 +588,15 @@
         if (c) {
             const g = c.dataset.clChip, v = c.dataset.v;
             if (g === 'by') { S.by = v; setRecorder(v); }
+            else if (g === 'place') { S.place = v; S.placeDirty = true; }
             else if (g === 'violated') S.violated = v === '1';
             else if (g === 'minutes') S.minutes = Number(v);
             else if (g === 'ann') S.ann = v;
-            else if (g === 'outcome') S.outcome = S.outcome === v ? '' : v;
+            else if (g === 'outcome') {
+                S.outcome = S.outcome === v ? '' : v;
+                // ศาล: ปิดประกาศคำบังคับ ณ สถานที่ชุมนุม → สถานที่ = จุดชุมนุม (ถ้ายังไม่ได้เลือกเอง)
+                if (S.kind === 'court' && !S.placeDirty) S.place = /ณ สถานที่ชุมนุม/.test(S.outcome) ? DEFAULT_PLACE : 'ศาลแพ่งมีนบุรี';
+            }
             else { const arr = S[g]; const i = arr.indexOf(v); if (i > -1) arr.splice(i, 1); else arr.push(v); }
             drawSheet(); return;
         }
@@ -547,6 +629,18 @@
         else if (k === 'title') { S.title = t.value; S.titleDirty = true; }
         else if (k === 'detail') { S.detail = t.value; S.detailDirty = true; }
         else if (k === 'law') { S.law = t.value; S.lawDirty = true; }
+        else if (k === 'place') {
+            S.place = t.value; S.placeDirty = true;
+            sheet.querySelectorAll('[data-cl-chip="place"]').forEach((c) => c.classList.toggle('on', c.dataset.v === t.value.trim()));
+        }
+        else if (k === 'person' || k === 'dailyNo') {
+            S[k] = t.value;
+            if (!S.titleDirty || !S.detailDirty) {
+                compose();
+                const ti = sheet.querySelector('[data-cl-in="title"]'); if (ti && !S.titleDirty) ti.value = S.title;
+                const de = sheet.querySelector('[data-cl-in="detail"]'); if (de && !S.detailDirty) de.value = S.detail;
+            }
+        }
         else if (k === 'by') {
             S.by = t.value; setRecorder(t.value.trim());
             sheet.querySelectorAll('[data-cl-chip="by"]').forEach((c) => c.classList.toggle('on', c.dataset.v === t.value.trim()));
@@ -572,13 +666,17 @@
         const entry = {
             at: new Date(S.at).toISOString(), kind: kind, title: title, detail: String(S.detail || '').trim(), law: String(S.law || '').trim(),
             crowd: counted ? S.crowd : null, vehicles: counted ? S.vehicles : null,
-            unit: UNIT_OF[kind] || UNIT_OF[S.kind] || 'ศปก.ส่วนหน้า', place: PLACE_OF[kind] || DEFAULT_PLACE,
+            unit: UNIT_OF[kind] || UNIT_OF[S.kind] || 'ศปก.ส่วนหน้า', place: String(S.place || '').trim() || PLACE_OF[kind] || PLACE_OF[S.kind] || DEFAULT_PLACE,
             by: String(S.by != null ? S.by : recorder()).trim(),
             deadlineAt: S.kind === 'announce' && a && a.id !== 'a25' ? new Date(S.at + S.minutes * 60000).toISOString() : (S.kind === 'announce' ? '' : S.deadlineAt || ''),
             refId: S.refId || '', picks: S.picks.slice(), groups: S.groups.slice(), units: S.units.slice(), outcome: S.outcome, ann: S.kind === 'announce' ? S.ann : '', minutes: S.kind === 'announce' ? S.minutes : '',
-            media: S.media.map((m) => ({ id: m.id, kind: m.kind, name: m.name, type: m.type, size: m.size, w: m.w, h: m.h, caption: String(m.caption || '').trim() }))
+            // คงช่องอื่นของรูปไว้ (เช่น m.drive = รหัสไฟล์สำรองใน Google Drive จาก cmdsync) — รวมกับค่าล่าสุดที่ซิงก์เข้ามาระหว่างเปิดแผ่นกรอก
+            media: S.media.map((m) => {
+                const cur = S.editId ? mediaOf(logOf(ev).find((y) => y.id === S.editId)).find((y) => y.id === m.id) : null;
+                return Object.assign({}, cur || {}, m, { caption: String(m.caption || '').trim() });
+            })
         };
-        if (S.editId && S.place) entry.place = S.place;   // คงสถานที่เดิมของรายการที่แก้
+        if (S.kind === 'daily') { entry.person = String(S.person || '').trim(); entry.dailyNo = String(S.dailyNo || '').trim(); }
         // รูปที่ลบออกในแผ่นกรอก → ลบไฟล์ในเครื่องเมื่อบันทึก
         const removed = (S.mediaOrig || []).filter((id) => !entry.media.some((m) => m.id === id));
         if (removed.length && MEDIA()) MEDIA().del(removed);
@@ -589,7 +687,7 @@
             const x = logOf(ev).find((y) => y.id === S.editId);
             if (x) Object.assign(x, entry);
         } else {
-            logOf(ev).push(Object.assign({ id: api.uid('lg'), level: '', evidence: '' }, entry));
+            logOf(ev).push(Object.assign({ id: api.uid('lg'), level: '', evidence: '', tv: 2 }, entry));
         }
         api.save(); render();
         api.toast((S.editId ? 'แก้ไขแล้ว · ' : 'บันทึกแล้ว · ') + hm(S.at) + ' น.');
@@ -598,7 +696,7 @@
     // ตอบแจ้งเตือนในกล่องด้านบน (บันทึกทันที ไม่ต้องเปิดแผ่นกรอก)
     function quickAdd(kind, title, extra) {
         const ev = api.active(); if (!ev) return;
-        logOf(ev).push(Object.assign({ id: api.uid('lg'), at: new Date().toISOString(), kind: kind, title: title, detail: '', crowd: null, vehicles: null, law: '',
+        logOf(ev).push(Object.assign({ id: api.uid('lg'), tv: 2, at: new Date().toISOString(), kind: kind, title: title, detail: '', crowd: null, vehicles: null, law: '',
             unit: UNIT_OF[kind] || 'ศปก.ส่วนหน้า', place: DEFAULT_PLACE, by: recorder(), level: '', evidence: '', deadlineAt: '', refId: '' }, extra || {}));
         api.save(); render(); api.toast('บันทึกแล้ว · ' + hm(Date.now()) + ' น.');
     }
