@@ -128,7 +128,8 @@
     const pad = (n) => String(n).padStart(2, '0');
     const hm = (ms) => { const d = new Date(ms); return pad(d.getHours()) + '.' + pad(d.getMinutes()); };
     const hmc = (ms) => { const d = new Date(ms); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
-    const thDigits = (s) => String(s == null ? '' : s).replace(/[0-9]/g, (d) => '๐๑๒๓๔๕๖๗๘๙'[d]);
+    // เลขไทย — ยกเว้นรหัสที่มีอักษรละติน (เช่น เลขรับคำแจ้งความ EV600…SJ) คงเลขอารบิก
+    const thDigits = (s) => String(s == null ? '' : s).replace(/[A-Za-z0-9]+/g, (w) => /[A-Za-z]/.test(w) ? w : w.replace(/[0-9]/g, (d) => '๐๑๒๓๔๕๖๗๘๙'[d]));
     const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     const num = (v) => { const n = parseInt(String(v == null ? '' : v).replace(/[^0-9]/g, ''), 10); return isNaN(n) ? null : n; };
     function recorder() { try { return localStorage.getItem(BY_KEY) || ''; } catch (e) { return ''; } }
@@ -146,6 +147,32 @@
         return out.slice(0, 8);
     }
     function logOf(ev) { if (!Array.isArray(ev.log)) ev.log = []; return ev.log; }
+
+    /* ---------------- รูปภาพ / ไฟล์แนบ (cmdmedia.js เก็บไฟล์ในเครื่อง · รายการเก็บรหัส + คำบรรยาย) ---------------- */
+    const MEDIA = () => window.LamhinMedia || null;
+    const mediaOf = (x) => (x && Array.isArray(x.media) ? x.media : []);
+    const mediaIds = (list) => list.map((m) => m.id);
+    const placeOf = (kind) => PLACE_OF[kind] || DEFAULT_PLACE;
+    const mediaOpen = new Set();   // รายการที่กางดูรูปอยู่ใน timeline
+    // คำบรรยายใต้ภาพ (ตั้งต้น): เหตุการณ์ · วันที่ · เวลา · สถานที่ — แก้ได้
+    function autoCaption(o) {
+        const t = String(o.title || '').replace(/\s*·\s*/g, ' ').trim() || 'ภาพเหตุการณ์';
+        return t + ' เมื่อ' + api.thDateLong(o.at) + ' เวลาประมาณ ' + hm(o.at) + ' นาฬิกา ณ ' + (o.place || DEFAULT_PLACE);
+    }
+    // ใส่รูปจริงให้ <img data-mid> (data-thumb="1" = ภาพเล็ก)
+    function hydrate(root) {
+        const M = MEDIA(); if (!M || !root) return;
+        root.querySelectorAll('img[data-mid]:not([src])').forEach((im) => {
+            M.url(im.dataset.mid, im.dataset.thumb === '1').then((u) => { if (u) im.src = u; else { im.alt = 'ไม่พบรูปในเครื่องนี้'; im.classList.add('miss'); } }).catch(() => { im.classList.add('miss'); });
+        });
+    }
+    // ไฟล์ในเครื่องที่ไม่มีรายการใดอ้างถึงแล้ว (ยกเลิกแผ่นกรอก / ปิดหน้ากลางคัน) → ลบทิ้ง (เฉพาะที่เก่ากว่า 1 ชม.)
+    function mediaGc() {
+        const M = MEDIA(); if (!M || !M.gc || !api.state) return;
+        const keep = new Set();
+        (api.state.events || []).forEach((e) => (Array.isArray(e.log) ? e.log : []).forEach((x) => mediaOf(x).forEach((m) => keep.add(m.id))));
+        M.gc(keep, 3600000);
+    }
     function sorted(ev) { return logOf(ev).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at)); }
     function latest(ev, key) {
         const l = sorted(ev).filter((x) => x[key] != null && x[key] !== '');
@@ -203,6 +230,7 @@
             : sub === 'legal' ? '<div class="cmd-grid cmd-g-one">' + api.card('legal', ev) + '</div>'
             : sub === 'contact' ? '<div class="cmd-grid cmd-g-one">' + api.card('contact', ev) + '</div>' : '';
         if (card && api.card) { el.innerHTML = '<div class="cl">' + subTabsHtml(ev) + card + '</div>'; if (api.tick) api.tick(); return; }
+        const nPhotos = logOf(ev).reduce((n, x) => n + mediaOf(x).filter((m) => m.kind === 'image').length, 0);
         el.innerHTML = '<div class="cl">' + subTabsHtml(ev) +
             '<section class="cmd-card cl-head">' +
                 '<div class="cl-top"><div class="cl-stats">' +
@@ -210,6 +238,7 @@
                     '<span><i class="fa-solid fa-people-group"></i><b>' + (crowd == null ? '–' : crowd) + '</b> คน</span>' +
                     '<span><i class="fa-solid fa-car-side"></i><b>' + (veh == null ? '–' : veh) + '</b> คัน</span>' +
                     '<span><i class="cmd-dot ' + esc(ev.level) + '"></i>' + esc(lv.short || '') + '</span>' +
+                    (nPhotos ? '<span title="รูปภาพที่แนบในบันทึก"><i class="fa-solid fa-images"></i><b>' + nPhotos + '</b> รูป</span>' : '') +
                 '</div><div class="cl-acts">' +
                     '<button type="button" class="cl-ic" data-cl="line" title="คัดลอกส่ง LINE" aria-label="คัดลอกส่ง LINE"><i class="fa-brands fa-line"></i></button>' +
                     '<button type="button" class="cl-ic" data-cl="print" title="พิมพ์ตารางแนบคำร้องศาล" aria-label="พิมพ์ตารางแนบคำร้องศาล"><i class="fa-solid fa-print"></i></button>' +
@@ -219,6 +248,7 @@
             '</section>' +
             '<section class="cmd-card cl-tl-card">' + timelineHtml(ev) + '</section>' +
         '</div>';
+        hydrate(el);
     }
     function timelineHtml(ev) {
         const items = sorted(ev).map((x) => ({ x: x, t: Date.parse(x.at) }));
@@ -250,9 +280,53 @@
                 '<button type="button" class="cl-body" data-cl="edit" data-id="' + esc(x.id) + '"><span class="cl-kind t-' + k.tone + '">' + esc(k.label) + '</span><b>' + esc(x.title || k.label) + '</b>' +
                 (x.detail && x.detail !== x.title ? '<span class="cl-det">' + esc(x.detail) + '</span>' : '') +
                 (tags.length ? '<span class="cl-tags">' + tags.join('') + '</span>' : '') + '</button>' +
+                mediaRowHtml(x) +
                 '<button type="button" class="cl-del" data-cl="del" data-id="' + esc(x.id) + '" title="ลบรายการนี้" aria-label="ลบรายการนี้"><i class="fa-solid fa-xmark"></i></button></li>';
         });
         return h + '</ol>';
+    }
+
+    // แถบรูป/ไฟล์แนบใต้รายการ: สัญลักษณ์ + จำนวน · แตะเพื่อกาง/หุบดูรูป · แตะรูปเพื่อดูภาพใหญ่ แก้คำบรรยาย หรือลบ
+    function mediaRowHtml(x) {
+        const md = mediaOf(x);
+        if (!md.length) return '';
+        const ni = md.filter((m) => m.kind === 'image').length, nf = md.length - ni, open = mediaOpen.has(x.id);
+        return '<div class="cl-media"><button type="button" class="cl-mtog' + (open ? ' on' : '') + '" data-cl="mtog" data-id="' + esc(x.id) + '" aria-expanded="' + open + '">' +
+            (ni ? '<i class="fa-solid fa-images"></i> ' + ni + ' รูป' : '') + (nf ? (ni ? ' · ' : '') + '<i class="fa-solid fa-paperclip"></i> ' + nf + ' ไฟล์' : '') +
+            ' <i class="fa-solid fa-chevron-' + (open ? 'up' : 'down') + ' cl-mchev"></i></button>' +
+            (open ? '<div class="cl-mgrid">' + md.map((m, i) => m.kind === 'image'
+                ? '<button type="button" class="cl-mthumb" data-cl="mview" data-id="' + esc(x.id) + '" data-i="' + i + '"><img data-mid="' + esc(m.id) + '" data-thumb="1" alt="รูปที่ ' + (i + 1) + '"><span>' + esc(m.caption || '') + '</span></button>'
+                : '<button type="button" class="cl-mfile" data-cl="mopen" data-mid="' + esc(m.id) + '"><i class="fa-solid fa-file-lines"></i><span>' + esc(m.name) + (m.caption ? '<small>' + esc(m.caption) + '</small>' : '') + '</span></button>').join('') + '</div>' : '') + '</div>';
+    }
+    // ดูภาพใหญ่ · แก้คำบรรยายใต้ภาพ · ลบรูป (จาก timeline โดยตรง)
+    function viewMedia(ev, id, i) {
+        const x = logOf(ev).find((y) => y.id === id), m = mediaOf(x)[i];
+        if (!x || !m) return;
+        const box = api.modal({
+            title: 'รูปที่ ' + (i + 1) + ' · ' + hm(Date.parse(x.at)) + ' น.', icon: 'fa-image',
+            body: '<div class="cl-lb"><img data-mid="' + esc(m.id) + '" alt="รูปที่ ' + (i + 1) + '"><label class="cl-f"><span>คำบรรยายใต้ภาพ (ใช้ในเอกสารภาพถ่ายประกอบ)</span><textarea rows="3" data-lb-cap>' + esc(m.caption || '') + '</textarea></label>' +
+                '<button type="button" class="cl-order" data-lb-auto><i class="fa-solid fa-wand-magic-sparkles"></i> เขียนใหม่จากรายการ</button></div>',
+            actions: [
+                { label: '<i class="fa-solid fa-trash"></i> ลบรูป', cls: 'danger', run: (close) => {
+                    if (!window.confirm('ลบรูปที่ ' + (i + 1) + ' ของรายการเวลา ' + hm(Date.parse(x.at)) + ' น.?\nลบแล้วกู้คืนไม่ได้')) return;
+                    x.media = mediaOf(x).filter((y) => y.id !== m.id);
+                    if (MEDIA()) MEDIA().del(m.id);
+                    api.save(); close(); render(); api.toast('ลบรูปแล้ว');
+                } },
+                { label: 'ปิด', run: (close) => close() },
+                { label: '<i class="fa-solid fa-check"></i> บันทึกคำบรรยาย', cls: 'gold', run: (close, b) => {
+                    m.caption = String((b.querySelector('[data-lb-cap]') || {}).value || '').trim();
+                    api.save(); close(); render(); api.toast('บันทึกคำบรรยายแล้ว');
+                } }
+            ]
+        });
+        if (!box) return;
+        box.addEventListener('click', (e) => {
+            if (!e.target.closest('[data-lb-auto]')) return;
+            const ta = box.querySelector('[data-lb-cap]');
+            if (ta) ta.value = autoCaption({ title: x.title, at: Date.parse(x.at), place: x.place });
+        });
+        hydrate(box);
     }
 
     /* ---------------- แผ่นกรอก (ตัวช่วยกรอกแบบปุ่มเลือก) ---------------- */
@@ -261,7 +335,8 @@
         return Object.assign({
             kind: kind, at: now, title: '', detail: '', law: '', titleDirty: false, detailDirty: false, editId: '', refId: '',
             crowd: clamp(num(latest(ev, 'crowd')) || 100, 1, 500), vehicles: clamp(num(latest(ev, 'vehicles')) == null ? 10 : num(latest(ev, 'vehicles')), 0, 50),
-            withCount: kind === 'sitrep' || kind === 'risk', picks: [], groups: [], units: [], who: [WHO[0]], outcome: '', ann: 'a212', minutes: 30, violated: false
+            withCount: kind === 'sitrep' || kind === 'risk', picks: [], groups: [], units: [], who: [WHO[0]], outcome: '', ann: 'a212', minutes: 30, violated: false,
+            media: [], mediaOrig: [], mediaNew: [], mediaBusy: false
         }, extra || {});
     }
     function fromEntry(x) {
@@ -270,7 +345,8 @@
             editId: x.id, at: Date.parse(x.at) || Date.now(), title: x.title || '', detail: x.detail || '', law: x.law || '', titleDirty: true, detailDirty: true,
             crowd: x.crowd != null && x.crowd !== '' ? clamp(num(x.crowd) || 1, 1, 500) : 100, vehicles: x.vehicles != null && x.vehicles !== '' ? clamp(num(x.vehicles) || 0, 0, 50) : 10,
             withCount: x.crowd != null && x.crowd !== '', violated: x.kind === 'violation', refId: x.refId || '', deadlineAt: x.deadlineAt || '',
-            origKind: x.kind, picks: x.picks || [], groups: x.groups || [], units: x.units || [], outcome: x.outcome || '', ann: x.ann || 'a212', minutes: x.minutes || 30
+            origKind: x.kind, picks: x.picks || [], groups: x.groups || [], units: x.units || [], outcome: x.outcome || '', ann: x.ann || 'a212', minutes: x.minutes || 30,
+            media: mediaOf(x).map((m) => Object.assign({}, m)), mediaOrig: mediaIds(mediaOf(x)), place: x.place || ''
         });
     }
     // เรียบเรียงหัวข้อ/รายละเอียด/มาตราจากปุ่มที่เลือก (ถ้าผู้ใช้ยังไม่ได้พิมพ์แก้เอง)
@@ -340,11 +416,40 @@
         if (S.law || k === 'risk') f += '<label class="cl-f"><span>ข้อกฎหมาย</span><input data-cl-in="law" value="' + esc(S.law) + '"></label>';
         const by = S.by != null ? S.by : recorder();
         f += '<label class="cl-f cl-time"><span>เวลา</span><input type="time" data-cl-in="time" value="' + hmc(S.at) + '"></label>';
+        f += mediaSec();
         f += '<div class="cl-sec cl-by"><span>ผู้บันทึก — แตะชื่อ หรือพิมพ์ค้นจากรายชื่อ สน.ลำหิน</span>' + chips('by', quickNames(api.active()), by, false) +
             '<input list="cl-staff" data-cl-in="by" value="' + esc(by) + '" placeholder="พิมพ์ชื่อหรือตำแหน่ง เช่น ภาณุ, สส., ผช.พงส." autocomplete="off">' +
             '<datalist id="cl-staff">' + STAFF.map((p) => '<option value="' + esc(p[0]) + '">' + esc(p[1]) + '</option>').join('') + '</datalist></div>';
         return f;
     }
+    // ภาพถ่าย / ไฟล์แนบในแผ่นกรอก: เพิ่มได้หลายไฟล์ · แก้คำบรรยายใต้ภาพ · ลบ (ลบจริงเมื่อกดบันทึก)
+    function sheetCaption() { return autoCaption({ title: S.title, at: S.at, place: S.place || placeOf(S.kind) }); }
+    function mediaSec() {
+        const M = MEDIA();
+        if (!M) return '';
+        const items = S.media.map((m, i) => m.kind === 'image'
+            ? '<div class="cl-mi"><img class="cl-mimg" data-mid="' + esc(m.id) + '" data-thumb="1" alt="ภาพที่ ' + (i + 1) + '">' +
+                '<div class="cl-mcap"><span class="cl-mno">ภาพที่ ' + (i + 1) + ' · คำบรรยายใต้ภาพ</span><textarea rows="3" data-cl-cap="' + i + '" placeholder="บรรยายว่าเป็นภาพอะไร เมื่อใด ที่ไหน">' + esc(m.caption || '') + '</textarea>' +
+                '<div class="cl-mbtns"><button type="button" data-cl-capauto="' + i + '"><i class="fa-solid fa-wand-magic-sparkles"></i> เขียนใหม่จากรายการ</button><button type="button" class="bad" data-cl-mdel="' + i + '"><i class="fa-solid fa-trash"></i> ลบรูป</button></div></div></div>'
+            : '<div class="cl-mi file"><i class="fa-solid fa-file-lines cl-mfi"></i><div class="cl-mcap"><span class="cl-mno">' + esc(m.name) + ' · ' + M.sizeText(m.size || 0) + '</span>' +
+                '<input data-cl-cap="' + i + '" value="' + esc(m.caption || '') + '" placeholder="คำอธิบายไฟล์ (ถ้ามี)">' +
+                '<div class="cl-mbtns"><button type="button" data-cl-mopen="' + esc(m.id) + '"><i class="fa-solid fa-up-right-from-square"></i> เปิด</button><button type="button" class="bad" data-cl-mdel="' + i + '"><i class="fa-solid fa-trash"></i> ลบไฟล์</button></div></div></div>').join('');
+        return '<div class="cl-sec cl-media-sec"><span>ภาพถ่าย / ไฟล์แนบ (' + S.media.length + ') — เก็บในเครื่องนี้ · คำบรรยายใต้ภาพใช้ในเอกสารภาพถ่ายประกอบ</span>' + items +
+            '<label class="cl-madd' + (S.mediaBusy ? ' busy' : '') + '"><input type="file" multiple accept="image/*,application/pdf,.pdf,.doc,.docx,.xls,.xlsx,video/*,audio/*" data-cl-file>' +
+            (S.mediaBusy ? '<i class="fa-solid fa-spinner fa-spin"></i> กำลังเตรียมรูป…' : '<i class="fa-solid fa-camera"></i> เพิ่มรูปภาพ / ไฟล์ (เลือกได้หลายไฟล์)') + '</label></div>';
+    }
+    function addMedia(files) {
+        const M = MEDIA(); if (!M || !files || !files.length) return;
+        const st = S;
+        st.mediaBusy = true; drawSheet();
+        M.add(files).then((list) => {
+            if (S !== st || !sheet) { M.del(mediaIds(list)); return; }   // ปิดแผ่นกรอกไปแล้ว
+            list.forEach((m) => { m.caption = m.kind === 'image' ? sheetCaption() : ''; st.media.push(m); st.mediaNew.push(m.id); });
+            api.toast('เพิ่ม ' + list.length + ' ไฟล์แล้ว — กดบันทึกเพื่อเก็บ');
+        }).catch((e) => api.toast((e && e.message) || 'เพิ่มไฟล์ไม่สำเร็จ')).then(() => { st.mediaBusy = false; if (S === st && sheet) drawSheet(); });
+    }
+    // ปิดแผ่นกรอกโดยไม่บันทึก → ลบไฟล์ที่เพิ่งเพิ่ม
+    function discardSheet() { if (S && S.mediaNew && S.mediaNew.length && MEDIA()) MEDIA().del(S.mediaNew); sheet = null; }
     function drawSheet() {
         if (!sheet) return;
         compose();
@@ -352,6 +457,7 @@
         const keep = b.scrollTop;
         b.innerHTML = '<div class="cl-sheet">' + sheetBody() + '</div>';
         b.scrollTop = keep;
+        hydrate(b);
     }
     function openSheet(st) {
         S = st;
@@ -359,19 +465,39 @@
         const q = QUICK.find((x) => x.k === S.kind);
         const actions = [];
         if (S.editId) actions.push({ label: '<i class="fa-solid fa-trash"></i> ลบ', cls: 'danger', run: (close) => {
-            if (!window.confirm('ลบรายการนี้?')) return;
-            const ev = api.active(); ev.log = logOf(ev).filter((x) => x.id !== S.editId); api.save(); close(); sheet = null; render(); api.toast('ลบแล้ว');
+            const ev = api.active(), x = logOf(ev).find((y) => y.id === S.editId);
+            const n = mediaOf(x).length;
+            if (!window.confirm('ลบรายการนี้?' + (n ? '\nรูปภาพ/ไฟล์แนบ ' + n + ' ไฟล์ของรายการนี้จะถูกลบด้วย' : ''))) return;
+            if (MEDIA()) MEDIA().del(mediaIds(mediaOf(x)).concat(S.mediaNew || []));
+            ev.log = logOf(ev).filter((y) => y.id !== S.editId); api.save(); close(); sheet = null; render(); api.toast('ลบแล้ว');
         } });
-        actions.push({ label: 'ยกเลิก', run: (close) => { close(); sheet = null; } });
-        actions.push({ label: '<i class="fa-solid fa-check"></i> บันทึก', cls: 'gold', run: (close) => { if (saveS()) { close(); sheet = null; } } });
+        actions.push({ label: 'ยกเลิก', run: (close) => { close(); discardSheet(); } });
+        actions.push({ label: '<i class="fa-solid fa-check"></i> บันทึก', cls: 'gold', run: (close) => { if (S.mediaBusy) { api.toast('รอเตรียมรูปให้เสร็จก่อน'); return; } if (saveS()) { close(); sheet = null; } } });
         sheet = api.modal({ title: (S.editId ? 'แก้ไข · ' : '') + (q ? q.label : k.label), icon: k.icon, body: '<div class="cl-sheet"></div>', actions: actions });
         sheet.classList.add('cl-modal');
         sheet.addEventListener('click', onSheetClick);
         sheet.addEventListener('input', onSheetInput);
+        sheet.addEventListener('change', (e) => { if (e.target.matches('[data-cl-file]')) { const fl = Array.from(e.target.files || []); e.target.value = ''; addMedia(fl); } });
         drawSheet();
     }
     function onSheetClick(e) {
-        if (e.target.closest('.cmd-modal-x') || e.target === sheet) { sheet = null; return; }
+        if (e.target.closest('.cmd-modal-x') || e.target === sheet) { discardSheet(); return; }
+        const cap = e.target.closest('[data-cl-capauto]');
+        if (cap) {
+            const i = Number(cap.dataset.clCapauto), m = S.media[i]; if (!m) return;
+            m.caption = sheetCaption();
+            const ta = sheet.querySelector('[data-cl-cap="' + i + '"]'); if (ta) ta.value = m.caption;
+            return;
+        }
+        const md = e.target.closest('[data-cl-mdel]');
+        if (md) {
+            const i = Number(md.dataset.clMdel), m = S.media[i]; if (!m) return;
+            if (!window.confirm('ลบ' + (m.kind === 'image' ? 'รูปที่ ' + (i + 1) : 'ไฟล์ ' + m.name) + ' ออกจากรายการนี้?')) return;
+            S.media.splice(i, 1);
+            drawSheet(); return;
+        }
+        const mo = e.target.closest('[data-cl-mopen]');
+        if (mo) { if (MEDIA()) MEDIA().open(mo.dataset.clMopen).catch((er) => api.toast(er.message)); return; }
         const c = e.target.closest('[data-cl-chip]');
         if (c) {
             const g = c.dataset.clChip, v = c.dataset.v;
@@ -405,6 +531,7 @@
             if (!S.titleDirty) { compose(); const ti = sheet.querySelector('[data-cl-in="title"]'); if (ti) ti.value = S.title; }
             return;
         }
+        if (t.dataset.clCap != null) { const m = S.media[Number(t.dataset.clCap)]; if (m) m.caption = t.value; return; }
         const k = t.dataset.clIn; if (!k) return;
         if (k === 'crowd' || k === 'vehicles') { S[k] = Number(t.value); syncCount(k); }
         else if (k === 'withCount') { S.withCount = t.checked; drawSheet(); }
@@ -439,8 +566,14 @@
             unit: UNIT_OF[kind] || UNIT_OF[S.kind] || 'ศปก.ส่วนหน้า', place: PLACE_OF[kind] || DEFAULT_PLACE,
             by: String(S.by != null ? S.by : recorder()).trim(),
             deadlineAt: S.kind === 'announce' && a && a.id !== 'a25' ? new Date(S.at + S.minutes * 60000).toISOString() : (S.kind === 'announce' ? '' : S.deadlineAt || ''),
-            refId: S.refId || '', picks: S.picks.slice(), groups: S.groups.slice(), units: S.units.slice(), outcome: S.outcome, ann: S.kind === 'announce' ? S.ann : '', minutes: S.kind === 'announce' ? S.minutes : ''
+            refId: S.refId || '', picks: S.picks.slice(), groups: S.groups.slice(), units: S.units.slice(), outcome: S.outcome, ann: S.kind === 'announce' ? S.ann : '', minutes: S.kind === 'announce' ? S.minutes : '',
+            media: S.media.map((m) => ({ id: m.id, kind: m.kind, name: m.name, type: m.type, size: m.size, w: m.w, h: m.h, caption: String(m.caption || '').trim() }))
         };
+        if (S.editId && S.place) entry.place = S.place;   // คงสถานที่เดิมของรายการที่แก้
+        // รูปที่ลบออกในแผ่นกรอก → ลบไฟล์ในเครื่องเมื่อบันทึก
+        const removed = (S.mediaOrig || []).filter((id) => !entry.media.some((m) => m.id === id));
+        if (removed.length && MEDIA()) MEDIA().del(removed);
+        S.mediaNew = [];
         pushRecent(entry.by);
         if (S.editId) {
             const x = logOf(ev).find((y) => y.id === S.editId);
@@ -477,59 +610,126 @@
         let rows = sorted(ev).filter((x) => !o.court || COURT_KINDS.indexOf(x.kind) !== -1).map((x) => Object.assign({ src: 'log' }, x));
         if (o.schedule) {
             const add = (t, title) => { if (t) rows.push({ src: 'plan', at: new Date(t).toISOString(), kind: 'note', title: title }); };
-            add(api.musterOf(ev), 'กำหนดการ: รวมพล/ปล่อยแถว ' + (ev.musterLabel || ''));
+            add(api.musterOf(ev), 'กำหนดการ: ' + (ev.musterLabel || 'รวมพล/ปล่อยแถว'));
             add(api.startOf(ev), 'กำหนดการ: เริ่มการชุมนุมตามที่แจ้ง');
             add(api.endOf(ev), 'กำหนดการ: ครบเวลาเลิกการชุมนุมตามที่แจ้ง');
         }
         if (o.levels) (ev.levelLog || []).forEach((l) => rows.push({ src: 'level', at: l.at, kind: 'note', title: 'ปรับระดับสถานการณ์เป็น' + ((api.LEVELS[l.level] || {}).name || '') }));
         return rows.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
     }
+    // ข้อความมุมขวาบนให้ตรงกับคำร้องแบบ 3-5 ข้อ 2 ("เอกสารท้ายคำร้องหมายเลข 5")
+    const ATTACH = 'เอกสารท้ายคำร้องหมายเลข ๕', OLD_ATTACH = ['เอกสารแนบท้ายคำร้องหมายเลข ๕'];
     function printPrefs() {
         let p = {};
         try { p = JSON.parse(localStorage.getItem(PRINT_KEY) || '{}') || {}; } catch (e) { p = {}; }
-        return Object.assign({ scope: 'court', schedule: true, levels: false, attach: 'เอกสารแนบท้ายคำร้องหมายเลข ๕', thai: true, landscape: false,
+        if (OLD_ATTACH.indexOf(p.attach) !== -1) p.attach = ATTACH;
+        return Object.assign({ scope: 'court', schedule: true, levels: false, attach: ATTACH, thai: true, landscape: false,
             maker: recorder(), checker: 'พันตำรวจโท อัคเดช ลัดดาวัลย์', checkerPos: 'รองผู้กำกับการ (สอบสวน) สถานีตำรวจนครบาลลำหิน' }, p);
     }
     function printDialog() {
         const ev = api.active(); if (!ev) return;
         if (!logOf(ev).length) { api.toast('ยังไม่มีบันทึกให้พิมพ์'); return; }
         const p = printPrefs();
+        const nPh = logOf(ev).reduce((n, x) => n + mediaOf(x).filter((m) => m.kind === 'image').length, 0);
+        const read = (box) => {
+            const v = (n) => api.formVal(box, n);
+            const np = Object.assign({}, p, { doc: nPh ? v('doc') || 'both' : 'table', scope: v('scope'), schedule: v('schedule') !== 'no', landscape: v('orient') === 'land', attach: v('attach'), maker: v('maker'), checker: v('checker'), checkerPos: v('checkerPos') });
+            try { localStorage.setItem(PRINT_KEY, JSON.stringify(np)); } catch (e) { /* ไม่จำก็ได้ */ }
+            return np;
+        };
+        const hasWord = !!(window.LamhinDocs && window.LamhinDocs.logDocx);
         api.modal({
-            title: 'พิมพ์ตารางลำดับเหตุการณ์ (แนบคำร้องศาล)', icon: 'fa-print',
+            title: 'เอกสารแนบคำร้องศาล (ตาราง + ภาพถ่าย)', icon: 'fa-print',
             body: '<div class="cmd-form">' +
+                (nPh ? api.field('เอกสาร', 'doc', p.doc || 'both', 'select', { cls: 'full', options: [['both', 'ตารางลำดับเหตุการณ์ + ภาพถ่ายประกอบ (' + nPh + ' รูป)'], ['table', 'ตารางลำดับเหตุการณ์อย่างเดียว'], ['photos', 'ภาพถ่ายประกอบอย่างเดียว (' + nPh + ' รูป)']] }) : '') +
                 api.field('รายการที่พิมพ์', 'scope', p.scope, 'select', { cls: 'full', options: [['court', 'เฉพาะที่ใช้ประกอบคำร้อง (สถานการณ์ ฝ่าฝืน เจรจา ประกาศ ศาล)'], ['all', 'ทุกรายการ']] }) +
-                api.field('ข้อความมุมขวาบน', 'attach', p.attach, 'text', { cls: 'full' }) +
+                api.field('แถวกำหนดการตามที่แจ้ง (ตัวเอียง)', 'schedule', p.schedule ? 'yes' : 'no', 'select', { cls: 'full', options: [['yes', 'แสดง (เวลารวมพล / เริ่ม / ครบเวลาเลิกตามที่แจ้ง)'], ['no', 'ไม่แสดง — เฉพาะเหตุการณ์ที่บันทึกจริง']] }) +
+                api.field('ข้อความมุมขวาบน', 'attach', p.attach, 'text') +
+                api.field('กระดาษ A4', 'orient', p.landscape ? 'land' : 'port', 'select', { options: [['port', 'แนวตั้ง'], ['land', 'แนวนอน (ตารางกว้าง)']] }) +
                 api.field('ผู้บันทึก (ยศ ชื่อ-สกุล)', 'maker', p.maker, 'text') +
                 api.field('ผู้ตรวจสอบ', 'checker', p.checker, 'text') +
-                api.field('ตำแหน่งผู้ตรวจสอบ', 'checkerPos', p.checkerPos, 'text', { cls: 'full' }) + '</div>',
+                api.field('ตำแหน่งผู้ตรวจสอบ', 'checkerPos', p.checkerPos, 'text', { cls: 'full' }) + '</div>' +
+                '<div class="cmd-hint"><i class="fa-solid fa-circle-info"></i> พิมพ์ / PDF: มือถือเปิดหน้าเอกสารใหม่ → เลือกพิมพ์ หรือบันทึกเป็น PDF · Word: ได้ไฟล์ .docx แก้ไขต่อได้' +
+                    (nPh ? ' · ภาพถ่ายเรียงตามเวลา เลขภาพตรงกับช่อง "หลักฐาน" ในตาราง (เฉพาะรายการที่อยู่ในตาราง)' : ' · แนบรูปได้ที่รายการในบันทึก (แตะรายการ → เพิ่มรูปภาพ)') + '</div>',
             actions: [
-                { label: 'ยกเลิก', run: (c) => c() },
-                { label: '<i class="fa-solid fa-print"></i> พิมพ์ / PDF', cls: 'gold', run: (close, box) => {
-                    const v = (n) => api.formVal(box, n);
-                    const np = Object.assign({}, p, { scope: v('scope'), attach: v('attach'), maker: v('maker'), checker: v('checker'), checkerPos: v('checkerPos') });
-                    try { localStorage.setItem(PRINT_KEY, JSON.stringify(np)); } catch (e) { /* ไม่จำก็ได้ */ }
-                    close(); printLog(ev, np);
-                } }
-            ]
+                { label: 'ยกเลิก', run: (c) => c() }
+            ].concat(hasWord ? [{ label: '<i class="fa-solid fa-file-word"></i> Word', run: (close, box) => { const np = read(box); close(); wordLog(ev, np); } }] : [], [
+                { label: '<i class="fa-solid fa-print"></i> พิมพ์ / PDF', cls: 'gold', run: (close, box) => { const np = read(box); close(); printLog(ev, np); } }
+            ])
         });
     }
-    function printHtml(ev, p) {
-        const T = (s) => p.thai ? thDigits(s) : String(s == null ? '' : s);
+    // เอกสารยื่นศาลใช้คำเต็ม: "26 พ.ย. 69" → "26 พฤศจิกายน 2569" · "ปจว." → "รายงานประจำวันเกี่ยวกับคดี" · "เลขรับ" → "เลขรับคำแจ้งความ"
+    const MON_S = { 'ม.ค.': 'มกราคม', 'ก.พ.': 'กุมภาพันธ์', 'มี.ค.': 'มีนาคม', 'เม.ย.': 'เมษายน', 'พ.ค.': 'พฤษภาคม', 'มิ.ย.': 'มิถุนายน', 'ก.ค.': 'กรกฎาคม', 'ส.ค.': 'สิงหาคม', 'ก.ย.': 'กันยายน', 'ต.ค.': 'ตุลาคม', 'พ.ย.': 'พฤศจิกายน', 'ธ.ค.': 'ธันวาคม' };
+    const formal = (s) => String(s || '')
+        .replace(/(\d{1,2})\s*(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s*(\d{2,4})/g, (m0, dd, mm, yy) => dd + ' ' + MON_S[mm] + ' ' + (yy.length === 2 ? '25' + yy : yy))
+        .replace(/ปจว\.\s*/g, 'รายงานประจำวันเกี่ยวกับคดี ').replace(/เลขรับ(?!คำแจ้งความ)\s*/g, 'เลขรับคำแจ้งความ ').replace(/\s*·\s*/g, ' ');
+    // ผู้จัดการชุมนุม: ชื่อ อายุ บทบาท (ไม่แสดงเลขประจำตัวประชาชนที่ปิดบางส่วนไว้)
+    const organizerLine = (o) => String(o || '').split(' · ')[0].replace(/\s*เลขประจำตัวประชาชน.*$/, '').trim();
+    // ข้อมูลชุดเดียวสำหรับหน้าพิมพ์ (PDF) และไฟล์ Word
+    function logModel(ev, p) {
         const rows = rowsFor(ev, { court: p.scope === 'court', schedule: p.schedule, levels: p.levels });
         const s = api.startOf(ev);
         const multiDay = new Set(rows.map((x) => new Date(x.at).toDateString())).size > 1;
-        const tr = rows.map((x, i) => {
-            const plan = x.src !== 'log';
-            const k = KINDS[x.kind] || KINDS.note;
-            const counts = [x.crowd != null ? 'ผู้ชุมนุม ' + x.crowd + ' คน' : '', x.vehicles != null ? 'รถ ' + x.vehicles + ' คัน' : ''].filter(Boolean).join('<br>');
-            const what = '<b>' + esc(x.title) + '</b>' + (x.detail && x.detail !== x.title ? '<br>' + esc(x.detail) : '') +
-                (x.place && !plan ? '<br><span class="m">จุด: ' + esc(x.place) + '</span>' : '') + (x.unit && !plan ? '<span class="m"> · ผู้รายงาน: ' + esc(x.unit) + '</span>' : '');
-            return '<tr class="' + (plan ? 'plan' : '') + '"><td class="c">' + T(i + 1) + '</td><td class="c">' + T(hm(Date.parse(x.at))) + ' น.' +
-                (multiDay ? '<br><span class="m">' + T(api.thDateShort(Date.parse(x.at))) + '</span>' : '') + (plan ? '' : '<br><span class="m">' + esc(k.label) + '</span>') + '</td>' +
-                '<td>' + T(what) + '</td><td class="c">' + T(counts || '-') + '</td><td>' + T(esc(x.law || '-')) + '</td><td>' + T(esc(x.evidence || (plan ? '' : '-'))) + '</td></tr>';
+        // ภาพถ่ายประกอบ: เรียงตามรายการในตาราง · เลขภาพต่อเนื่อง · ช่องหลักฐานอ้าง "ภาพที่ ก–ข"
+        const photos = [], refOf = {};
+        rows.forEach((x) => {
+            if (x.src !== 'log') return;
+            const imgs = mediaOf(x).filter((m) => m.kind === 'image');
+            if (!imgs.length) return;
+            const first = photos.length + 1;
+            imgs.forEach((m) => photos.push({ n: photos.length + 1, id: m.id, w: m.w || 4, h: m.h || 3, caption: m.caption || autoCaption({ title: x.title, at: Date.parse(x.at), place: x.place }) }));
+            refOf[x.id] = 'ภาพที่ ' + (first === photos.length ? first : first + '–' + photos.length);
+        });
+        return {
+            doc: photos.length ? (p.doc || 'both') : 'table', photos: photos,
+            photoTitle: 'ภาพถ่ายประกอบบันทึกลำดับเหตุการณ์การชุมนุมสาธารณะ',
+            photoCert: 'ข้าพเจ้าขอรับรองว่าภาพถ่ายข้างต้นเป็นภาพที่บันทึกไว้ขณะปฏิบัติหน้าที่ดูแลการชุมนุมสาธารณะ ณ สถานที่และวันเวลาตามคำบรรยายใต้ภาพจริง โดยมิได้ตัดต่อหรือดัดแปลงเนื้อหาของภาพแต่อย่างใด',
+            attach: p.attach || '', title: 'บันทึกลำดับเหตุการณ์การชุมนุมสาธารณะ', sub: ev.title, thai: !!p.thai, landscape: !!p.landscape,
+            info: [['สถานที่', (ev.place || '-') + (ev.latlng ? ' (พิกัด ' + String(ev.latlng).replace(/(\d+\.\d{6})\d+/g, '$1') + ')' : '')],
+                ['วันเวลาตามที่แจ้ง', (s ? api.thDateLong(s) : '') + ' เวลา ' + api.hmStr(ev.start) + ' ถึง ' + api.hmStr(ev.end)]]
+                .concat(organizerLine(ev.organizer) ? [['ผู้จัดการชุมนุม', organizerLine(ev.organizer)]] : [], ev.ref ? [['หลักฐานการรับแจ้ง', formal(ev.ref)]] : [],
+                    [['บันทึกโดย', 'ศูนย์ปฏิบัติการส่วนหน้า สถานีตำรวจนครบาลลำหิน']]),
+            head: ['ลำดับ', 'เวลา', 'เหตุการณ์ / พฤติการณ์', 'จำนวน', 'ข้อกฎหมาย', 'หลักฐาน'],
+            widths: [0.07, 0.11, 0.47, 0.11, 0.13, 0.11],
+            rows: rows.map((x, i) => {
+                const plan = x.src !== 'log', k = KINDS[x.kind] || KINDS.note;
+                return {
+                    no: i + 1, plan: plan, time: hm(Date.parse(x.at)) + ' น.', date: multiDay ? api.thDateShort(Date.parse(x.at)) : '', kind: plan ? '' : k.label,
+                    title: x.title || k.label, detail: x.detail && x.detail !== x.title ? x.detail : '', place: plan ? '' : x.place || '', unit: plan ? '' : x.unit || '',
+                    counts: [x.crowd != null && x.crowd !== '' ? 'ผู้ชุมนุม ' + x.crowd + ' คน' : '', x.vehicles != null && x.vehicles !== '' ? 'รถ ' + x.vehicles + ' คัน' : ''].filter(Boolean),
+                    law: x.law || '', evidence: [x.evidence || '', refOf[x.id] || ''].filter(Boolean).join(' · ')
+                };
+            }),
+            cert: 'ข้าพเจ้าขอรับรองว่าบันทึกลำดับเหตุการณ์ฉบับนี้ จัดทำขึ้นตามเหตุการณ์ที่เกิดขึ้นจริงในขณะปฏิบัติหน้าที่ดูแลการชุมนุมสาธารณะ ณ สถานที่และวันเวลาดังกล่าวข้างต้น โดยมีภาพถ่ายและคลิปวิดีโอบันทึกเหตุการณ์ประกอบตามที่ระบุไว้',
+            signs: [{ label: 'ผู้บันทึก', name: p.maker, pos: '' }, { label: 'ผู้ตรวจสอบ', name: p.checker, pos: p.checkerPos }]
+        };
+    }
+    function fileName(ev, ext) {
+        const s = api.startOf(ev);
+        return ('บันทึกลำดับเหตุการณ์' + (s ? ' ' + api.thDateShort(s) : '')).replace(/[\\/:*?"<>|]+/g, ' ').trim() + ext;
+    }
+    const withPhotos = (m) => m.doc !== 'table' && m.photos.length > 0;
+    function wordLog(ev, p) {
+        if (!(window.LamhinDocs && window.LamhinDocs.logDocx)) { api.toast('ตัวสร้างไฟล์ Word ยังไม่พร้อม — ลองอีกครั้ง'); return; }
+        const m = logModel(ev, p);
+        api.toast('กำลังสร้างไฟล์ Word…' + (withPhotos(m) ? ' (' + m.photos.length + ' รูป)' : ''));
+        // รูปขนาดเต็มจากเครื่อง → base64 ฝังในไฟล์ Word
+        const imgs = withPhotos(m) && MEDIA() ? Promise.all(m.photos.map((ph) => MEDIA().b64(ph.id).then((b) => { ph.b64 = b; }))) : Promise.resolve();
+        imgs.then(() => window.LamhinDocs.logDocx(m)).then((blob) => window.LamhinDocs.download(blob, fileName(ev, '.docx')))
+            .catch((e) => { console.error('[cmdlog] docx', e); api.toast('สร้างไฟล์ Word ไม่สำเร็จ (ต้องต่ออินเทอร์เน็ตครั้งแรกเพื่อโหลดตัวสร้างไฟล์)'); });
+    }
+    // src = { รหัสรูป: data URL } สำหรับภาพถ่ายประกอบ
+    function printHtml(ev, p, src) {
+        const m = logModel(ev, p);
+        const T = (s) => p.thai ? thDigits(s) : String(s == null ? '' : s);
+        const tr = m.rows.map((r) => {
+            const what = '<b>' + esc(r.title) + '</b>' + (r.detail ? '<br>' + esc(r.detail) : '') +
+                (r.place ? '<br><span class="m">จุด: ' + esc(r.place) + '</span>' : '') + (r.unit ? '<span class="m"> · ผู้รายงาน: ' + esc(r.unit) + '</span>' : '');
+            return '<tr class="' + (r.plan ? 'plan' : '') + '"><td class="c">' + T(r.no) + '</td><td class="c">' + T(r.time) +
+                (r.date ? '<br><span class="m">' + T(r.date) + '</span>' : '') + (r.kind ? '<br><span class="m">' + esc(r.kind) + '</span>' : '') + '</td>' +
+                '<td>' + T(what) + '</td><td class="c">' + T(r.counts.length ? r.counts.join('<br>') : '-') + '</td><td>' + T(esc(r.law || '-')) + '</td><td>' + T(esc(r.evidence || (r.plan ? '' : '-'))) + '</td></tr>';
         }).join('');
-        const title = 'บันทึกลำดับเหตุการณ์การชุมนุมสาธารณะ';
-        const dateLine = s ? api.thDateLong(s) : '';
+        const title = m.title;
         const css = '@font-face{font-family:THSarabunDoc;src:url("cmd/fonts/THSarabunPSK.woff") format("woff");font-weight:400}' +
             '@font-face{font-family:THSarabunDoc;src:url("cmd/fonts/THSarabunPSK-Bold.woff") format("woff");font-weight:700}' +
             '@page{size:A4 ' + (p.landscape ? 'landscape' : 'portrait') + ';margin:2cm 2cm 2cm 3cm;@top-center{content:"- " counter(page' + (p.thai ? ', thai' : '') + ') " -";font-family:THSarabunDoc,"TH SarabunPSK",Sarabun,sans-serif;font-size:16pt}}' +
@@ -552,33 +752,70 @@
             return '<div class="sg"><div class="sc"><span class="sa">' + (rank ? esc(rank) : '') + '</span><span class="sd">' + NB + '</span><span class="sb">' + label + '</span>' +
                 '<p>(' + (nm ? esc(nm) : '<span class="sdl">' + NB + '</span>') + ')</p></div>' + (pos ? '<p>' + esc(pos) + '</p>' : '') + '</div>';
         };
+        const W = p.landscape ? 24.7 : 16;
+        const signs = '<div class="signs">' + m.signs.map((x) => sign(x.label, x.name, x.pos)).join('') + '</div>';
+        const table = m.doc === 'photos' ? '' :
+            (m.attach ? '<p class="att">' + esc(T(m.attach)) + '</p>' : '') +
+            '<h1>' + title + '</h1><p class="sub">' + esc(m.sub) + '</p>' +
+            '<div class="info">' + m.info.map((kv) => '<div><b>' + esc(kv[0]) + '</b> ' + T(esc(kv[1])) + '</div>').join('') + '</div>' +
+            '<table><thead><tr>' + m.head.map((h, i) => '<th style="width:' + (m.widths[i] * 100).toFixed(0) + '%">' + h + '</th>').join('') + '</tr></thead><tbody>' + tr + '</tbody></table>' +
+            // คำรับรอง + ลงชื่อ ไม่แยกหน้ากัน (ลายมือชื่อไม่ไปอยู่หน้าใหม่ลำพัง)
+            '<div class="tail"><p class="cert">' + m.cert + '</p>' + signs + '</div>';
+        // ภาพถ่ายประกอบ: ขึ้นหน้าใหม่ · ภาพละกรอบ คำบรรยายใต้ภาพ "ภาพที่ ๑ …" · คำรับรองภาพถ่าย + ลงชื่อ
+        const photos = !withPhotos(m) ? '' :
+            '<section class="phs' + (table ? ' brk' : '') + '">' + (m.attach ? '<p class="att">' + esc(T(m.attach)) + '</p>' : '') +
+            '<h1>' + m.photoTitle + '</h1><p class="sub">' + esc(m.sub) + '</p>' +
+            m.photos.map((ph) => '<figure class="ph"><img src="' + esc((src && src[ph.id]) || '') + '" alt="ภาพที่ ' + ph.n + '"><figcaption><b>ภาพที่ ' + T(ph.n) + '</b> ' + T(esc(ph.caption)) + '</figcaption></figure>').join('') +
+            '<div class="tail"><p class="cert">' + m.photoCert + '</p>' + signs + '</div></section>';
         const body =
-            (p.attach ? '<p class="att">' + esc(T(p.attach)) + '</p>' : '') +
-            '<h1>' + title + '</h1><p class="sub">' + esc(ev.title) + '</p>' +
-            '<div class="info">' +
-                '<div><b>สถานที่</b> ' + T(esc(ev.place || '-')) + (ev.latlng ? ' (พิกัด ' + T(esc(ev.latlng)) + ')' : '') + '</div>' +
-                '<div><b>วันเวลาตามที่แจ้ง</b> ' + T(esc(dateLine)) + ' เวลา ' + T(esc(api.hmStr(ev.start))) + ' ถึง ' + T(esc(api.hmStr(ev.end))) + '</div>' +
-                (ev.organizer ? '<div><b>ผู้จัดการชุมนุม</b> ' + T(esc(ev.organizer.split(' · ')[0])) + '</div>' : '') +
-                (ev.ref ? '<div><b>หลักฐานการรับแจ้ง</b> ' + T(esc(ev.ref)) + '</div>' : '') +
-                '<div><b>บันทึกโดย</b> ศูนย์ปฏิบัติการส่วนหน้า สถานีตำรวจนครบาลลำหิน</div>' +
-            '</div>' +
-            '<table><thead><tr><th style="width:6%">ลำดับ</th><th style="width:11%">เวลา</th><th>เหตุการณ์ / พฤติการณ์</th><th style="width:11%">จำนวน</th><th style="width:13%">ข้อกฎหมาย</th><th style="width:11%">หลักฐาน</th></tr></thead><tbody>' + tr + '</tbody></table>' +
-            '<p class="cert">ข้าพเจ้าขอรับรองว่าบันทึกลำดับเหตุการณ์ฉบับนี้ จัดทำขึ้นตามเหตุการณ์ที่เกิดขึ้นจริงในขณะปฏิบัติหน้าที่ดูแลการชุมนุมสาธารณะ ณ สถานที่และวันเวลาดังกล่าวข้างต้น โดยมีภาพถ่ายและคลิปวิดีโอบันทึกเหตุการณ์ประกอบตามที่ระบุไว้</p>' +
-            '<div class="signs">' + sign('ผู้บันทึก', p.maker, '') + sign('ผู้ตรวจสอบ', p.checker, p.checkerPos) + '</div>';
-        return '<!doctype html><html lang="th"><head><meta charset="utf-8"><title>' + title + '</title><style>' + css + '</style></head><body>' + body + '</body></html>';
+            // แถบปุ่มบนจอ (ไม่พิมพ์): ถ้าหน้าพิมพ์ไม่ขึ้นเอง กดพิมพ์ซ้ำได้ · iPhone บันทึก PDF จากหน้าพิมพ์ → ปุ่มแชร์ → บันทึกไปยังไฟล์
+            '<div class="pbar"><button type="button" data-print>🖨 พิมพ์ / บันทึกเป็น PDF</button><span>iPhone: กดพิมพ์ แล้วกดปุ่มแชร์ในหน้าตัวเลือกการพิมพ์ → "บันทึกไปยังไฟล์" จะได้ไฟล์ PDF</span></div>' +
+            table + photos;
+        const screenCss = '.phs.brk{break-before:page;page-break-before:always}.ph{margin:12pt 0 0;break-inside:avoid;page-break-inside:avoid;text-align:center}' +
+            '.ph img{display:block;margin:0 auto;max-width:100%;max-height:' + (p.landscape ? '11cm' : '10.3cm') + ';border:1px solid #000}' +
+            '.ph figcaption{margin-top:4pt;text-align:justify;font-size:15pt;line-height:1.25}' +
+            '.tail{break-inside:avoid;page-break-inside:avoid}.pbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 14px;padding:10px 12px;border-radius:12px;background:#0A1628;color:#E8EFF9;font:14px/1.4 system-ui,sans-serif}' +
+            '.pbar button{font:700 16px system-ui,sans-serif;padding:10px 16px;border:0;border-radius:10px;background:#D4AF37;color:#0A1628;cursor:pointer}' +
+            '@media screen{body{max-width:' + W + 'cm;margin:0 auto;padding:12px}}@media print{.pbar{display:none!important}}';
+        return '<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + title + '</title><style>' + css + screenCss + '</style></head><body>' + body + '</body></html>';
     }
+    // พิมพ์ / PDF: จอสัมผัส (iPhone/แท็บเล็ต) เปิดหน้าเอกสารในหน้าต่างใหม่ (ต้องเปิดทันทีตอนกด) · คอมพิวเตอร์ใช้ iframe เล็ก 1 พิกเซล
+    // (เดิมใช้ iframe ขนาด 0 ที่ซ่อนไว้ → iPhone และบางเบราว์เซอร์พิมพ์ไม่ออก)
     function printLog(ev, p) {
+        const touch = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
         const old = document.getElementById('cmdl-print'); if (old) old.remove();
-        const f = document.createElement('iframe');
-        f.id = 'cmdl-print';
-        f.setAttribute('aria-hidden', 'true');
-        f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
-        document.body.appendChild(f);
-        const d = f.contentDocument;
-        d.open(); d.write(printHtml(ev, p).replace('<head>', '<head><base href="' + esc(document.baseURI) + '">')); d.close();
-        const go = () => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { api.toast('เปิดหน้าพิมพ์ไม่ได้ในเบราว์เซอร์นี้'); } };
-        const ready = d.fonts && d.fonts.ready ? d.fonts.ready : Promise.resolve();
-        Promise.race([ready, new Promise((r) => setTimeout(r, 2500))]).then(() => setTimeout(go, 150));
+        let win = null;
+        if (touch) {
+            win = window.open('', '_blank');
+            if (!win) { api.toast('เบราว์เซอร์บล็อกหน้าต่างใหม่ — อนุญาตป๊อปอัป หรือกดปุ่ม Word แทน'); return; }
+        } else {
+            const f = document.createElement('iframe');
+            f.id = 'cmdl-print';
+            f.setAttribute('aria-hidden', 'true');
+            f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+            document.body.appendChild(f);
+            win = f.contentWindow;
+            setTimeout(() => f.remove(), 120000);
+        }
+        if (touch) { try { win.document.write('<p style="font:16px sans-serif;padding:20px">กำลังจัดหน้าเอกสาร…</p>'); } catch (e) { /* ไม่ต้อง */ } }
+        // รูปขนาดเต็มจากเครื่อง (data URL) — โหลดหลังเปิดหน้าต่างแล้ว (หน้าต่างต้องเปิดทันทีตอนกด)
+        const m = logModel(ev, p);
+        const src = {};
+        const imgs = withPhotos(m) && MEDIA() ? Promise.all(m.photos.map((ph) => MEDIA().dataUrl(ph.id).then((u) => { src[ph.id] = u; }).catch(() => {}))) : Promise.resolve();
+        imgs.then(() => {
+            const d = win.document;
+            d.open(); d.write(printHtml(ev, p, src).replace('<head>', '<head><base href="' + esc(document.baseURI) + '">')); d.close();
+            const btn = d.querySelector('[data-print]');
+            if (btn) btn.addEventListener('click', () => { try { win.focus(); win.print(); } catch (e) { /* ผู้ใช้กดใหม่ได้ */ } });
+            const go = () => {
+                const fonts = d.fonts ? Promise.all([d.fonts.load('16pt THSarabunDoc'), d.fonts.load('bold 16pt THSarabunDoc')]).then(() => d.fonts.ready) : Promise.resolve();
+                const pics = Array.from(d.images || []).map((im) => (im.complete ? 0 : new Promise((r) => { im.onload = im.onerror = r; })));
+                Promise.race([Promise.all([fonts].concat(pics)), new Promise((r) => setTimeout(r, 6000))]).then(() => setTimeout(() => {
+                    try { win.focus(); win.print(); } catch (e) { api.toast('เปิดหน้าพิมพ์ไม่ได้ — กดปุ่ม "พิมพ์ / บันทึกเป็น PDF" ในหน้าเอกสาร หรือใช้ปุ่ม Word'); }
+                }, 150));
+            };
+            if (d.readyState === 'complete') go(); else win.addEventListener('load', go);
+        }).catch((e) => { console.error('[cmdlog] print', e); api.toast('จัดหน้าไม่สำเร็จ'); });
     }
 
     /* ---------------- คลิก / ทุกวินาที ---------------- */
@@ -595,6 +832,9 @@
             return;
         }
         if (act === 'new') openSheet(freshS(ev, b.dataset.k));
+        else if (act === 'mtog') { const id = b.dataset.id; if (mediaOpen.has(id)) mediaOpen.delete(id); else mediaOpen.add(id); render(); }
+        else if (act === 'mview') viewMedia(ev, b.dataset.id, Number(b.dataset.i));
+        else if (act === 'mopen') { if (MEDIA()) MEDIA().open(b.dataset.mid).catch((er) => api.toast(er.message)); }
         else if (act === 'go') api.openTab(b.dataset.tab);
         else if (act === 'edit') { const x = logOf(ev).find((y) => y.id === b.dataset.id); if (x) openSheet(fromEntry(x)); }
         else if (act === 'order') { newestFirst = !newestFirst; try { localStorage.setItem(ORDER_KEY, newestFirst ? 'new' : 'old'); } catch (er) { /* ไม่จำก็ได้ */ } render(); }
@@ -604,7 +844,9 @@
         else if (act === 'due-no') openSheet(freshS(ev, 'deadline', { outcome: OUT.deadline[1], refId: b.dataset.ref }));
         else if (act === 'del') {
             const x = logOf(ev).find((y) => y.id === b.dataset.id); if (!x) return;
-            if (!window.confirm('ลบรายการ ' + hm(Date.parse(x.at)) + ' น. "' + (x.title || '').slice(0, 60) + '" ?')) return;
+            const nm = mediaOf(x).length;
+            if (!window.confirm('ลบรายการ ' + hm(Date.parse(x.at)) + ' น. "' + (x.title || '').slice(0, 60) + '" ?' + (nm ? '\nรูปภาพ/ไฟล์แนบ ' + nm + ' ไฟล์ของรายการนี้จะถูกลบด้วย' : ''))) return;
+            if (nm && MEDIA()) MEDIA().del(mediaIds(mediaOf(x)));
             ev.log = logOf(ev).filter((y) => y.id !== x.id); api.save(); render(); api.toast('ลบรายการแล้ว');
         } else if (act === 'del-lv') {
             const lv = Array.isArray(ev.levelLog) ? ev.levelLog : [];
@@ -617,7 +859,10 @@
             api.save(); api.render(); render(); api.toast('ลบการปรับระดับแล้ว');
         } else if (act === 'clear') {
             const n = logOf(ev).length, m = (ev.levelLog || []).length;
-            if (!window.confirm('ล้างบันทึกทั้งหมด ' + n + ' รายการ และการปรับระดับ ' + m + ' ครั้ง?\nลบแล้วกู้คืนไม่ได้ (แนะนำกด Export JSON ในหน้าภาพรวมเก็บไว้ก่อน)')) return;
+            const allMedia = [].concat.apply([], logOf(ev).map((x) => mediaIds(mediaOf(x))));
+            if (!window.confirm('ล้างบันทึกทั้งหมด ' + n + ' รายการ และการปรับระดับ ' + m + ' ครั้ง?' + (allMedia.length ? '\nรูปภาพ/ไฟล์แนบ ' + allMedia.length + ' ไฟล์จะถูกลบด้วย' : '') + '\nลบแล้วกู้คืนไม่ได้ (แนะนำกด Export JSON ในหน้าภาพรวมเก็บไว้ก่อน)')) return;
+            if (allMedia.length && MEDIA()) MEDIA().del(allMedia);
+            mediaOpen.clear();
             ev.log = []; ev.levelLog = []; api.save(); api.render(); render(); api.toast('ล้างบันทึกแล้ว');
         }
         else if (act === 'ot-ok') quickAdd('end', OUT.end[0]);
@@ -640,8 +885,9 @@
     window.LamhinCmdLog = {
         KINDS: KINDS,
         rows: (ev, opts) => rowsFor(ev, opts),
-        printHtml: (ev, opts) => printHtml(ev, Object.assign(printPrefs(), opts || {})),
+        printHtml: (ev, opts, src) => printHtml(ev, Object.assign(printPrefs(), opts || {}), src),
         print: (ev, opts) => printLog(ev, Object.assign(printPrefs(), opts || {})),
+        model: (ev, opts) => logModel(ev, Object.assign(printPrefs(), opts || {})),   // ข้อมูลตาราง (ใช้สร้าง Word / ทดสอบ)
         showSub: (v) => { setSubTab(v); api.openTab('log'); }   // เช่น ปุ่ม "บันทึก ศปก." ในแผงมาตรการ → กลับแท็บย่อยบันทึกเหตุการณ์
     };
 
@@ -654,6 +900,7 @@
             api = a; el = node;
             el.addEventListener('click', onClick);
             render();
+            setTimeout(mediaGc, 8000);   // เก็บกวาดไฟล์รูปที่ไม่มีรายการอ้างถึงแล้ว
         },
         update(ev) {
             if (sheet && sheet.isConnected) return;   // กำลังกรอกอยู่ ไม่วาดทับ

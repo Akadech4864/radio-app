@@ -712,11 +712,12 @@
     const runBU = (text) => '<w:r><w:rPr><w:b/><w:bCs/><w:u w:val="single"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:cs/></w:rPr><w:t xml:space="preserve">' + xe(noHints(text).replace(PH_RE, PH_DOTS)) + '</w:t></w:r>';
     const pX = (ppr, inner) => '<w:p><w:pPr>' + ppr + '</w:pPr>' + (inner || '') + '</w:p>';
     const spX = (before) => '<w:spacing w:before="' + Math.round(before * 20) + '" w:after="0" w:line="240" w:lineRule="auto"/>';
-    function picX(rid, w, h, id) {
+    function picX(rid, w, h, id, border) {
         return '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
             '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="' + id + '" name="Picture ' + id + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
             '<pic:blipFill><a:blip r:embed="' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
-            '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + w + '" cy="' + h + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>';
+            '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + w + '" cy="' + h + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+            (border ? '<a:ln w="9525"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>' : '') + '</pic:spPr></pic:pic></a:graphicData></a:graphic>';
     }
     function anchorX(rid, w, h, xEmu, yEmu, id) {
         return '<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="1" behindDoc="0" locked="1" layoutInCell="1" allowOverlap="1">' +
@@ -742,12 +743,14 @@
             '<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
             '<Relationship Id="rIdGaruda" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/garuda.png"/>' +
             (o.pageNumbers ? '<Relationship Id="rIdHdr" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/><Relationship Id="rIdHdrFirst" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header2.xml"/>' : '') +
+            (o.media || []).map((md) => '<Relationship Id="' + md.rid + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="' + md.path + '"/>').join('') +
             '</Relationships>';
         const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr>' +
             '<w:rFonts w:ascii="' + DX.FONT + '" w:hAnsi="' + DX.FONT + '" w:eastAsia="' + DX.FONT + '" w:cs="' + DX.FONT + '"/><w:sz w:val="32"/><w:szCs w:val="32"/><w:lang w:val="th-TH" w:bidi="th-TH"/></w:rPr></w:rPrDefault>' +
             '<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>';
         const types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
             '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/>' +
+            ((o.media || []).length ? '<Default Extension="jpeg" ContentType="image/jpeg"/>' : '') +
             '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
             '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
             (o.pageNumbers ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/header2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : '') +
@@ -761,6 +764,7 @@
         z.file('word/_rels/document.xml.rels', rels);
         if (o.pageNumbers) { z.file('word/header1.xml', hdr); z.file('word/header2.xml', emptyHdr); }
         z.file('word/media/garuda.png', window.LAMHIN_GARUDA_B64 || '', { base64: true });
+        (o.media || []).forEach((md) => z.file('word/' + md.path, md.b64, { base64: true }));   // ภาพถ่ายประกอบ
         return z.generateAsync({ type: 'blob', mimeType: DOCX_MIME });
     }
 
@@ -947,18 +951,111 @@
         }).catch((e) => { console.error('[docs] docx', e); api.toast('สร้างไฟล์ Word ไม่สำเร็จ (ต้องต่ออินเทอร์เน็ตครั้งแรกเพื่อโหลดตัวสร้างไฟล์)'); });
     }
     function download(blob, name) {
+        const save = () => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+            api.toast('ดาวน์โหลด ' + name + ' แล้ว');
+        };
         try {
             const file = new File([blob], name, { type: blob.type });
             if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
-                navigator.share({ files: [file], title: name }).catch(() => {});
+                // มือถือ: แผ่นแชร์ (บันทึกลงไฟล์ / เปิดด้วย Word) · ถ้าเบราว์เซอร์ไม่ยอม (เช่น รอสร้างไฟล์นานเกินช่วงที่กด) → ดาวน์โหลดแทน
+                navigator.share({ files: [file], title: name }).catch((e) => { if (!e || e.name !== 'AbortError') save(); });
                 return;
             }
         } catch (e) { /* ดาวน์โหลดปกติ */ }
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-        api.toast('ดาวน์โหลด ' + name + ' แล้ว');
+        save();
+    }
+
+    /* ---------- ตารางบันทึกลำดับเหตุการณ์ (แท็บ บันทึก ศปก.) → Word ----------
+       m จาก cmdlog.js (ชุดเดียวกับหน้าพิมพ์): { attach, title, sub, info: [[ป้าย, ค่า]], head: [หัวคอลัมน์], widths: [สัดส่วน],
+       rows: [{ no, time, date, kind, title, detail, place, unit, counts: [], law, evidence, plan }], cert, signs: [{ label, name, pos }], thai, landscape } */
+    function logDocxXml(m) {
+        // เลขไทย ยกเว้นรหัสที่มีอักษรละติน (เช่น เลขรับคำแจ้งความ EV600…SJ) — ตรงกับหน้าพิมพ์
+        const th = m.thai ? (s) => String(s == null ? '' : s).replace(/[A-Za-z0-9]+/g, (w) => /[A-Za-z]/.test(w) ? w : toThai(w)) : toArabic;
+        const W = m.landscape ? 29.7 - 5 : 16;   // ขอบซ้าย 3 ซม. ขวา 2 ซม. เท่าหน้าพิมพ์
+        const run = (s, pt, b, it) => runX(wbr(th(s)), pt || 16, b, it);
+        const TAB = '<w:r><w:tab/></w:r>', UTAB = '<w:r><w:rPr><w:u w:val="dotted"/></w:rPr><w:tab/></w:r>';
+        const x = [], media = [];
+        const showTable = m.doc !== 'photos', showPhotos = m.doc !== 'table' && (m.photos || []).length > 0;
+        const head = (title) => {
+            if (m.attach) x.push(pX(spX(0) + '<w:jc w:val="right"/>', run(m.attach, 14)));
+            x.push(pX(spX(m.attach ? 4 : 0) + '<w:jc w:val="center"/>', run(title, 20, true)));
+            if (m.sub) x.push(pX(spX(2) + '<w:jc w:val="center"/>', run(m.sub, 16)));
+        };
+        // ลงชื่อ (เรียงลงล่าง ครึ่งขวา): เส้นจุดที่เซนกว้างเท่าชื่อในวงเล็บ กึ่งกลางชื่อ · ยศจบก่อนเส้นจุด 0.3 ซม. · คำบทบาทต่อท้าย
+        const signsX = () => {
+            const cx = W * 0.6875, nameLeft = tw(2 * cx - W);
+            (m.signs || []).forEach((sg, i) => {
+                const sr = splitRank(sg.name), nm = sr[1];
+                const dw = Math.max(nm ? realCm(th('(' + nm + ')')) : 0, 3.6), d0 = cx - dw / 2, d1 = cx + dw / 2;
+                const last = i === m.signs.length - 1;
+                x.push(pX('<w:keepNext/><w:keepLines/>' + spX(i ? 16 : 22) + '<w:tabs><w:tab w:val="right" w:pos="' + tw(d0 - 0.3) + '"/><w:tab w:val="left" w:pos="' + tw(d0) + '"/><w:tab w:val="left" w:pos="' + tw(d1) + '"/></w:tabs>',
+                    TAB + run(sr[0] || '') + TAB + UTAB + run(' ' + sg.label)));
+                x.push(pX((sg.pos || !last ? '<w:keepNext/>' : '') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run('(' + (nm || '........................................') + ')')));
+                if (sg.pos) x.push(pX((last ? '' : '<w:keepNext/>') + spX(0) + '<w:ind w:left="' + nameLeft + '"/><w:jc w:val="center"/>', run(sg.pos)));
+            });
+        };
+        if (showTable) {
+        head(m.title);
+        (m.info || []).forEach((kv, i) => x.push(pX(spX(i ? 1 : 8) + '<w:ind w:left="' + tw(0.6) + '" w:hanging="' + tw(0.6) + '"/>', run(kv[0] + ' ', 15, true) + run(kv[1], 15))));
+        // ตาราง: หัวตารางซ้ำทุกหน้า · แถวไม่แยกหน้า · แถวกำหนดการตัวเอียงพื้นเทา
+        const cw = (m.widths || []).map((f) => tw(W * f));
+        const p = (inner, center, sp) => pX(spX(sp || 0) + (center ? '<w:jc w:val="center"/>' : ''), inner);
+        const cell = (i, paras, fill) => '<w:tc><w:tcPr><w:tcW w:w="' + cw[i] + '" w:type="dxa"/>' + (fill ? '<w:shd w:val="clear" w:color="auto" w:fill="' + fill + '"/>' : '') + '</w:tcPr>' + (paras.join('') || pX('')) + '</w:tc>';
+        const B = '<w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/>' +
+            '<w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/>';
+        let tb = '<w:tbl><w:tblPr><w:tblW w:w="' + tw(W) + '" w:type="dxa"/><w:tblBorders>' + B + '</w:tblBorders><w:tblLayout w:type="fixed"/>' +
+            '<w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="70" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="70" w:type="dxa"/></w:tblCellMar></w:tblPr>' +
+            '<w:tblGrid>' + cw.map((w) => '<w:gridCol w:w="' + w + '"/>').join('') + '</w:tblGrid>';
+        tb += '<w:tr><w:trPr><w:tblHeader/><w:cantSplit/></w:trPr>' + (m.head || []).map((h, i) => cell(i, [p(run(h, 14, true), true)], 'E9E9E9')).join('') + '</w:tr>';
+        (m.rows || []).forEach((r) => {
+            const it = !!r.plan, fill = it ? 'F6F6F6' : '';
+            const sm = (s) => run(s, 12.5, false, it);
+            const what = [p(run(r.title, 14, !it, it))];
+            if (r.detail) what.push(p(run(r.detail, 14, false, it)));
+            const meta = [r.place ? 'จุด: ' + r.place : '', r.unit ? 'ผู้รายงาน: ' + r.unit : ''].filter(Boolean).join(' · ');
+            if (meta) what.push(p(sm(meta)));
+            const time = [p(run(r.time, 14, false, it), true)];
+            if (r.date) time.push(p(sm(r.date), true));
+            if (r.kind) time.push(p(sm(r.kind), true));
+            tb += '<w:tr><w:trPr><w:cantSplit/></w:trPr>' +
+                cell(0, [p(run(String(r.no), 14, false, it), true)], fill) + cell(1, time, fill) + cell(2, what, fill) +
+                cell(3, (r.counts && r.counts.length ? r.counts : ['-']).map((c) => p(run(c, 14, false, it), true)), fill) +
+                cell(4, [p(run(r.law || '-', 14, false, it))], fill) + cell(5, [p(run(r.evidence || (it ? '' : '-'), 14, false, it))], fill) + '</w:tr>';
+        });
+        x.push(tb + '</w:tbl>');
+        if (m.cert) x.push(pX('<w:keepNext/>' + spX(12) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(m.cert)));
+        signsX();
+        }
+        // ภาพถ่ายประกอบ: ขึ้นหน้าใหม่ · ภาพกึ่งกลางมีกรอบ (กว้างไม่เกินเนื้อที่ สูงไม่เกิน ~10 ซม. ≈ 2 ภาพต่อหน้า) · "ภาพที่ ๑ คำบรรยาย" ใต้ภาพ
+        if (showPhotos) {
+            if (showTable) x.push('<w:p><w:r><w:br w:type="page"/></w:r></w:p>');
+            head(m.photoTitle || 'ภาพถ่ายประกอบ');
+            const maxH = m.landscape ? 11 : 10.3;
+            m.photos.forEach((ph, i) => {
+                const k = Math.min(W / (ph.w || 4), maxH / (ph.h || 3));
+                const cx = Math.round((ph.w || 4) * k * DX.EMU_CM), cy = Math.round((ph.h || 3) * k * DX.EMU_CM);
+                const rid = 'rIdPh' + (i + 1);
+                if (ph.b64) media.push({ rid: rid, path: 'media/photo' + (i + 1) + '.jpeg', b64: ph.b64 });
+                const pic = ph.b64 ? '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/>' +
+                    '<wp:docPr id="' + (100 + i) + '" name="Photo ' + (i + 1) + '"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
+                    picX(rid, cx, cy, 100 + i, true) + '</wp:inline></w:drawing></w:r>' : run('[ไม่พบรูปในเครื่องนี้]', 14, false, true);
+                x.push(pX('<w:keepNext/>' + spX(i ? 12 : 10) + '<w:jc w:val="center"/>', pic));
+                x.push(pX('<w:keepLines/>' + spX(4) + '<w:jc w:val="thaiDistribute"/>', run('ภาพที่ ' + ph.n, 15, true) + run(' ' + ph.caption, 15)));
+            });
+            if (m.photoCert) x.push(pX('<w:keepNext/>' + spX(14) + '<w:ind w:firstLine="' + tw(2.5) + '"/><w:jc w:val="thaiDistribute"/>', run(m.photoCert)));
+            signsX();
+        }
+        // แนวนอน: ส่วนหน้ากระดาษของตัวเอง (เลขหน้าเริ่มหน้า 2 เหมือนหน้าพิมพ์)
+        const finalSect = m.landscape ? '<w:sectPr><w:headerReference w:type="default" r:id="rIdHdr"/><w:headerReference w:type="first" r:id="rIdHdrFirst"/>' +
+            '<w:pgSz w:w="' + DX.PAGE_H + '" w:h="' + DX.PAGE_W + '" w:orient="landscape"/><w:pgMar w:top="' + tw(2) + '" w:right="' + tw(2) + '" w:bottom="' + tw(2) + '" w:left="' + tw(3) + '" w:header="709" w:footer="709" w:gutter="0"/><w:titlePg/></w:sectPr>' : null;
+        return { xml: x.join(''), margin: [2, 2, 2, 3], pageNumbers: true, finalSect: finalSect, media: media };
+    }
+    function logDocx(m) {
+        return jszip().then((JSZip) => { const b = logDocxXml(m); return docxPackage(JSZip, b.xml, { margin: b.margin, pageNumbers: true, thai: !!m.thai, finalSect: b.finalSect, media: b.media }); });
     }
 
     /* =====================================================================
@@ -1694,6 +1791,7 @@
         printHtml: (ids) => { const k = kit(); const list = ids.map((id) => tplById(k, id)).filter(Boolean); return pagedDocs(list, k).then((b) => printDocument(b, { title: list.length === 1 ? list[0].title : 'ชุดเอกสาร', paged: true })); },
         paginate: paginate,
         docx: (id) => { const k = kit(); return docxBlob(tplById(k, id), k); },
+        logDocx: logDocx, download: (blob, name) => download(blob, name),   // ตารางบันทึกลำดับเหตุการณ์ (บันทึก ศปก.) เป็น Word
         sheetCss: SHEET_CSS, fontCss: fontCss, garuda: garuda, print: printHtml
     };
 
