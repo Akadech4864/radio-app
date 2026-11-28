@@ -9,7 +9,7 @@
 (function () {
     'use strict';
     // Web App URL ของ Apps Script (ลงท้าย /exec) — ว่าง = ปิดซิงก์
-    const SYNC_URL = '';
+    const SYNC_URL = 'https://script.google.com/macros/s/AKfycbzun47lZUEUEmeJ-dkkTEPbiWV5bJozIoW9siuEWtI8MdUM9H0TjupkFJWEgHF6ts0_/exec';
     const KEY = 'lamhin_cmd_v1', BASE_KEY = 'lamhin_cmd_sync', DEL = '__deleted__';
     const CHECK_MS = 3000, PULL_MS = 20000;
 
@@ -60,7 +60,8 @@
     function localChanges() {
         const st = state(); if (!st) return [];
         const out = [], ids = new Set();
-        st.events.forEach((e) => { ids.add(e.id); const j = evJson(e), b = base[e.id]; if (!b || b.json !== j) out.push({ id: e.id, rev: Date.now(), json: j }); });
+        const edited = Date.parse(st.updatedAt) || 1;      // เวลาแก้ล่าสุดของเครื่องนี้ (เครื่องที่ยังไม่เคยแก้ = 1 → ไม่ทับของจริงในชีต)
+        st.events.forEach((e) => { ids.add(e.id); const j = evJson(e), b = base[e.id]; if (!b || b.json !== j) out.push({ id: e.id, rev: b ? Date.now() : edited, json: j }); });
         Object.keys(base).forEach((id) => { if (!ids.has(id) && base[id].json !== DEL) out.push({ id: id, rev: Date.now(), deleted: true }); });
         return out;
     }
@@ -69,6 +70,7 @@
     function applyRemote(list) {
         const st = state(); if (!st || !Array.isArray(list)) return false;
         let changed = false;
+        const edited = Date.parse(st.updatedAt) || 0;
         list.forEach((r) => {
             if (!r || !r.id) return;
             const b = base[r.id], idx = st.events.findIndex((e) => e.id === r.id), local = idx >= 0 ? st.events[idx] : null;
@@ -83,7 +85,7 @@
             if (!local) {
                 if (b && b.json !== DEL && !untouched) { /* ลบในเครื่องนี้แต่อีกเครื่องแก้ → เก็บไว้ (ข้อมูลไม่หาย) */ }
                 st.events.push(remote); changed = true;
-            } else if (!b) { st.events[idx] = mergeEvent(remote, local); changed = true; }     // เครื่องนี้ไม่เคยซิงก์ → ยึดค่าจากชีต แต่เก็บบันทึกในเครื่องไว้ด้วย
+            } else if (!b) { st.events[idx] = r.rev > edited ? mergeEvent(remote, local) : mergeEvent(local, remote); changed = true; }   // ซิงก์ครั้งแรก: ฝั่งที่แก้ล่าสุดเป็นหลัก · บันทึกทั้งสองฝั่งรวมกัน
             else if (untouched) { st.events[idx] = remote; changed = true; }
             else { st.events[idx] = mergeEvent(local, remote); changed = true; }            // แก้ทั้งสองฝั่ง → รวม แล้วส่งขึ้นรอบหน้า
             base[r.id] = { rev: r.rev, json: r.json };
