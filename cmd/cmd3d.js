@@ -855,28 +855,115 @@
     }
 
     /* ---------- เหตุการณ์จำลอง: มวลชน ตำรวจ รถ ---------- */
-    function car(color, kind) {
-        const g = new THREE.Group();
+    // แนวกราฟิกจอรถยนต์ไฟฟ้า: ตัวถังโค้งมนผิวเงา · หลังคา/กระจกดำเงา · ล้อขอบเงิน · เงานุ่มใต้รถ (โมเดลวาดเอง)
+    const CARGEO = {}, STD = {};
+    function std(hex, rough, metal, o) {
+        const key = hex + '|' + rough + '|' + metal + '|' + JSON.stringify(o || {});
+        return STD[key] || (STD[key] = new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: rough, metalness: metal }, o || {})));
+    }
+    // รวมจุดที่ซ้อนกัน แล้วคำนวณเวกเตอร์ปกติใหม่ → ผิวเรียบไม่เป็นเหลี่ยม
+    function smoothGeo(g) {
+        const pos = g.attributes.position, map = new Map(), verts = [], idx = [];
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), k = Math.round(x * 1e4) + ',' + Math.round(y * 1e4) + ',' + Math.round(z * 1e4);
+            let j = map.get(k); if (j === undefined) { j = verts.length / 3; verts.push(x, y, z); map.set(k, j); } idx.push(j);
+        }
+        const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); out.setIndex(idx); out.computeVertexNormals();
+        g.dispose(); return out;
+    }
+    // ต่อหลายชิ้นเป็นรูปทรงเดียว (ลดจำนวนการวาด)
+    function mergeGeos(list) {
+        const P = [], N = [];
+        list.forEach((g0) => { const g = g0.index ? g0.toNonIndexed() : g0; if (!g.attributes.normal) g.computeVertexNormals(); P.push.apply(P, g.attributes.position.array); N.push.apply(N, g.attributes.normal.array); });
+        const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(N, 3)); return out;
+    }
+    function extrudeSide(shape, width, bev) {
+        const depth = width - bev * 2;
+        const g = new THREE.ExtrudeGeometry(shape, { depth: depth, bevelEnabled: true, bevelThickness: bev, bevelSize: bev * 0.85, bevelSegments: 4, curveSegments: 12 });
+        g.translate(0, 0, -depth / 2); return smoothGeo(g);
+    }
+    function carGeo(kind) {
+        if (CARGEO[kind]) return CARGEO[kind];
         const pickup = kind === 'pickup', van = kind === 'van';
-        const body = new THREE.Mesh(G.box, lam(color)); body.scale.set(4.6, 0.85, 1.8); body.position.y = 0.75; body.castShadow = true; g.add(body);
-        const cab = new THREE.Mesh(G.box, lam(0x2a3442)); cab.scale.set(pickup ? 1.9 : van ? 3.9 : 2.5, 0.72, 1.62); cab.position.set(pickup ? 0.55 : van ? -0.1 : -0.1, 1.5, 0); g.add(cab);
-        const top = new THREE.Mesh(G.box, lam(color)); top.scale.set(pickup ? 1.7 : van ? 3.8 : 2.2, 0.1, 1.62); top.position.set(pickup ? 0.55 : -0.1, 1.9, 0); g.add(top);
-        [[-1.5, 0.85], [1.5, 0.85], [-1.5, -0.85], [1.5, -0.85]].forEach((w) => { const t = new THREE.Mesh(G.cyl, lam(0x15181d)); t.scale.set(0.38, 0.28, 0.38); t.rotation.x = Math.PI / 2; t.position.set(w[0], 0.38, w[1]); g.add(t); });
-        const hl = new THREE.Mesh(G.box, lam(0xfff6d8, { emissive: 0x000000 })); hl.scale.set(0.05, 0.16, 1.4); hl.position.set(2.31, 0.85, 0); g.add(hl);
+        const lift = pickup ? 0.06 : van ? 0.04 : 0, bl = (pickup ? 1.0 : 0.94) + lift;    // แนวเอว (ขอบล่างกระจก)
+        // ตัวถังด้านข้าง (หน้า = +x)
+        const body = new THREE.Shape();
+        body.moveTo(-2.16, 0.34 + lift); body.lineTo(2.02, 0.34 + lift);
+        body.quadraticCurveTo(2.2, 0.36 + lift, 2.2, 0.55 + lift);
+        body.quadraticCurveTo(2.18, 0.76 + lift, 1.92, 0.82 + lift);
+        body.quadraticCurveTo(1.4, bl - 0.02, 0.95, bl);
+        body.lineTo(van ? -2.0 : -1.4, bl);
+        body.quadraticCurveTo(-2.05, bl, -2.16, bl - 0.14);
+        body.quadraticCurveTo(-2.22, 0.6 + lift, -2.16, 0.34 + lift);
+        // ห้องโดยสาร/กระจก (หลังคาดำเงา)
+        const gl = new THREE.Shape(), y0 = bl - 0.05;
+        if (van) {
+            gl.moveTo(-2.06, y0); gl.lineTo(1.22, y0); gl.quadraticCurveTo(0.85, 1.52, 0.25, 1.68); gl.quadraticCurveTo(-1.2, 1.74, -1.85, 1.66); gl.quadraticCurveTo(-2.1, 1.55, -2.06, y0);
+        } else if (pickup) {
+            gl.moveTo(-0.62, y0); gl.lineTo(0.98, y0); gl.quadraticCurveTo(0.6, 1.42, 0.12, 1.52); gl.lineTo(-0.48, 1.53); gl.quadraticCurveTo(-0.64, 1.48, -0.62, y0);
+        } else {
+            gl.moveTo(-1.48, y0); gl.lineTo(1.02, y0); gl.quadraticCurveTo(0.56, 1.32, 0.04, 1.4); gl.quadraticCurveTo(-0.82, 1.44, -1.22, 1.2); gl.quadraticCurveTo(-1.48, 1.05, -1.48, y0);
+        }
+        // ล้อ 4 ล้อ (ยาง + ดุมเงิน) รวมเป็น 2 รูปทรง
+        const r = pickup ? 0.39 : 0.36, wx = pickup ? 1.45 : 1.42, wz = 0.78, tires = [], rims = [];
+        [[-wx, wz], [wx, wz], [-wx, -wz], [wx, -wz]].forEach((w) => {
+            const t = new THREE.CylinderGeometry(r, r, 0.26, 20); t.rotateX(Math.PI / 2); t.translate(w[0], r, w[1]); tires.push(t);
+            const m = new THREE.CylinderGeometry(r * 0.62, r * 0.62, 0.275, 16); m.rotateX(Math.PI / 2); m.translate(w[0], r, w[1]); rims.push(m);
+        });
+        const out = { body: extrudeSide(body, 1.8, 0.17), glass: extrudeSide(gl, 1.56, 0.1), tires: mergeGeos(tires), rims: mergeGeos(rims), roof: van ? 1.8 : pickup ? 1.62 : 1.5, bl: bl };
+        if (pickup) { const bed = new THREE.BoxGeometry(1.5, 0.05, 1.3); bed.translate(-1.38, bl + 0.13, 0); out.bed = bed; }
+        return (CARGEO[kind] = out);
+    }
+    let shadowTex = null;
+    function carShadowTex() {
+        return shadowTex || (shadowTex = canvasTex(128, 64, (g, w, h) => {
+            const gr = g.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
+            gr.addColorStop(0, 'rgba(0,0,0,0.6)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.32)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+            g.save(); g.scale(1, h / w); g.fillStyle = gr; g.fillRect(0, 0, w, w); g.restore();
+        }));
+    }
+    function car(color, kind) {
+        const g = new THREE.Group(), G2 = carGeo(kind === 'pickup' || kind === 'van' ? kind : 'sedan');
+        const paint = std(color, 0.26, 0.15), glass = std(0x07090d, 0.12, 0.65);
+        const body = new THREE.Mesh(G2.body, paint); body.castShadow = true; g.add(body);
+        const cab = new THREE.Mesh(G2.glass, glass); cab.castShadow = true; g.add(cab);
+        g.add(new THREE.Mesh(G2.tires, std(0x16181c, 0.75, 0)));
+        g.add(new THREE.Mesh(G2.rims, std(0xc7ccd3, 0.3, 0.7)));
+        if (G2.bed) g.add(new THREE.Mesh(G2.bed, std(0x22272e, 0.8, 0)));
+        const hl = new THREE.Mesh(G.box, lam(0xfff6d8, { emissive: 0x000000 })); hl.scale.set(0.05, 0.07, 1.3); hl.position.set(2.31, 0.74, 0); g.add(hl);
         anim.headlights.push(hl);
+        const tl = new THREE.Mesh(G.box, lam(0xc81e2a)); tl.scale.set(0.05, 0.07, 1.3); tl.position.set(-2.31, G2.bl - 0.16, 0); g.add(tl);
+        const sh = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 2.7), new THREE.MeshBasicMaterial({ map: carShadowTex(), transparent: true, depthWrite: false }));
+        sh.rotation.x = -Math.PI / 2; sh.position.y = 0.04; sh.renderOrder = -1; g.add(sh);
+        g.userData.roof = G2.roof;
         return g;
     }
     function placeCar(g, x, y, headingDeg) { g.position.set(x, 0, -y); g.rotation.y = headingDeg * Math.PI / 180; scene.add(g); return g; }
-    function personMats() { return { body: lam(0xffffff), head: lam(0xffffff) }; }
+    function personMats() { return { body: std(0xffffff, 0.6, 0.02), head: std(0xffffff, 0.55, 0.02) }; }
+    // หุ่นคนแนวกราฟิกจอรถ: สูง ~1.78 ม. หันหน้า +z · ศีรษะแยกชิ้น (ใช้แนวทางเดิมของฉาก)
+    function personBodyGeo() {
+        const parts = [];
+        const prof = [[0.001, 0.86], [0.15, 0.88], [0.168, 0.98], [0.142, 1.12], [0.17, 1.3], [0.205, 1.41], [0.165, 1.48], [0.06, 1.52], [0.001, 1.52]].map((q) => new THREE.Vector2(q[0], q[1]));
+        const torso = new THREE.LatheGeometry(prof, 12); torso.scale(1, 1, 0.62); parts.push(torso);
+        const neck = new THREE.CylinderGeometry(0.045, 0.052, 0.12, 8); neck.translate(0, 1.56, 0); parts.push(neck);
+        [[-0.088, 0.15], [0.088, -0.15]].forEach((q) => {   // ขา (ซ้ายก้าวหลัง ขวาก้าวหน้า)
+            const leg = new THREE.CylinderGeometry(0.078, 0.05, 0.88, 8); leg.translate(0, -0.44, 0); leg.rotateX(q[1]); leg.translate(q[0], 0.9, 0); parts.push(leg);
+            const foot = new THREE.SphereGeometry(0.06, 8, 5); foot.scale(1, 0.6, 1.8); foot.translate(0, -0.86, 0.05); foot.rotateX(q[1]); foot.translate(q[0], 0.9, 0); parts.push(foot);
+        });
+        [[-0.218, -0.2], [0.218, 0.2]].forEach((q) => {    // แขนแกว่งสวนขา
+            const arm = new THREE.CylinderGeometry(0.05, 0.036, 0.66, 8); arm.translate(0, -0.33, 0); arm.rotateZ(q[0] < 0 ? -0.07 : 0.07); arm.rotateX(q[1]); arm.translate(q[0], 1.45, 0); parts.push(arm);
+        });
+        return mergeGeos(parts);
+    }
+    function personHeadGeo() { const h = new THREE.SphereGeometry(0.118, 14, 10); h.scale(0.92, 1.12, 1); h.translate(0, 1.7, 0); return h; }
     function buildEventScene() {
         const R = rng(2811);
         const grp = new THREE.Group(); scene.add(grp); anim.crowdGroup = grp;
         // ---- มวลชน 500 ตำแหน่ง (แสดงตามจำนวนที่เลือก · คนลำดับแรกอยู่กลางลาน จำนวนมากขึ้นจึงขยายออกและล้นลงผิวซอย) ----
-        const bodyGeo = new THREE.CylinderGeometry(0.21, 0.26, 1.25, 7); bodyGeo.translate(0, 0.62, 0);
-        const headGeo = new THREE.SphereGeometry(0.14, 8, 6); headGeo.translate(0, 1.42, 0);
+        const bodyGeo = personBodyGeo(), headGeo = personHeadGeo();
         const pm = personMats();
         const crowd = new THREE.InstancedMesh(bodyGeo, pm.body, MAX_CROWD), heads = new THREE.InstancedMesh(headGeo, pm.head, MAX_CROWD);
-        const shirts = [0xffffff, 0xf4d03f, 0x2e86de, 0xe74c3c, 0x27ae60, 0x2d3436, 0xe67e22, 0xfd79a8, 0x8e44ad, 0x95a5a6, 0x16a085, 0xf5f6fa];
+        const tones = [0xa9b2bc, 0xb7bfc8, 0x9ca6b1, 0xc4cbd3, 0x929ca8, 0xb0b8c1];   // หุ่นสีเทาไล่เฉดเล็กน้อย ให้มองเป็นกลุ่มคนได้ชัด
         const c = new THREE.Color();
         // ตารางช่อง 1 ม. ไว้ตรวจระยะห่างระหว่างคน (เร็วพอสำหรับ 500 คนบนมือถือ)
         const cells = new Map(), cellKey = (x, y) => Math.floor(x) + ',' + Math.floor(y);
@@ -904,10 +991,9 @@
             }
             occupy(x, y);
             anim.crowdBase.push({ x: x, y: y, ph: R() * 6.28, rate: 1.2 + R() * 1.6, rot: Math.atan2(4 - y, 1 - x) + (R() - 0.5) * 0.8 });
-            c.setHex(shirts[(R() * shirts.length) | 0]); crowd.setColorAt(i, c);
-            c.setHex([0xd9a77c, 0xc68e62, 0xe0b48a, 0xb07a52][(R() * 4) | 0]); heads.setColorAt(i, c);
+            c.setHex(tones[(R() * tones.length) | 0]); crowd.setColorAt(i, c); heads.setColorAt(i, c);
         }
-        crowd.castShadow = true;
+        crowd.castShadow = true; heads.castShadow = true;
         grp.add(crowd); grp.add(heads); anim.crowd = crowd; anim.heads = heads;
         // ป้ายคัดค้านในมือผู้ชุมนุม
         const texts = ['ไม่เอาเสาไฟแนวใหม่', 'หยุดจั้มไฟ!', 'ชุมชนลำเจดีย์', 'ขอความเป็นธรรม', 'กฟน. ต้องชี้แจง', 'เสาไฟกีดขวางทาง'];
@@ -936,13 +1022,13 @@
         [-0.6, 8.6].forEach((x) => { const p = new THREE.Mesh(G.cyl, lam(0x8b6b45)); p.scale.set(0.07, 3.6, 0.07); p.position.set(x, 1.8, 5.6); grp.add(p); });
         // ผู้จัดถือโทรโข่ง (ยืนหน้าป้ายผ้า หันหาผู้ชุมนุม)
         const leader = new THREE.Group();
-        const lb = new THREE.Mesh(bodyGeo, lam(0xf8f9fa)); leader.add(lb);
-        const lh = new THREE.Mesh(headGeo, lam(0xc68e62)); leader.add(lh);
-        const mega = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.06, 0.5, 10, 1, true), lam(0xf2f2f2, { side: THREE.DoubleSide })); mega.rotation.x = Math.PI / 2; mega.position.set(0, 1.45, 0.3); leader.add(mega);
+        const lb = new THREE.Mesh(bodyGeo, std(0xe6eaef, 0.55, 0.02)); lb.castShadow = true; leader.add(lb);
+        const lh = new THREE.Mesh(headGeo, std(0xe6eaef, 0.5, 0.02)); leader.add(lh);
+        const mega = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.06, 0.5, 12, 1, true), std(0xf2f4f7, 0.35, 0.1, { side: THREE.DoubleSide })); mega.rotation.x = Math.PI / 2; mega.position.set(0, 1.62, 0.32); leader.add(mega);
         leader.position.set(4, 0, -4.4); leader.rotation.y = 0; grp.add(leader); anim.leader = leader;
 
         // ---- รถผู้ชุมนุม ~10 คัน ----
-        const cc = [0xf5f6fa, 0x2d3436, 0x95a5a6, 0xb2bec3, 0xc0392b, 0x2e86de, 0xdfe6e9, 0x636e72, 0xffffff, 0x8e2d2d];
+        const cc = [0xf3f5f8, 0x1c1f24, 0xc5cad1, 0xe9ecf0, 0xc0182c, 0x8d949c, 0xf7f8fa, 0x4b5159, 0xffffff, 0xa1162a];
         const kinds = ['pickup', 'sedan', 'pickup', 'van', 'pickup', 'sedan', 'pickup', 'sedan', 'pickup', 'van'];
         // จอดที่ลานจอดรถมัสยิดฝั่งตะวันตกของถนนคู้-คลองสิบ (ริมซอยฝั่งตะวันออกเป็นแนวต้นไม้/ป่า จอดไม่ได้) — จอดตั้งฉาก 2 แถว แถวละ 5 คัน
         [-75, -72, -69, -66, -63].forEach((x, i) => {
@@ -951,8 +1037,8 @@
         });
 
         // ---- ตำรวจ คฝ. สน.ลำหิน 1 หมู่ (12 นาย) แนวริมซอยหันหาผู้ชุมนุม ----
-        const pol = new THREE.InstancedMesh(bodyGeo, lam(0x1e3a8a), 12), helm = new THREE.InstancedMesh(new THREE.SphereGeometry(0.19, 8, 6).translate(0, 1.47, 0), lam(0xe5e7eb), 12);
-        const shield = new THREE.InstancedMesh(new THREE.BoxGeometry(0.62, 1.0, 0.05).translate(0, 0.85, 0.32), lam(0xb9dcff, { transparent: true, opacity: 0.55 }), 12);
+        const pol = new THREE.InstancedMesh(bodyGeo, std(0x23365e, 0.55, 0.05), 12), helm = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 12, 8).translate(0, 1.73, 0), std(0xeef1f5, 0.3, 0.1), 12);
+        const shield = new THREE.InstancedMesh(new THREE.BoxGeometry(0.62, 1.05, 0.04).translate(0, 0.95, 0.34), std(0xbfe0ff, 0.15, 0.1, { transparent: true, opacity: 0.5 }), 12);
         const m4 = new THREE.Matrix4(), qq = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), pp = new THREE.Vector3();
         for (let i = 0; i < 12; i++) {
             pp.set(-14 + i * 2.9, 0, 7.6); qq.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
@@ -963,9 +1049,9 @@
         // ---- รถสายตรวจ 2 คัน + ไฟวับวาบ ----
         [[-28, -4.2, 0], [-55.5, -1, 90]].forEach((p) => {
             const g = car(0xf4f6f8, 'sedan');
-            const stripe = new THREE.Mesh(G.box, lam(0x1e3a8a)); stripe.scale.set(4.62, 0.25, 1.82); stripe.position.y = 0.75; g.add(stripe);
-            const r = new THREE.Mesh(G.box, new THREE.MeshBasicMaterial({ color: 0xff2a2a })); r.scale.set(0.3, 0.16, 0.6); r.position.set(-0.1, 2.05, 0.35); g.add(r);
-            const b = new THREE.Mesh(G.box, new THREE.MeshBasicMaterial({ color: 0x2a6bff })); b.scale.set(0.3, 0.16, 0.6); b.position.set(-0.1, 2.05, -0.35); g.add(b);
+            const stripe = new THREE.Mesh(G.box, std(0x1f3a7a, 0.4, 0.1)); stripe.scale.set(3.9, 0.12, 1.84); stripe.position.set(-0.05, 0.64, 0); g.add(stripe);
+            const r = new THREE.Mesh(G.box, new THREE.MeshBasicMaterial({ color: 0xff2a2a })); r.scale.set(0.3, 0.12, 0.55); r.position.set(-0.3, g.userData.roof + 0.04, 0.32); g.add(r);
+            const b = new THREE.Mesh(G.box, new THREE.MeshBasicMaterial({ color: 0x2a6bff })); b.scale.set(0.3, 0.12, 0.55); b.position.set(-0.3, g.userData.roof + 0.04, -0.32); g.add(b);
             anim.bars.push([r, b]); placeCar(g, p[0], p[1], p[2]);
         });
         // ---- จุด ศปก.ส่วนหน้า (เต็นท์) ----
@@ -975,8 +1061,8 @@
         const table = new THREE.Mesh(G.box, lam(0x6b4f32)); table.scale.set(2.4, 0.8, 1); table.position.y = 0.4; tent.add(table);
         tent.position.set(-57.5, 0, -15.5); scene.add(tent);   // ศปก.ส่วนหน้า: ลานจอดรถมัสยิดติดถนนใหญ่ มองเห็นจุดชุมนุมฝั่งตรงข้าม
         // ---- จุดจราจรที่แยก + กรวย ----
-        const tp = new THREE.Mesh(bodyGeo, lam(0xd4ff3a)); tp.position.set(-44, 0.3, 9); scene.add(tp);
-        const tph = new THREE.Mesh(headGeo, lam(0xffffff)); tph.position.set(-44, 0.3, 9); scene.add(tph);
+        const tp = new THREE.Mesh(bodyGeo, std(0xd4ff3a, 0.5, 0.02)); tp.position.set(-44, 0.3, 9); tp.castShadow = true; scene.add(tp);
+        const tph = new THREE.Mesh(headGeo, std(0xeef1f5, 0.3, 0.1)); tph.position.set(-44, 0.3, 9); scene.add(tph);
         for (let k = 0; k < 6; k++) { const cn = new THREE.Mesh(G.cone, lam(0xff6b1a)); cn.scale.set(0.25, 0.7, 0.25); cn.position.set(-40.5 + k * 1.6, 0.7, 13.5 - k * 0.2); scene.add(cn); }
         // ---- รถกระเช้า กฟน. ที่แนวเสาใหม่ (~100 ม. จากปากซอย) ----
         const mea = new THREE.Group();
@@ -991,8 +1077,8 @@
         // ---- รถวิ่งบนถนนใหญ่ (มีชีวิตชีวา) ----
         if (mainPts) {
             const L = lineLength(mainPts);
-            [[0x2d3436, 1, 0.1], [0xdfe6e9, -1, 0.45], [0xc0392b, 1, 0.7], [0x74b9ff, -1, 0.9]].forEach((t) => {
-                const g = car(t[0], t[0] === 0xdfe6e9 ? 'pickup' : 'sedan'); scene.add(g);
+            [[0x1c1f24, 1, 0.1], [0xe9ecf0, -1, 0.45], [0xc0182c, 1, 0.7], [0xc5cad1, -1, 0.9]].forEach((t) => {
+                const g = car(t[0], t[0] === 0xe9ecf0 ? 'pickup' : 'sedan'); scene.add(g);
                 anim.traffic.push({ g: g, dir: t[1], s: t[2] * L, L: L, speed: 9 + Math.random() * 3 });
             });
         }
@@ -1296,7 +1382,7 @@
     function stop() { running = false; cancelAnimationFrame(raf); }
 
     // สถานะสำหรับตรวจสอบ (อ่านอย่างเดียว)
-    window.LamhinCmd3D = { get running() { return running; }, get built() { return built; }, get view() { return { az: want.az, pol: want.pol, dist: want.dist, tx: want.tx, tz: want.tz, auto: autoRot, panLock: panLock }; }, focus: focus, setTime: setTime };
+    window.LamhinCmd3D = { get running() { return running; }, get built() { return built; }, get view() { return { az: want.az, pol: want.pol, dist: want.dist, tx: want.tx, tz: want.tz, auto: autoRot, panLock: panLock }; }, focus: focus, look: (v) => { Object.assign(want, v || {}); clampWant(); stopAuto(); }, setTime: setTime };
 
     /* ---------------- ลงทะเบียนแท็บ ---------------- */
     CMD.registerSection({ id: 'map3d', label: 'แผนที่ 3 มิติ', icon: 'fa-cube', order: 30, host: 'overview', top: true, mount: mount, update: update, visible: visible });
