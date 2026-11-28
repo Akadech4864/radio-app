@@ -154,6 +154,13 @@
     const mediaIds = (list) => list.map((m) => m.id);
     const placeOf = (kind) => PLACE_OF[kind] || DEFAULT_PLACE;
     const mediaOpen = new Set();   // รายการที่กางดูรูปอยู่ใน timeline
+    // ซิงก์หลายเครื่อง (cmdsync.js): จดรหัสที่ลบไว้ใน ev.deleted ไม่ให้เครื่องอื่นดึงกลับมา
+    // รหัสรายการบันทึก · 'lv:' + เวลาปรับระดับ · รหัสรูปที่ลบออกจากรายการ
+    function markDeleted(ev, ids) {
+        if (!ev) return;
+        const list = Array.isArray(ev.deleted) ? ev.deleted : (ev.deleted = []);
+        (Array.isArray(ids) ? ids : [ids]).forEach((id) => { if (id && list.indexOf(id) === -1) list.push(String(id)); });
+    }
     // คำบรรยายใต้ภาพ (ตั้งต้น): เหตุการณ์ · วันที่ · เวลา · สถานที่ — แก้ได้
     function autoCaption(o) {
         const t = String(o.title || '').replace(/\s*·\s*/g, ' ').trim() || 'ภาพเหตุการณ์';
@@ -310,6 +317,7 @@
                 { label: '<i class="fa-solid fa-trash"></i> ลบรูป', cls: 'danger', run: (close) => {
                     if (!window.confirm('ลบรูปที่ ' + (i + 1) + ' ของรายการเวลา ' + hm(Date.parse(x.at)) + ' น.?\nลบแล้วกู้คืนไม่ได้')) return;
                     x.media = mediaOf(x).filter((y) => y.id !== m.id);
+                    markDeleted(ev, m.id);
                     if (MEDIA()) MEDIA().del(m.id);
                     api.save(); close(); render(); api.toast('ลบรูปแล้ว');
                 } },
@@ -469,6 +477,7 @@
             const n = mediaOf(x).length;
             if (!window.confirm('ลบรายการนี้?' + (n ? '\nรูปภาพ/ไฟล์แนบ ' + n + ' ไฟล์ของรายการนี้จะถูกลบด้วย' : ''))) return;
             if (MEDIA()) MEDIA().del(mediaIds(mediaOf(x)).concat(S.mediaNew || []));
+            markDeleted(ev, S.editId);
             ev.log = logOf(ev).filter((y) => y.id !== S.editId); api.save(); close(); sheet = null; render(); api.toast('ลบแล้ว');
         } });
         actions.push({ label: 'ยกเลิก', run: (close) => { close(); discardSheet(); } });
@@ -573,6 +582,7 @@
         // รูปที่ลบออกในแผ่นกรอก → ลบไฟล์ในเครื่องเมื่อบันทึก
         const removed = (S.mediaOrig || []).filter((id) => !entry.media.some((m) => m.id === id));
         if (removed.length && MEDIA()) MEDIA().del(removed);
+        if (removed.length) markDeleted(ev, removed);
         S.mediaNew = [];
         pushRecent(entry.by);
         if (S.editId) {
@@ -847,12 +857,14 @@
             const nm = mediaOf(x).length;
             if (!window.confirm('ลบรายการ ' + hm(Date.parse(x.at)) + ' น. "' + (x.title || '').slice(0, 60) + '" ?' + (nm ? '\nรูปภาพ/ไฟล์แนบ ' + nm + ' ไฟล์ของรายการนี้จะถูกลบด้วย' : ''))) return;
             if (nm && MEDIA()) MEDIA().del(mediaIds(mediaOf(x)));
+            markDeleted(ev, x.id);
             ev.log = logOf(ev).filter((y) => y.id !== x.id); api.save(); render(); api.toast('ลบรายการแล้ว');
         } else if (act === 'del-lv') {
             const lv = Array.isArray(ev.levelLog) ? ev.levelLog : [];
             const i = lv.findIndex((l) => l.at === b.dataset.at); if (i < 0) return;
             if (!window.confirm('ลบการปรับระดับสถานการณ์ เวลา ' + hm(Date.parse(lv[i].at)) + ' น. ?')) return;
             const wasLatest = i === lv.length - 1 || lv.every((l, j) => j === i || Date.parse(l.at) < Date.parse(lv[i].at));
+            markDeleted(ev, 'lv:' + lv[i].at);
             lv.splice(i, 1);
             // ลบการปรับล่าสุด → ระดับกลับไปเป็นระดับก่อนหน้า (ไม่มีแล้ว = สีเขียว)
             if (wasLatest) { const prev = lv.slice().sort((p, q) => Date.parse(p.at) - Date.parse(q.at)).pop(); ev.level = prev ? prev.level : 'green'; }
@@ -863,6 +875,7 @@
             if (!window.confirm('ล้างบันทึกทั้งหมด ' + n + ' รายการ และการปรับระดับ ' + m + ' ครั้ง?' + (allMedia.length ? '\nรูปภาพ/ไฟล์แนบ ' + allMedia.length + ' ไฟล์จะถูกลบด้วย' : '') + '\nลบแล้วกู้คืนไม่ได้ (แนะนำกด Export JSON ในหน้าภาพรวมเก็บไว้ก่อน)')) return;
             if (allMedia.length && MEDIA()) MEDIA().del(allMedia);
             mediaOpen.clear();
+            markDeleted(ev, logOf(ev).map((x) => x.id).concat((ev.levelLog || []).map((l) => 'lv:' + l.at), allMedia));
             ev.log = []; ev.levelLog = []; api.save(); api.render(); render(); api.toast('ล้างบันทึกแล้ว');
         }
         else if (act === 'ot-ok') quickAdd('end', OUT.end[0]);

@@ -1091,14 +1091,15 @@
             placeCar(car(cc[i], kinds[i]), x, -3.2, 90);
             placeCar(car(cc[5 + i], kinds[5 + i]), x, 8.6, 270);
         });
-        // ---- ลานไหล่ทางคอนกรีตริมถนนใหญ่หน้าทางเข้ามัสยิด (กว้าง ~5.5 ม. ยาว ~35 ม.) + รถการไฟฟ้า (กฟน.) 2 คัน จอดแนวตรงเรียงกันขนานถนน ตามภาพถ่ายหน้างาน ----
-        const APRON_H = 0.22, ay0 = -26, ay1 = 9;
-        const ap = new THREE.Shape([new THREE.Vector2(mainX(ay0) - 6.1, ay0), new THREE.Vector2(mainX(ay1) - 6.1, ay1), new THREE.Vector2(mainX(ay1) - 11.6, ay1), new THREE.Vector2(mainX(ay0) - 11.6, ay0)]);
+        // ---- ลานไหล่ทางคอนกรีตริมถนนใหญ่ เฉพาะช่วงใต้ปากทางถนนภายในมัสยิด (กว้าง ~7 ม. · ปากทางและทางเข้าลานจอดโล่ง)
+        //      รถเครน + รถกระเช้า จอดเรียงหน้า-หลังขนานถนนใหญ่ หัวรถหันขึ้นเหนือเข้าหาถนนภายในมัสยิด (ตามภาพถ่ายจากปากซอยฝั่งจุดชุมนุม: รถเยื้องซ้ายของทางเข้า) ----
+        const APRON_H = 0.22, ay0 = -32, ay1 = -12.2;
+        const ap = new THREE.Shape([new THREE.Vector2(mainX(ay0) - 6.1, ay0), new THREE.Vector2(mainX(ay1) - 6.1, ay1), new THREE.Vector2(mainX(ay1) - 13.2, ay1), new THREE.Vector2(mainX(ay0) - 13.2, ay0)]);
         const apG = new THREE.ExtrudeGeometry(ap, { depth: APRON_H, bevelEnabled: false }); apG.rotateX(-Math.PI / 2);
         const apron = new THREE.Mesh(apG, lam(0xb7b8b1)); apron.receiveShadow = true; scene.add(apron);
-        const roadHead = Math.atan2(1, mainX(1) - mainX(0)) * 180 / Math.PI;   // หันหัวขึ้นเหนือขนานถนน (จอดชิดซ้ายตามทิศจราจร)
-        [['crane', -19], ['bucket', -9.6]].forEach((t) => {
-            const g = placeCar(meaTruck(t[0]), mainX(t[1]) - 7.4, t[1], roadHead); g.position.y = APRON_H;
+        const roadHead = Math.atan2(1, mainX(1) - mainX(0)) * 180 / Math.PI;   // ขนานถนนใหญ่ หัวรถขึ้นเหนือ
+        [['bucket', -16.4], ['crane', -26]].forEach((t) => {
+            const g = placeCar(meaTruck(t[0]), mainX(t[1]) - 8.2, t[1], roadHead); g.position.y = APRON_H;
         });
 
         // ---- ตำรวจ คฝ. สน.ลำหิน 1 หมู่ (12 นาย) แนวริมซอยหันหาผู้ชุมนุม ----
@@ -1205,7 +1206,7 @@
         addLabel('ศปก.ส่วนหน้า', 'ลานจอดรถมัสยิด', -57.5, 15.5, 5.5, 'police', 320);
         addLabel('จุดจราจร', '', -44, -9, 3.2, 'police', 220);
         addLabel('รถผู้ชุมนุม ~10 คัน', 'จอดลานจอดรถมัสยิด', -69, 2.7, 3.4, '', 320);
-        addLabel('รถ กฟน. 2 คัน', 'จอดไหล่ทางหน้าทางเข้ามัสยิด', mainX(-14) - 7.4, -14, 4.8, '', 320);
+        addLabel('รถ กฟน. 2 คัน', 'ไหล่ทางใต้ปากทางเข้ามัสยิด', mainX(-21) - 8.2, -21, 4.8, '', 320);
         anim.crowdLabel = addLabel('มวลชนจำลอง ' + crowdN + ' คน', '', 4, 1, 4.2, '', 240);
         addLabel('↗ สน.ลำหิน 2.8 กม.', 'คฝ. 1 หมวด สแตนด์บาย', m2[0] + 18, Math.min(330, m2[1] + 150), 4, 'dir');
         [100, 200, 300].forEach((r) => addLabel(r + ' ม.', '', r * 0.707, -r * 0.707, 2, 'ring'));
